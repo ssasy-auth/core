@@ -1,31 +1,32 @@
-# Self-Sovereign Authentictaion Scheme (SSASy)
+# **_SSASy_**
 
 > To be sovereign is to have supreme power and to be free from external control or influence ([Merriam-Webster](https://www.merriam-webster.com/dictionary/sovereign)).
 
-SSASy is a self-sovereign authentication scheme that enables users to authenticate themselves in usable, secure and decentralized manner without without relying on a third party (e.g. Google, Microsoft, Facebook, Twitter). The scheme is based on two main concepts: (1) [Public Key Encryption](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/diffie-hellman.pdf) by Diffie and Hellman and (2) the [Self-Sovereign Identity](http://www.lifewithalacrity.com/2016/04/the-path-to-self-soverereign-identity.html) by Chirstopher Allen.
+SSASy is a **self-sovereign authentication scheme** that enables users to authenticate themselves in usable, secure and decentralized manner without without relying on a third party (e.g. Google, Microsoft, Facebook, Twitter). The scheme is based on two main concepts: (1) [Public Key Encryption](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/diffie-hellman.pdf) by Diffie and Hellman and (2) the [Self-Sovereign Identity](http://www.lifewithalacrity.com/2016/04/the-path-to-self-soverereign-identity.html) by Chirstopher Allen.
+
+---
 
 ## Table of Contents
 
-- [Self-Sovereign Authentictaion Scheme (SSASy)](#self-sovereign-authentictaion-scheme-ssasy)
+- [**_SSASy_**](#ssasy)
   - [Table of Contents](#table-of-contents)
-  - [Motivation](#motivation)
+  - [**Introduction**](#introduction)
     - [Usability](#usability)
     - [Security](#security)
     - [Problem Statement](#problem-statement)
-  - [How it works](#how-it-works)
-    - [Setup](#setup)
-    - [Register](#register)
-    - [Authenticate](#authenticate)
-    - [Recover](#recover)
-    - [Transfer](#transfer)
-    - [Delegate](#delegate)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [License](#license)
+  - [**How it works**](#how-it-works)
+    - [Registration](#registration)
+    - [Authentication](#authentication)
+    - [Recovery](#recovery)
+    - [Delegation](#delegation)
+  - [**Usage**](#usage)
+    - [Core Logic](#core-logic)
+    - [Client Library](#client-library)
+  - [**License**](#license)
 
-## Motivation
+## **Introduction**
 
-There are two main problems with the current authentication schemes (AS) on the web.
+User authentication is a foundational building block on the Internet and in Information Security because ensures that information and services are only accessed by authorized users. Almost all websites on the internet require users to register and authenticate themselves before they can access their emails, social media or financial services. However, there are two main problems with the current authentication schemes (AS) on the web.
 
 ### Usability
 
@@ -60,7 +61,7 @@ At the end of the day, users are unable to use AS, as they were intended, so the
 
 ### Problem Statement
 
-User authentication is a very important aspect of the internet and involves a number of stakeholders, the most important being the user (claimant) that needs to authenticate themselves and the service or platform (verifier) that needs to ensure that only authorized users are able to access some resources.
+User authentication is a very important aspect of the internet and involves a number of stakeholders, the most important being the user (**claimant**) that needs to authenticate themselves and the service or platform (**verifier**) that needs to ensure that only authorized users are able to access some resources.
 
 One possible solution would be an authentication scheme that enable users to be self-sovereign in how they authenticate themselves. The AS should also be secure to the same extent as existing solutions otherwise it won't be adopted by existing infrastructures. Lastly, the AS should be usable - this is very important given that the self-sovereign aspect implies that users are in control of their authentication as opposed to a digital platform with much larger resource pools. Usability, or perceived ease of use, is also important when considering user adoption in the context of innovative technologies.
 
@@ -73,26 +74,83 @@ In order to acheive this, the self-sovereign authentication scheme should be abl
 3. the claimant and verifier should be able to recover their authenticator if it were to be forgoten or lost
 4. the claimant and verifier should be able to delegate their tasks without sharing credentials so that security is not compromised at the cost of productivity
 
-These features are still in progress and succesptible to change.
+_Note: These features are still in progress and succesptible to change._
 
-## How it works
+---
 
-### Setup
+## **How it works**
 
-### Register
+At a very high level, the self-sovereign authentication scheme (SSASy) is a two-party authentication scheme that uses a **claimant** and a **verifier**. The claimant is the user that needs to authenticate themselves and the verifier is the service or platform that needs to ensure that only authorized users are able to access some resources.
 
-### Authenticate
+Using public key cryptography, SSASy is able to provide a seamless and secure authentication experience for the users. The following is a generic sequence of events that would occur during the authentication process:
 
-### Recover
+### Registration
 
-### Transfer
+1. the claimant generates a public/private key pair
+2. the claimant registers their public key with the verifier (e.g. Twitter)
+3. the verifier stores the public key and binds it to the claimant's account along with additional metadata (e.g. username, email)
+4. the claimant receives a confirmation from the verifier along with the verifier's public key which the claimant stores
 
-### Delegate
+### Authentication
 
-## Installation
+1. the claimant provides an identitifer (e.g. public key, username, email) to the verifier
+2. the verifier extracts the public key from the claimant's account and sends a challenge (e.g. a nonce encrypted with the public key) to the claimant
+3. the claimant decrypts the challenge with their private key and signs the challenge with their private key. Afterwards, the claimant encrypts the signature with the verifier's public key and sends it back to the verifier
+4. the verifier decrypts the signature with the verifier's private key and verifies that the signature is valid. If the signature is valid, the verifier authenticates the claimant and grants the claimant access to the resources (e.g. using an access token).
 
-## Usage
+### Recovery
 
-## License
+<!--TODO-->
+
+### Delegation
+
+<!--TODO-->
+
+---
+
+## **Usage**
+
+At a high level, SSASy is made up of two main components; (1) the core logic and (2) the client library that would be used by claimants and verifier.
+
+### Core Logic
+
+The core logic is responsible for all the cryptographic operations that are required for the scheme to work. Both, the server and client libraries, depend on the core logic to perform their respective tasks.
+
+Functions:
+
+- [ ] generate public key pair
+- [ ] encrypt and decrypt data
+- [ ] create and verify signatures
+- [ ] challenge and response
+
+Stack:
+
+- [Rust](https://www.rust-lang.org/)
+
+### Client Library
+
+The client library is meant to be used by the claimant to create their public key pair, register and authenticate with the verifier, among other things. Although the verifier is different from the claiment, in the context of an registration and authentication dance, they both perform similar tasks. Therefore, the client library is also used by the verifier.
+
+Functions:
+
+- [ ] **general**
+  - [ ] create a key pair
+  - [ ] setup recovery option
+  - [ ] setup delegation option
+- [ ] **claimant**
+  - [ ] register to a verifier
+  - [ ] authenticate with a verifier
+- [ ] **verifier**
+  - [ ] register a claimant
+  - [ ] authenticate a claimant
+
+Stack:
+
+- [Vue.js](https://vuejs.org/) for the web client
+- [Python](https://www.python.org/) for the CLI client
+
+---
+
+## **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file, in the root of the project, for details.
