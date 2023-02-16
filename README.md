@@ -14,11 +14,15 @@ SSASy is a **self-sovereign authentication scheme** that enables users to authen
     - [Usability](#usability)
     - [Security](#security)
     - [Problem Statement](#problem-statement)
+  - [Standards](#standards)
+    - [Public Key Cryptography](#public-key-cryptography)
+    - [Encryption](#encryption)
+  - [Digital Signatures](#digital-signatures)
   - [**How it works**](#how-it-works)
-    - [Registration](#registration)
-    - [Authentication](#authentication)
-    - [Recovery](#recovery)
-    - [Delegation](#delegation)
+    - [**Registration**](#registration)
+    - [**Authentication**](#authentication)
+    - [**Recovery**](#recovery)
+    - [**Delegation**](#delegation)
   - [**Usage**](#usage)
     - [Core Logic](#core-logic)
     - [Client Library](#client-library)
@@ -78,31 +82,63 @@ _Note: These features are still in progress and succesptible to change._
 
 ---
 
+## Standards
+
+Standards are a set of rules that dictate how something should be done. They are important because they allow developers to create products that work with other products (interoperable), without knowing the details of how the other products work.
+
+In order to create a seamless authentication scheme, it is important to consider the different standards and protocols that are being used.
+
+### Public Key Cryptography
+
+The main cryptographic algorithms being used are **Rivest-Shamir-Adleman** (RSA) and **Elliptic Curve Cryptography** (ECC).
+
+- FIDO standards support RSA and ECC according to the [webauthn speci](https://www.w3.org/TR/webauthn-1/#credential-params).
+- Ethereum uses ECC according to the [ethereum specifications](https://ethereum.org/en/developers/docs/accounts/) and [Gavin Wood (Ethereum co-founder)](http://gavwood.com/paper.pdf). Also, [Kobl](https://kobl.one/blog/create-full-ethereum-keypair-and-address/) outlines the steps to create a full Ethereum keypair and address.
+- Metamask uses ECC according to the [metamask documentation](https://docs.metamask.io/guide/ethereum-provider.html#ethereum-provider-api).
+
+### Encryption
+
+- AES-256-CBC
+
+## Digital Signatures
+
+- SHA-256
+
+---
+
 ## **How it works**
 
 At a very high level, the self-sovereign authentication scheme (SSASy) is a two-party authentication scheme that uses a **claimant** and a **verifier**. The claimant is the user that needs to authenticate themselves and the verifier is the service or platform that needs to ensure that only authorized users are able to access some resources.
 
 Using public key cryptography, SSASy is able to provide a seamless and secure authentication experience for the users. The following is a generic sequence of events that would occur during the authentication process:
 
-### Registration
+### **Registration**
 
 1. the claimant generates a public/private key pair
 2. the claimant registers their public key with the verifier (e.g. Twitter)
 3. the verifier stores the public key and binds it to the claimant's account along with additional metadata (e.g. username, email)
 4. the claimant receives a confirmation from the verifier along with the verifier's public key which the claimant stores
 
-### Authentication
+Notes:
+
+- according to [this metamask helpdesk](https://metamask.zendesk.com/hc/en-us/articles/360020091432-How-does-MetaMask-generate-your-keys-), it is recommded to use the [`Crypto.getRandomValues`](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues) function to generate a cryptographically secure random number (seed) for the key generation process.
+
+### **Authentication**
 
 1. the claimant provides an identitifer (e.g. public key, username, email) to the verifier
 2. the verifier extracts the public key from the claimant's account and sends a challenge (e.g. a nonce encrypted with the public key) to the claimant
 3. the claimant decrypts the challenge with their private key and signs the challenge with their private key. Afterwards, the claimant encrypts the signature with the verifier's public key and sends it back to the verifier
 4. the verifier decrypts the signature with the verifier's private key and verifies that the signature is valid. If the signature is valid, the verifier authenticates the claimant and grants the claimant access to the resources (e.g. using an access token).
 
-### Recovery
+### **Recovery**
 
 <!--TODO-->
 
-### Delegation
+Inspo:
+
+- [Wei-Meng Lee](https://levelup.gitconnected.com/blockchain-series-how-metamask-creates-accounts-a8971b21a74b) talks about how Metamask uses [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt) to generate a Secret Recovery Phrase
+
+### **Delegation**
 
 <!--TODO-->
 
