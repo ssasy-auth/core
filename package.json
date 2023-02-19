@@ -1,0 +1,21 @@
+{
+  "name": "ssasy",
+  "version": "0.0.1",
+  "description": "a self-sovereign authentication scheme",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/this-oliver/ssasy.git"
+  },
+  "author": " <hello@oliverrr.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/this-oliver/ssasy/issues"
+  },
+  "homepage": "https://github.com/this-oliver/ssasy#readme",
+  "devDependencies": {
+  }
+}
