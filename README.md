@@ -20,7 +20,7 @@ SSASy is a **self-sovereign authentication scheme** that enables users to authen
     - [Recovery](#recovery)
     - [Delegation](#delegation)
   - [Standards and Libraries](#standards-and-libraries)
-    - [Key Pairs](#key-pairs)
+    - [Public Key Cryptogrphy](#public-key-cryptogrphy)
     - [Encryption](#encryption)
     - [Digital Signatures](#digital-signatures)
   - [Usage](#usage)
@@ -126,7 +126,7 @@ Standards are a set of rules that dictate how something should be done. They are
 
 In order to create a seamless authentication scheme, it is important to consider the different standards and protocols that are being used against the tasks that need to be performed. This involves (1) creating key pairs (asymmetric) for the claimant and verifier, (2) creating keys (symmetric) for the encryption and decryption of the challenge and signature, (3) signing the challenges and verifying the signatures, and (4) encrypting and decrypting the challenges and signatures.
 
-### Key Pairs
+### Public Key Cryptogrphy
 
 > Tldr; This project uses **Elliptic Curve Cryptography** as the cryptographic algorithm for public key operations.
 
