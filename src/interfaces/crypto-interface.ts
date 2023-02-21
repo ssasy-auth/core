@@ -8,8 +8,8 @@ import { Key, SecretKey, PrivateKey, PublicKey } from "./key-interface";
 export interface CryptoUtil {
   /**
    * Returns a cipher text which is the result of encrypting the plaintext with the key
-   * @param key crypto key
-   * @param plaintext plain text to encrypt
+   * @param key - crypto key
+   * @param plaintext - plain text to encrypt
    * @returns ciphertext
    */
   encrypt: (key: SecretKey | PublicKey, plaintext: string) => Promise<string>;
@@ -17,8 +17,8 @@ export interface CryptoUtil {
   /**
    * Returns a plain text which is the result of decrypting the cipher text with the key
    *
-   * @param key crypto key
-   * @param ciphertext cipher text to decrypt
+   * @param key - crypto key
+   * @param ciphertext - cipher text to decrypt
    * @returns plaintext
    */
   decrypt: (
@@ -51,9 +51,10 @@ export interface SymmetricUtil extends CryptoUtil {
   /**
    * Returns a secret key using the symmetric cryptography algorithm
    *
+   * @param domain - domain to generate the key for
    * @returns key
    * */
-  generateSecret: () => Promise<SecretKey>;
+  generateSecret: (domain?: string) => Promise<SecretKey>;
 }
 
 /**
@@ -64,24 +65,26 @@ export interface AsymmetricUtil extends CryptoUtil {
   /**
    * Returns a new private and public key pair using the elliptic curve cryptography algorithm
    *
+   * @param domain - domain to generate the key for
    * @returns private key
    * */
-  generatePrivateKey: () => Promise<PrivateKey>;
+  generatePrivateKey: (domain?: string) => Promise<PrivateKey>;
 
   /**
    * Returns a public key that is derived from the private source key. At a lower level, the public key
    * is actually an AES key that is derived from the private key.
    *
-   * @param key private source key
+   * @param key - private source key
+   * @param domain - domain to generate the key for
    * @returns public key
    */
-  generatePublicKey: (key: PrivateKey) => Promise<PublicKey>;
+  generatePublicKey: (key: PrivateKey, domain?: string) => Promise<PublicKey>;
 
   /**
    * Returns a signature for the plaintext using the key
    *
-   * @param key
-   * @param plaintext
+   * @param key - private key
+   * @param plaintext - plain text to sign
    * @returns signature
    */
   sign: (key: PrivateKey, plaintext: string) => Promise<string>;
@@ -89,8 +92,8 @@ export interface AsymmetricUtil extends CryptoUtil {
   /**
    * Returns true if the signature is valid using the key
    *
-   * @param key
-   * @param signature
+   * @param key - public key
+   * @param signature - signature to verify
    * @returns boolean
    */
   verify: (key: PublicKey, signature: string) => Promise<string>;

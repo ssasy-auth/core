@@ -25,7 +25,7 @@ export interface Vault {
 
   /**
    * Returns true if a file exists at the path
-   * @param path
+   * @param path - path to the file
    * @returns boolean
    * */
   fileExists: (path: string) => Promise<boolean>;

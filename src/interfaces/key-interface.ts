@@ -9,7 +9,6 @@ export interface Key {
    * Key type
    */
   type: "key" | "secret-key" | "public-key" | "private-key";
-
   /**
    * Key domain
    * */
