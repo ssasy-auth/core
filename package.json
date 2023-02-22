@@ -3,8 +3,9 @@
   "version": "0.0.1",
   "description": "a self-sovereign authentication scheme",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
-    "start": "node lib/index.js",
+    "start": "node --experimental-specifier-resolution=node lib/index.js",
     "build": "tsc --project tsconfig.json",
     "test": "mocha"
   },
