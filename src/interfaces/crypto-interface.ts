@@ -101,26 +101,6 @@ export interface CryptoUtil {
   generateSharedKey: (params: GenSharedKeyParams) => Promise<SharedKey>;
 
   /**
-   * Returns a signature for the plaintext using the key.
-   * This operation is for **asymmetric** key cryptography.
-   *
-   * @param key - private key
-   * @param plaintext - plain text to sign
-   * @returns signature
-   */
-  sign: (key: PrivateKey, plaintext: string) => Promise<string>;
-
-  /**
-   * Returns true if the signature is valid using the key.
-   * This operation is for **asymmetric** key cryptography.
-   *
-   * @param key - public key
-   * @param signature - signature to verify
-   * @returns boolean
-   */
-  verify: (key: PublicKey, signature: string) => Promise<string>;
-
-  /**
    * Returns a cipher text which is the result of encrypting the plaintext with the key.
    * This operation is for **symmetric** key cryptography.
    * 

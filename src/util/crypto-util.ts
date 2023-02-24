@@ -232,6 +232,7 @@ export const CryptoUtil: ICryptoUtil = {
 
     return Buffer.from(plaintextBuffer).toString();
   },
+
   async exportKey(key: Key) {
     if(!isKey(key)) {
       throw new Error(CRYPTO_ERROR.COMMON.INVALID_KEY);
