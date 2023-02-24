@@ -3,7 +3,7 @@ import { CRYPTO_ERROR } from "../config/messages";
 import { CRYPTO_ALGORITHMS } from "../config/algorithm";
 import { KeyType, JsonWebKey, Key, RawKey, SecretKey, PassKey, PrivateKey, PublicKey } from "../interfaces/key-interface"
 import { CryptoUtil as ICryptoUtil, Ciphertext, GenPassKeyParams } from "../interfaces/crypto-interface"
-import { isKey, isRawKey, isAsymmetricKey } from "./key-util"
+import { isKey, isRawKey, isAsymmetricKey, isSymmetricKey } from "./key-util"
 
 /**
  * Default configuration properties for the crypto util module
@@ -169,6 +169,69 @@ export const CryptoUtil: ICryptoUtil = {
     }
   },
 
+  async encrypt(key, plaintext) {
+    if (!isSymmetricKey(key)) {
+      throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_KEY);
+    }
+
+    if(typeof plaintext !== "string") {
+      throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_PLAINTEXT);
+    }
+
+    // initialization vector
+    const salt = WebCrypto.getRandomValues(new Uint8Array(12));
+
+    // encrypt plaintext
+    const ciphertextBuffer = await WebCrypto.subtle.encrypt(
+      {
+        ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
+        iv: salt
+      },
+      key.crypto,
+      Buffer.from(plaintext)
+    );
+
+    return {
+      data: Buffer.from(ciphertextBuffer).toString("base64"),
+      salt: salt
+    }
+  },
+
+  async decrypt(key, ciphertext: Ciphertext) {
+    // throw error if key is not a shared or pass key
+    if (!isSymmetricKey(key)) {
+      throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_KEY);
+    }
+
+    // throw error if ciphertext is not a valid ciphertext
+    if(!ciphertext || !ciphertext.data || !ciphertext.salt) {
+      throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_CIPHERTEXT);
+    }
+
+    let plaintextBuffer: ArrayBuffer;
+
+    try {
+      plaintextBuffer = await WebCrypto.subtle.decrypt(
+        {
+          ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
+          iv: ciphertext.salt
+        },
+        key.crypto,
+        Buffer.from(ciphertext.data, "base64")
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.name === "InvalidAccessError" || error.message === "Cipher job failed")
+      ) {
+        throw new Error(CRYPTO_ERROR.SYMMETRIC.WRONG_KEY);
+      }
+
+      throw error;
+    }
+
+    return Buffer.from(plaintextBuffer).toString();
+  },
   async exportKey(key: Key) {
     if(!isKey(key)) {
       throw new Error(CRYPTO_ERROR.COMMON.INVALID_KEY);
@@ -197,7 +260,7 @@ export const CryptoUtil: ICryptoUtil = {
   async importKey(rawKey: RawKey) {
 
     if (!isRawKey(rawKey as Key)) {
-      throw new Error(CRYPTO_ERROR.RAW.INVALID_RAW_KEY);
+      throw new Error(CRYPTO_ERROR.RAW.INVALID_KEY);
     }
 
     if (rawKey.type === KeyType.PrivateKey || rawKey.type === KeyType.PublicKey) {

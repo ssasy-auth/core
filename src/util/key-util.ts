@@ -9,7 +9,7 @@ import { webcrypto as WebCrypto } from "crypto";
  * @returns boolean
  */
 export function isRawKey(key: Key) {
-  if(!key || !key.crypto) {
+  if (!key || !key.crypto) {
     return false;
   }
 
@@ -38,7 +38,7 @@ export function isRawKey(key: Key) {
  * @returns boolean
  */
 export function isKey(key: Key) {
-  if(!key) {
+  if (!key) {
     return false;
   }
 
@@ -65,15 +65,19 @@ export function isKey(key: Key) {
  * @returns boolean
  */
 export function isSymmetricKey(key: Key) {
-  if(!isKey(key)) {
+  if (!isKey(key)) {
     return false;
   }
 
-  if(key.type !== KeyType.SecretKey) {
+  if (
+    key.type !== KeyType.SecretKey &&
+    key.type !== KeyType.PassKey &&
+    key.type !== KeyType.SharedKey
+  ) {
     return false;
   }
 
-  if(key.crypto.algorithm.name !== CRYPTO_ALGORITHMS.AES.name){
+  if (key.crypto.algorithm.name !== CRYPTO_ALGORITHMS.AES.name) {
     return false;
   }
 
@@ -87,15 +91,15 @@ export function isSymmetricKey(key: Key) {
  * @returns boolean
  */
 export function isAsymmetricKey(key: Key) {
-  if(!isKey(key)) {
+  if (!isKey(key)) {
     return false;
   }
 
-  if(key.type !== KeyType.PrivateKey && key.type !== KeyType.PublicKey) {
+  if (key.type !== KeyType.PrivateKey && key.type !== KeyType.PublicKey) {
     return false;
   }
 
-  if(key.crypto.algorithm.name !== CRYPTO_ALGORITHMS.ECDH.name){
+  if (key.crypto.algorithm.name !== CRYPTO_ALGORITHMS.ECDH.name) {
     return false;
   }
 

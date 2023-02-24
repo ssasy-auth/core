@@ -43,8 +43,14 @@ export interface GenSharedKeyParams extends GenKeyParams {
 }
 
 export interface Ciphertext {
-  salt: ArrayBuffer;
+  /**
+   * Encrypted data
+   */
   data: string;
+  /**
+   * Salt (initialization vector) used to encrypt the data
+   */
+  salt: Uint8Array;
 }
 
 /**
