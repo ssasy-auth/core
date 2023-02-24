@@ -191,3 +191,8 @@ export interface PublicKey extends Key {
 export interface SharedKey extends Key {
   type: KeyType.SharedKey;
 }
+
+export interface KeyPair {
+  public: PublicKey;
+  private: PrivateKey;
+}

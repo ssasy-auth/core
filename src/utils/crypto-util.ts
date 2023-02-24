@@ -1,176 +1,66 @@
 import { webcrypto as WebCrypto } from "crypto"
 import { CRYPTO_ERROR } from "../config/messages";
-import { CRYPTO_ALGORITHMS } from "../config/algorithm";
-import { KeyType, JsonWebKey, Key, RawKey, SecretKey, PassKey, PrivateKey, PublicKey } from "../interfaces/key-interface"
-import { CryptoUtil as ICryptoUtil, Ciphertext, GenPassKeyParams } from "../interfaces/crypto-interface"
-import { isKey, isRawKey, isAsymmetricKey, isSymmetricKey } from "./key-util"
+import { CRYPTO_CONFIG } from "../config/algorithm";
+import { Ciphertext } from "../interfaces/ciphertext-interface";
+import { KeyType, JsonWebKey, Key, RawKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey } from "../interfaces/key-interface"
+import { KeyValidator } from "./validator-util";
 
-/**
- * Default configuration properties for the crypto util module
- */
-export const CRYPTO_CONFIG = {
-  SYMMETRIC: {
-    algorithm: CRYPTO_ALGORITHMS.AES,
-    exportable: true, // key can be exported
-    usages: [ "encrypt", "decrypt" ] as WebCrypto.KeyUsage[] // key can be used for encryption and decryption (type assertion)
-  },
-  ASYMMETRIC: {
-    algorithm: CRYPTO_ALGORITHMS.ECDH,
-    exportable: true, // key can be exported
-    usages: [ "deriveKey" ] as WebCrypto.KeyUsage[] // key can be used for generating other keys (type assertion)
-  }
+export interface GenKeyParams {
+  /**
+   * domain to generate the key for
+   */
+  domain?: string;
 }
 
-export const CryptoUtil: ICryptoUtil = {
-  async generateKey({ domain } = {}) {
-    const cryptoKey = await WebCrypto.subtle.generateKey(
-      CRYPTO_CONFIG.SYMMETRIC.algorithm,
-      CRYPTO_CONFIG.SYMMETRIC.exportable,
-      CRYPTO_CONFIG.SYMMETRIC.usages
-    )
+export interface GenPassKeyParams extends GenKeyParams {
+  /**
+   * passphrase to generate the key from
+   */
+  passphrase: string;
 
-    return {
-      type: KeyType.SecretKey,
-      domain: domain,
-      crypto: cryptoKey
-    }
-  },
+  /**
+   * salt to use to derive the key from the passphrase
+   */
+  salt?: Uint8Array;
 
-  async generatePassKey(
-    { 
-      passphrase, 
-      salt, 
-      iterations, 
-      domain 
-    }: GenPassKeyParams
-  ) {
-    if(typeof passphrase !== "string") {
-      throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_PASSPHRASE);
-    }
+  /**
+   * number of iterations to use to derive the key from the passphrase
+   * */
+  iterations?: number;
+}
 
-    if(salt && !(salt instanceof Uint8Array)) {
-      throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_SALT);
-    }
+export interface GenPublicKeyParams extends GenKeyParams {
+  /**
+   * private source key
+   */
+  privateKey: PrivateKey;
+}
 
-    // encode passphrase
-    const encoder = new TextEncoder();
-    const encodedPassphrase = encoder.encode(passphrase);
-    
-    // prepare key material for PBKDF2
-    const keyMaterial = await WebCrypto.subtle.importKey(
-      "raw",
-      encodedPassphrase,
-      CRYPTO_ALGORITHMS.PBKDF2.name,
-      false,
-      [ "deriveBits", "deriveKey" ]
-    );
+export interface GenSharedKeyParams extends GenKeyParams {
+  /**
+   * a private ECDH key
+   */
+  privateKey: PrivateKey;
+  /**
+   * a public ECDH key
+   */
+  publicKey: PublicKey;
+}
 
-    // prepare salt for key with provided salt or generate random salt
-    salt = salt || WebCrypto.getRandomValues(new Uint8Array(16));
-
-    // prepare iterations for key with provided iterations or use default iterations
-    iterations = iterations || CRYPTO_ALGORITHMS.PBKDF2.iterations;
-
-    // generate key from key material
-    const cryptoKey = await WebCrypto.subtle.deriveKey(
-      {
-        ...CRYPTO_ALGORITHMS.PBKDF2,
-        iterations: iterations,
-        salt: salt
-      },
-      keyMaterial,
-      CRYPTO_CONFIG.SYMMETRIC.algorithm,
-      CRYPTO_CONFIG.SYMMETRIC.exportable,
-      CRYPTO_CONFIG.SYMMETRIC.usages
-    );
-
-    return {
-      type: KeyType.PassKey,
-      domain: domain,
-      crypto: cryptoKey,
-      salt: salt,
-      iterations: iterations,
-      hash: CRYPTO_ALGORITHMS.PBKDF2.hash
-    }
-  },
-
-  async generatePrivateKey({ domain } = {}) {
-    const { privateKey } = await WebCrypto.subtle.generateKey(
-      CRYPTO_CONFIG.ASYMMETRIC.algorithm,
-      CRYPTO_CONFIG.ASYMMETRIC.exportable,
-      CRYPTO_CONFIG.ASYMMETRIC.usages
-    )
-
-    return {
-      type: KeyType.PrivateKey,
-      domain: domain,
-      crypto: privateKey
-    }
-  },
-
-  async generatePublicKey({ privateKey, domain }) {
-    if(!isKey(privateKey)) {
-      throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_KEY);
-    }
-
-    if (privateKey.type !== KeyType.PrivateKey) {
-      throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_PRIVATE_KEY);
-    }
-
-    // convert private key to public key
-    const privateJsonWebKey = await WebCrypto.subtle.exportKey("jwk", privateKey.crypto);
-    // delete private key properties
-    delete privateJsonWebKey.d;
-
-    // import public key from JsonWebKey (without private key properties)
-    const publicKey = await WebCrypto.subtle.importKey(
-      "jwk",
-      privateJsonWebKey,
-      CRYPTO_CONFIG.ASYMMETRIC.algorithm,
-      CRYPTO_CONFIG.ASYMMETRIC.exportable,
-      CRYPTO_CONFIG.ASYMMETRIC.usages
-    );
-
-    return {
-      type: KeyType.PublicKey,
-      domain: domain,
-      crypto: publicKey
-    }
-  },
-
-  async generateSharedKey({ privateKey, publicKey, domain }) {
-    if (!isAsymmetricKey(privateKey)) {
-      throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_PRIVATE_KEY);
-    }
-
-    if (!isAsymmetricKey(publicKey)) {
-      throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_PUBLIC_KEY);
-    }
-
-    if ((privateKey as Key).type === (publicKey as Key).type) {
-      throw new Error(CRYPTO_ERROR.ASYMMETRIC.IDENTICAL_KEY_TYPES);
-    }
-
-    const sharedKey = await WebCrypto.subtle.deriveKey(
-      {
-        name: CRYPTO_CONFIG.ASYMMETRIC.algorithm.name,
-        public: publicKey.crypto
-      },
-      privateKey.crypto,
-      CRYPTO_CONFIG.SYMMETRIC.algorithm,
-      CRYPTO_CONFIG.SYMMETRIC.exportable,
-      CRYPTO_CONFIG.SYMMETRIC.usages
-    );
-
-    return {
-      type: KeyType.SharedKey,
-      domain: domain,
-      crypto: sharedKey
-    }
-  },
-
-  async encrypt(key, plaintext) {
-    if (!isSymmetricKey(key)) {
+/**
+ * Functions for performing symmetric and asymmetric cryptographic operations
+ */
+export const CryptoUtil = {
+  /**
+   * Returns a cipher text which is the result of encrypting the plaintext with the key.
+   * This operation is for **symmetric** key cryptography.
+   * 
+   * @param key - crypto key
+   * @param plaintext - plain text to encrypt
+   * @returns ciphertext
+   */
+  async encrypt(key: SecretKey | PassKey | SharedKey, plaintext: string): Promise<Ciphertext> {
+    if (!KeyValidator.isSymmetricKey(key)) {
       throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_KEY);
     }
 
@@ -197,9 +87,17 @@ export const CryptoUtil: ICryptoUtil = {
     }
   },
 
-  async decrypt(key, ciphertext: Ciphertext) {
+  /**
+   * Returns a plain text which is the result of decrypting the cipher text with the key.
+   * This operation is for **symmetric** key cryptography.
+   *
+   * @param key - crypto key
+   * @param ciphertext - cipher text to decrypt
+   * @returns plaintext
+   */
+  async decrypt(key: SecretKey | PassKey | SharedKey, ciphertext: Ciphertext): Promise<string> {
     // throw error if key is not a shared or pass key
-    if (!isSymmetricKey(key)) {
+    if (!KeyValidator.isSymmetricKey(key)) {
       throw new Error(CRYPTO_ERROR.SYMMETRIC.INVALID_KEY);
     }
 
@@ -233,8 +131,15 @@ export const CryptoUtil: ICryptoUtil = {
     return Buffer.from(plaintextBuffer).toString();
   },
 
-  async exportKey(key: Key) {
-    if(!isKey(key)) {
+  /**
+   * Returns a json web key representation of the key.
+   * This operation is for **symmetric** and **asymmetric** key cryptography.
+   *
+   * @param key - key to export
+   * @returns json web key
+   */
+  async exportKey(key: Key): Promise<RawKey> {
+    if(!KeyValidator.isKey(key)) {
       throw new Error(CRYPTO_ERROR.COMMON.INVALID_KEY);
     }
     
@@ -258,9 +163,16 @@ export const CryptoUtil: ICryptoUtil = {
     }
   },
 
-  async importKey(rawKey: RawKey) {
+  /**
+   * Returns a key from the json web key representation.
+   * This operation is for **symmetric** and **asymmetric** key cryptography.
+   *
+   * @param jsonWebKey - json web key to import
+   * @returns key
+   */
+  async importKey(rawKey: RawKey): Promise<SecretKey | PassKey | PrivateKey | PublicKey> {
 
-    if (!isRawKey(rawKey as Key)) {
+    if (!KeyValidator.isRawKey(rawKey as Key)) {
       throw new Error(CRYPTO_ERROR.RAW.INVALID_KEY);
     }
 
