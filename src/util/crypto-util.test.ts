@@ -148,6 +148,15 @@ describe("Crypto Util Test Suite", () => {
 
       });
 
+      it("should be able to generate a shared key from a private key and a public key in the same key pair", async () => {
+        const privateKey = await CryptoUtil.generatePrivateKey();
+        const publicKey = await CryptoUtil.generatePublicKey({ privateKey });
+
+        const sharedKey = await CryptoUtil.generateSharedKey({ privateKey, publicKey });
+        expect(sharedKey.type).to.equal(KeyType.SharedKey);
+        expect(sharedKey.crypto.algorithm.name).to.equal(CRYPTO_CONFIG.SYMMETRIC.algorithm.name);
+      });
+
       it("should throw an error if private/public key is not a valid ECDH key", async () => {
         const invalidPrivateKey = await CryptoUtil.generateKey() as any;
         const invalidPublicKey = await CryptoUtil.generateKey() as any;
@@ -356,9 +365,7 @@ describe("Crypto Util Test Suite", () => {
     });
   });
 
-  describe("=> Symmetric Operations", () => {
-    
-
+  describe("=> Cryptographic Operations", () => {
     describe("encrypt()", () => {
       it("should encrypt a plaintext with a SecretKey and return a Ciphertext", async () => {
         const key = await CryptoUtil.generateKey();
@@ -541,4 +548,4 @@ describe("Crypto Util Test Suite", () => {
       });
     });
   });
-})
+});
