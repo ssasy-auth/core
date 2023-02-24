@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node --experimental-specifier-resolution=node lib/index.js",
     "build": "tsc --project tsconfig.json",
-    "test": "mocha"
+    "test": "mocha --experimental-specifier-resolution=node"
   },
   "repository": {
     "type": "git",

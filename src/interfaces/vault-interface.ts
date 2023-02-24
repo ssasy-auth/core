@@ -1,4 +1,4 @@
-import { JsonKey, Key } from "./key-interface";
+import { RawKey, Key } from "./key-interface";
 
 /**
  * @interface Vault
@@ -21,7 +21,7 @@ export interface Vault {
    * @param path - path to the key
    * @returns key
    * */
-  get: (passphrase: string, path: string) => Promise<JsonKey>;
+  get: (passphrase: string, path: string) => Promise<RawKey>;
 
   /**
    * Returns true if a file exists at the path

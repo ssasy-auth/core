@@ -34,6 +34,12 @@
     // moves the dot before a function call to the next line
     "newline-per-chained-call": ["error", { "ignoreChainWithDepth": 2 }],
     // ensures that functions are defined before they are used
-    "func-style": ["error", "declaration", { "allowArrowFunctions": true }]
+    "func-style": ["error", "declaration", { "allowArrowFunctions": true }],
+    // new line for ternary operator
+    "multiline-ternary": ["error", "always"],
+    // new line for operators
+    "operator-linebreak": ["error", "none", { "overrides": { "?": "before", ":": "before", "||": "after", "&&": "after" } }],
+    // new line for function arguments
+    "function-call-argument-newline": ["error", "consistent"]
   }
 }
