@@ -107,6 +107,7 @@
   /* files to exclude when compiling */
   "exclude": [
     "node_modules",
-    "src/**/*.test.ts" /* exclude test files */
+    "**/*.test.ts"  /* exclude test files */
+    
   ]
 }

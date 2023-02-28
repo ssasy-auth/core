@@ -43,7 +43,8 @@ export const CRYPTO_ALGORITHMS = {
       kty: "oct",
       algo: "A256GCM" // note: the algorithm used to prepare the key is "PBES2-HS512+A256" but the actual key is A256GCM
     } as JSON_WEB_ALGORITHM
-  }
+  },
+  HASH: "SHA-512" // sha512 hash
 }
 
 /**
@@ -59,5 +60,8 @@ export const CRYPTO_CONFIG = {
     algorithm: CRYPTO_ALGORITHMS.ECDH,
     exportable: true, // key can be exported
     usages: [ "deriveKey" ] as WebCrypto.KeyUsage[] // key can be used for generating other keys (type assertion)
+  },
+  HASH: {
+    algorithm: CRYPTO_ALGORITHMS.HASH
   }
 }

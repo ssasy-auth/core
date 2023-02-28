@@ -1,6 +1,6 @@
 {
   "name": "ssasy",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "a self-sovereign authentication scheme",
   "main": "src/index.js",
   "type": "module",

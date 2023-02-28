@@ -22,8 +22,6 @@ export const CRYPTO_ERROR = {
   SYMMETRIC: {
     INVALID_KEY: "Key is not a valid symmetric key (AES)",
     INVALID_SALT: "Salt is not a valid uint8array",
-    INVALID_ENCRYPT_KEY: "Encryption key is not a valid symmetric key",
-    INVALID_DECRYPT_KEY: "Decryption key is not a valid symmetric key",
     INVALID_PASSPHRASE: "Passphrase is not a string",
     INVALID_PLAINTEXT: "Plaintext is not a string",
     INVALID_CIPHERTEXT: "Ciphertext is not valid Ciphertext object",
@@ -36,5 +34,27 @@ export const CRYPTO_ERROR = {
   COMMON: {
     INVALID_KEY: "Key is not a valid key",
     KEY_NOT_SUPPORTED: "Key type is not supported"
+  },
+  HASH: {
+    INVALID_STRING: "Input is not a valid string"
   }
 }
+
+/**
+ * Error messages for the challenge operations
+ * */
+export const CHALLENGE_ERROR = {
+  INVALID_CHALLENGE: "Challenge is not valid",
+  INVALID_NONCE: "Nonce is not a valid uint8array",
+  INVALID_TIMESTAMP: "Timestamp is not a valid number",
+  INVALID_VERIFIER_PUBLIC_KEY: "Verifier's public key is not valid",
+  INVALID_VERIFIER_PRIVATE_KEY: "Verifier's private key is not valid",
+  INVALID_CLAIMANT_PUBLIC_KEY: "Claimant's public key is not valid",
+  INVALID_CLAIMANT_PRIVATE_KEY: "Claimant's private key is not valid",
+  EXPIRED_CHALLENGE: "Challenge has expired",
+  MISSING_KEY: "Key is missing",
+  MISSING_CHALLENGE: "Challenge is missing",
+  MISSING_SOLUTION: "Solution is missing",
+  CLAIMANT_MISMATCH: "Claimant does not match the challenge claimant",
+  VERIFIER_MISMATCH: "Verifier does not match the challenge verifier"
+};

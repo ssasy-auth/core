@@ -192,6 +192,10 @@ export interface SharedKey extends Key {
   type: KeyType.SharedKey;
 }
 
+/**
+ * @interface KeyPair
+ * @description Key pair containing a public and private key
+ */
 export interface KeyPair {
   public: PublicKey;
   private: PrivateKey;

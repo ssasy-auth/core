@@ -1,29 +1,40 @@
 import { PublicKey } from "./key-interface";
-import { Ciphertext } from "./ciphertext-interface";
 
 /**
- * @interface Challange
+ * @interface Challenge
  * @description Represents the authentication challenge
  */
-export interface Challange {
+export interface Challenge {
   /**
-   * The public key of the user who sent the challenge
+   * A random nonce
    */
-  creator: PublicKey;
+  nonce: Uint8Array;
 
   /**
-   * The public key of the user who will solve the challenge
+   * A digest of the nonce
+   * 
+   * TODO: improve this challenge digest
+   */
+  solution?: string;
+
+  /**
+   * The timestamp of the challenge
+   */
+  timestamp: number;
+
+  /**
+   * The public key of the user that created the challenge
+   */
+  verifier: PublicKey;
+
+  /**
+   * The public key of the user that will solve the challenge
    * */
-  contributer: PublicKey;
-
-  /**
-   * The encrypted challenge
-   */
-  problem: Ciphertext;
+  claimant: PublicKey;
 }
 
 /**
  * @interface isChallenge
- * @description Type guard for the Challange interface
+ * @description Type guard for the Challenge interface
  */
-export type isChallenge = (challenge: unknown) => challenge is Challange;
+export type isChallenge = (challenge: unknown) => challenge is Challenge;
