@@ -1,154 +1,23 @@
 import { webcrypto as WebCrypto } from "crypto";
-import { CRYPTO_CONFIG } from "../config/algorithm";
-import { CHALLENGE_MAX_AGE } from "../config/challenge";
-import { CHALLENGE_ERROR, CRYPTO_ERROR } from "../config/messages";
+import { CHALLENGE_MAX_AGE } from "../../config/challenge";
 import { Challenge } from "../interfaces/challenge-interface";
 import { KeyType, PrivateKey, PublicKey } from "../interfaces/key-interface";
-import { CryptoMod, KeyHelper } from "./crypto-mod";
+import { CryptoModule } from "./crypto-mod";
+import { KeyModule, KeyChecker } from "./key-mod";
 
 /**
- * Provides operations for formatting keys, challenges and solutions to and from strings
- */
-export const ChallengeEncoder = {
-  /**
-     * Returns a stringified JSON representation of the public key
-     *
-     * @param key - the public key to convert to a string
-     * @returns string representation of the public key
-     * */
-  publicKeyToString: async (key: PublicKey): Promise<string> => {
-    if(!key) {
-      throw new Error(CHALLENGE_ERROR.MISSING_KEY);
-    }
-
-    if (!KeyHelper.isAsymmetricKey(key) || key.type !== KeyType.PublicKey) {
-      throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_PUBLIC_KEY);
-    }
-
-    // encode the CryptoKey as a X.509 SubjectPublicKeyInfo (SPKI) PEM
-    const spki = await WebCrypto.subtle.exportKey("spki", key.crypto);
-
-    // convert DER-encoded public key to a base64 string
-    const spkiBase64 = Buffer.from(spki).toString("base64");
-
-    return JSON.stringify({
-      ...key,
-      crypto: spkiBase64
-    })
-  },
-  /**
-   * Returns a public key from a stringyfied JSON representation of the public key
-   *
-   * @param key - the string representation of the public key
-   * @returns the public key
-   * */
-  stringToPublicKey: async (key: string): Promise<PublicKey> => {
-    if(!key) {
-      throw new Error(CHALLENGE_ERROR.MISSING_KEY);
-    }
-
-    let publicKey: PublicKey;
-    let cryptoKey: WebCrypto.CryptoKey;
-
-    try {
-      publicKey = JSON.parse(key);
-    } catch (error) {
-      if (error instanceof Error && error.name === "SyntaxError") {
-        throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_PUBLIC_KEY);
-      }
-
-      throw error;
-    }
-
-    try {
-      // convert the base64 encoded string to a DER-encoded public key
-      const spki = Buffer.from(publicKey.crypto as unknown as string, "base64");
-
-      cryptoKey = await WebCrypto.subtle.importKey(
-        "spki",
-        spki,
-        CRYPTO_CONFIG.ASYMMETRIC.algorithm,
-        CRYPTO_CONFIG.ASYMMETRIC.exportable,
-        CRYPTO_CONFIG.ASYMMETRIC.usages
-      );
-    } catch (error) {
-      if (error instanceof Error && error.message === "TypeError") {
-        throw new Error(CRYPTO_ERROR.ASYMMETRIC.INVALID_PUBLIC_KEY);
-      }
-      throw error;
-    }
-
-    return {
-      type: publicKey.type,
-      domain: publicKey.domain,
-      crypto: cryptoKey
-    }
-  },
-
-  /**
-     * Returns a string representation of the challenge.
-     * String representation is in the format: `<nonce>::<timestamp>::<verifier>::<claimant>::<solution>`
-     *
-     * @param challenge - the challenge to convert to a string
-     * @returns challenge string
-     * */
-  challengeToString: async (challenge: Challenge): Promise<string> => {
-    const { nonce, timestamp, verifier, claimant } = challenge;
-
-    // convert nonce to string
-    const nonceString = nonce.toString();
-
-    // convert timestamp to string
-    const timestampString = timestamp.toString();
-
-    // convert verifier's public key to string
-    const verifierString = await ChallengeEncoder.publicKeyToString(verifier);
-
-    // convert claimant's public key to string
-    const claimantString = await ChallengeEncoder.publicKeyToString(claimant);
-
-    // convert solution to string
-    const solutionString = challenge.solution
-      ? "::" + challenge.solution
-      : "";
-
-    return `${nonceString}::${timestampString}::${verifierString}::${claimantString}${solutionString}`
-  },
-
-  /**
-   * Returns a challenge object from a string representation of a challenge
-   * 
-   * @param challenge - the string representation of the challenge
-   * @returns challenge object
-   * */
-  stringToChallenge: async (challenge: string): Promise<Challenge> => {
-    const [ nonce, timestamp, verifier, claimant, solution ] = challenge.split("::");
-
-    // convert nonce.toString() back to Uint8Array
-    const nonceUint8Array = new Uint8Array(nonce.split(",").map(Number));
-
-    // convert timestamp back to number
-    const timestampNumber = Number(timestamp);
-
-    // convert verifier's public key back to CryptoKey
-    const verifierCryptoKey = await ChallengeEncoder.stringToPublicKey(verifier);
-
-    // convert claimant's public key back to CryptoKey
-    const claimantCryptoKey = await ChallengeEncoder.stringToPublicKey(claimant);
-
-    // convert solution back to string
-    const solutionString = solution
-      ? solution
-      : undefined;
-
-    return {
-      nonce: nonceUint8Array,
-      timestamp: timestampNumber,
-      verifier: verifierCryptoKey,
-      claimant: claimantCryptoKey,
-      solution: solutionString
-    }
-  }
+ * Error messages for the challenge operations
+ * */
+export const CHALLENGE_ERROR_MESSAGE = {
+  INVALID_VERIFIER_PRIVATE_KEY: "Verifier's private key is not valid",
+  INVALID_CLAIMANT_PUBLIC_KEY: "Claimant's public key is not valid",
+  INVALID_CLAIMANT_PRIVATE_KEY: "Claimant's private key is not valid",
+  EXPIRED_CHALLENGE: "Challenge has expired",
+  MISSING_KEY: "Key is missing",
+  MISSING_CHALLENGE: "Challenge is missing",
+  MISSING_SOLUTION: "Solution is missing",
+  CLAIMANT_MISMATCH: "Claimant does not match the challenge claimant",
+  VERIFIER_MISMATCH: "Verifier does not match the challenge verifier"
 };
 
 /**
@@ -163,9 +32,9 @@ function ChallengeHasExpired(timestamp: number): boolean {
 }
 
 /**
- * Functions for authenticating ownership of a public key
+ * Operations for authenticating ownership of a public key with challenges
  */
-export const Challenger = {
+export const ChallengeModule = {
   /**
 	 * Returns a random nonce
 	 * @returns nonce
@@ -185,23 +54,23 @@ export const Challenger = {
 	 */
   async generateChallenge(verifier: PrivateKey, claimant: PublicKey ): Promise<Challenge> {
     if(!verifier || !claimant) {
-      throw new Error(CHALLENGE_ERROR.MISSING_KEY);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_KEY);
     }
 
-    if(!KeyHelper.isAsymmetricKey(verifier) || verifier.type !== KeyType.PrivateKey) {
-      throw new Error(CHALLENGE_ERROR.INVALID_VERIFIER_PRIVATE_KEY);
+    if(!KeyChecker.isAsymmetricKey(verifier) || verifier.type !== KeyType.PrivateKey) {
+      throw new Error(CHALLENGE_ERROR_MESSAGE.INVALID_VERIFIER_PRIVATE_KEY);
     }
 
-    if(!KeyHelper.isAsymmetricKey(claimant) || claimant.type !== KeyType.PublicKey) {
-      throw new Error(CHALLENGE_ERROR.INVALID_CLAIMANT_PUBLIC_KEY);
+    if(!KeyChecker.isAsymmetricKey(claimant) || claimant.type !== KeyType.PublicKey) {
+      throw new Error(CHALLENGE_ERROR_MESSAGE.INVALID_CLAIMANT_PUBLIC_KEY);
     }
 
     // generate verifier public key
-    const verifierPublicKey = await CryptoMod.generatePublicKey({ privateKey: verifier })
+    const verifierPublicKey = await KeyModule.generatePublicKey({ privateKey: verifier })
 
     // create challenge
     return {
-      nonce: Challenger.generateNonce(),
+      nonce: ChallengeModule.generateNonce(),
       timestamp: Date.now(),
       verifier: verifierPublicKey,
       claimant: claimant
@@ -217,28 +86,28 @@ export const Challenger = {
 	 */
   async solveChallenge(claimant: PrivateKey, challenge: Challenge): Promise<Challenge> {
     if(!claimant) {
-      throw new Error(CHALLENGE_ERROR.MISSING_KEY);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_KEY);
     }
 
     if (!challenge) {
-      throw new Error(CHALLENGE_ERROR.MISSING_CHALLENGE);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_CHALLENGE);
     }
 
-    if(!KeyHelper.isAsymmetricKey(claimant) || claimant.type !== KeyType.PrivateKey) {
-      throw new Error(CHALLENGE_ERROR.INVALID_CLAIMANT_PRIVATE_KEY);
+    if(!KeyChecker.isAsymmetricKey(claimant) || claimant.type !== KeyType.PrivateKey) {
+      throw new Error(CHALLENGE_ERROR_MESSAGE.INVALID_CLAIMANT_PRIVATE_KEY);
     }
 
-    const claimantPublicKey = await CryptoMod.generatePublicKey({ privateKey: claimant });
-    if (! await CryptoMod.isSameKey(claimantPublicKey, challenge.claimant)) {
-      throw new Error(CHALLENGE_ERROR.CLAIMANT_MISMATCH);
+    const claimantPublicKey = await KeyModule.generatePublicKey({ privateKey: claimant });
+    if (! await KeyChecker.isSameKey(claimantPublicKey, challenge.claimant)) {
+      throw new Error(CHALLENGE_ERROR_MESSAGE.CLAIMANT_MISMATCH);
     }
 
     if(ChallengeHasExpired(challenge.timestamp)) {
-      throw new Error(CHALLENGE_ERROR.EXPIRED_CHALLENGE);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.EXPIRED_CHALLENGE);
     }
 
     // create solution = hash(nonce)
-    challenge.solution = await CryptoMod.hash(challenge.nonce.toString());
+    challenge.solution = await CryptoModule.hash(challenge.nonce.toString());
 
     return challenge;
   },
@@ -252,32 +121,32 @@ export const Challenger = {
 	 */
   async verifyChallenge(verifier: PrivateKey, challenge: Challenge): Promise<boolean> {
     if(!verifier) {
-      throw new Error(CHALLENGE_ERROR.MISSING_KEY);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_KEY);
     }
     
     if(!challenge) {
-      throw new Error(CHALLENGE_ERROR.MISSING_CHALLENGE);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_CHALLENGE);
     }
 
-    if(!KeyHelper.isAsymmetricKey(verifier) || verifier.type !== KeyType.PrivateKey) {
-      throw new Error(CHALLENGE_ERROR.INVALID_VERIFIER_PRIVATE_KEY);
+    if(!KeyChecker.isAsymmetricKey(verifier) || verifier.type !== KeyType.PrivateKey) {
+      throw new Error(CHALLENGE_ERROR_MESSAGE.INVALID_VERIFIER_PRIVATE_KEY);
     }
 
-    const verifierPublicKey = await CryptoMod.generatePublicKey({ privateKey: verifier });
-    if(!await CryptoMod.isSameKey(verifierPublicKey, challenge.verifier)) {
-      throw new Error(CHALLENGE_ERROR.VERIFIER_MISMATCH);
+    const verifierPublicKey = await KeyModule.generatePublicKey({ privateKey: verifier });
+    if(!await KeyChecker.isSameKey(verifierPublicKey, challenge.verifier)) {
+      throw new Error(CHALLENGE_ERROR_MESSAGE.VERIFIER_MISMATCH);
     }
 
     if (ChallengeHasExpired(challenge.timestamp)) {
-      throw new Error(CHALLENGE_ERROR.EXPIRED_CHALLENGE);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.EXPIRED_CHALLENGE);
     }
 
     if(!challenge.solution) {
-      throw new Error(CHALLENGE_ERROR.MISSING_SOLUTION);
+      throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_SOLUTION);
     }
 
     // verify that the solution is a hash of nonce
-    const hashedNonce = await CryptoMod.hash(challenge.nonce.toString());
+    const hashedNonce = await CryptoModule.hash(challenge.nonce.toString());
 
     return hashedNonce === challenge.solution;
   }
