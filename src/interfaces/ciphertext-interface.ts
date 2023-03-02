@@ -7,9 +7,14 @@ export interface Ciphertext {
   data: string;
   
   /**
-   * Salt (initialization vector) used to encrypt the data
+   * Initialization vector used to encrypt the data
    */
-  salt: Uint8Array;
+  iv: Uint8Array;
+
+  /**
+   * Salt (initialization vector) used to build passkey
+   */
+  salt?: Uint8Array;
 
   /**
    * The public key of the sender

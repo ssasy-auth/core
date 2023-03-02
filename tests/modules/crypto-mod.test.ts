@@ -30,9 +30,9 @@ describe("CryptoModule Test Suite", () => {
       // ciphertext should be a base64 string
       expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
       // ciphertext should have a salt
-      expect(ciphertext.salt).to.exist;
+      expect(ciphertext.iv).to.exist;
       // salt should be a uint8array
-      expect(ciphertext.salt).to.be.instanceOf(Uint8Array);
+      expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
     });
 
     it("should encrypt a plaintext with a PassKey and return a Ciphertext", async () => {
@@ -45,6 +45,25 @@ describe("CryptoModule Test Suite", () => {
         .and.to.not.include(validPlaintext);
       // ciphertext should be a base64 string
       expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
+      // ciphertext should have a salt
+      expect(ciphertext.iv).to.exist;
+      // salt should be a uint8array
+      expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
+    });
+
+    it("should encrypt a plaintext with a passphrase string and return a Ciphertext with passkey salt", async () => {
+      const ciphertext = await CryptoModule.encrypt(validPassphrase, validPlaintext);
+
+      // ciphertext should not be the same as plaintext
+      expect(ciphertext.data)
+        .to.not.equal(validPlaintext)
+        .and.to.not.include(validPlaintext);
+      // ciphertext should be a base64 string
+      expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
+      // ciphertext should have a iv
+      expect(ciphertext.iv).to.exist;
+      // iv should be a uint8array
+      expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
       // ciphertext should have a salt
       expect(ciphertext.salt).to.exist;
       // salt should be a uint8array
@@ -66,9 +85,9 @@ describe("CryptoModule Test Suite", () => {
       // ciphertext should be a base64 string
       expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
       // ciphertext should have a salt
-      expect(ciphertext.salt).to.exist;
+      expect(ciphertext.iv).to.exist;
       // salt should be a uint8array
-      expect(ciphertext.salt).to.be.instanceOf(Uint8Array);
+      expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
     });
 
     it("should add sender and recipient public keys to ciphertext when provided", async () => {
@@ -84,8 +103,8 @@ describe("CryptoModule Test Suite", () => {
       expect(ciphertext.recipient).to.deep.equal(receiverPublicKey);
     })
 
-    it("should throw an error if key is not a valid AES", async () => {
-      const invalidKey = "invalid-key" as any;
+    it("should throw an error if key is not a valid symmetric key or string", async () => {
+      const invalidKey = KeyModule.generatePrivateKey() as any;
 
       try {
         await CryptoModule.encrypt(invalidKey, validPlaintext);
@@ -126,6 +145,26 @@ describe("CryptoModule Test Suite", () => {
       expect(plaintext).to.equal(validPlaintext);
     });
 
+    it("should decrypt Ciphertext with passphrase and salt", async () => {
+      const ciphertext = await CryptoModule.encrypt(validPassphrase, validPlaintext);
+      const plaintext = await CryptoModule.decrypt(validPassphrase, ciphertext);
+
+      expect(plaintext).to.equal(validPlaintext);
+    });
+
+    it("should throw error if key is passphrase and salt is not provided in ciphertext", async () => {
+      const ciphertext = await CryptoModule.encrypt(validKey, validPlaintext);
+      expect(ciphertext.salt).to.not.exist;
+
+      try {
+        await CryptoModule.decrypt(validPassphrase, ciphertext);
+        expect.fail(TEST_ERROR.DID_NOT_THROW);
+      } catch (e) {
+        const error: Error = e as Error;
+        expect(error.message).to.equal(CRYPTO_ERROR_MESSAGE.MISSING_PASSPHRASE_SALT);
+      }
+    });
+
     it("should decrypt SharedKey's Ciphertext", async () => {
       const senderPrivateKey = await KeyModule.generatePrivateKey();
       const senderPublicKey = await KeyModule.generatePublicKey({ privateKey: senderPrivateKey });
@@ -162,8 +201,8 @@ describe("CryptoModule Test Suite", () => {
       }
     });
 
-    it("should throw an error if key is not a valid AES key", async () => {
-      const invalidKey = "invalid-key" as any;
+    it("should throw an error if key is not a valid passphrase or symmetric key", async () => {
+      const invalidKey = await KeyModule.generatePrivateKey() as any;
       const cipherText = await CryptoModule.encrypt(validKey, validPlaintext);
 
       try {
