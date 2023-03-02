@@ -8,15 +8,11 @@ import { KeyChecker, KeyModule } from "./key-mod";
  * Error messages for the crypto operations
  */
 export const CRYPTO_ERROR_MESSAGE = {
-  INVALID_KEY: "Key is not a valid key",
   INVALID_SYMMETRIC_KEY: "Key is not a valid symmetric key (AES)",
   INVALID_PLAINTEXT: "Plaintext is not a string",
   INVALID_CIPHERTEXT: "Ciphertext is not valid Ciphertext object",
   INVALID_HASH_STRING: "Input is not a valid string",
-  INVALID_RAW_KEY: "Key is not a raw key",
-  WRONG_KEY: "Key is not the correct key for this ciphertext",
-  WRONG_PASSPHRASE: "Passphrase is not the correct passphrase for this ciphertext",
-  MISSING_KEY: "Key param is missing",
+  WRONG_KEY: "The key provided does not match the key used to obfuscate the data",
   MISSING_PASSPHRASE_SALT: "Passphrase salt is missing from ciphertext"
 }
 
