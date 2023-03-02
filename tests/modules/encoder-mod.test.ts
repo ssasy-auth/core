@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { expect } from "chai";
-import { TEST_ERROR } from "../config";
+import { TEST_ERROR } from "../../config/test";
 import { Challenge } from "../../src/interfaces/challenge-interface";
 import { PublicKey } from "../../src/interfaces/key-interface";
 import { KeyModule } from "../../src/modules/key-mod";
@@ -163,7 +163,49 @@ describe("EncoderModule Test Suite", () => {
        * 2. should throw an error if invalid timestamp is not a number
        * 3. should throw an error if invalid verifier is not a public key object
        */
-      it("should throw an error if invalid challenge is passed")
+      it("should throw an error if invalid challenge is passed", async () => {
+        let challengeCopy: Challenge;
+
+        try {
+          challengeCopy = { ...challenge };
+          challengeCopy.nonce = "invalid nonce" as any;
+          await EncoderModule.challenge.challengeToString(challengeCopy);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE);
+        }
+
+        try {
+          challengeCopy = { ...challenge };
+          challengeCopy.timestamp = "invalid timestamp" as any;
+          await EncoderModule.challenge.challengeToString(challengeCopy);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE);
+        }
+
+        try {
+          challengeCopy = { ...challenge };
+          challengeCopy.timestamp = "invalid timestamp" as any;
+          await EncoderModule.challenge.challengeToString(challengeCopy);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE);
+        }
+
+        try {
+          challengeCopy = { ...challenge };
+          challengeCopy.claimant = "invalid claimant" as any;
+          await EncoderModule.challenge.challengeToString(challengeCopy);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE);
+        }
+      })
     })
 
     describe("stringToChallenge()", () => {
@@ -205,7 +247,32 @@ describe("EncoderModule Test Suite", () => {
        * 2. should throw an error if invalid timestamp is not a number
        * 3. should throw an error if invalid verifier is not a public key object
        */
-      it("should throw an error if invalid challenge string is passed")
+      it("should throw an error if invalid challenge string is passed", async () => {
+        
+        try {
+          await EncoderModule.challenge.stringToChallenge(`invalid-nonce::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+        }
+
+        try {
+          await EncoderModule.challenge.stringToChallenge(`${challenge.nonce}::invalid-timestamp::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+        }
+
+        try {
+          await EncoderModule.challenge.stringToChallenge(`${challenge.nonce}::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
+          expect.fail(TEST_ERROR.DID_NOT_THROW)
+        } catch (e) {
+          const error = e as Error;
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+        }
+      })
     })
   });
 })

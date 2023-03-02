@@ -1,11 +1,14 @@
 import { Challenge } from "../interfaces/challenge-interface";
 import { KeyType, PublicKey, RawKey } from "../interfaces/key-interface";
 import { KeyModule, KeyChecker } from "./key-mod";
+import { ChallengeChecker } from "./challenge-mod";
 
 export const ENCODER_ERROR_MESSAGE = {
   MISSING_KEY: "Key is missing",
   KEY_NOT_SUPPORTED: "Key is not supported",
-  INVALID_ENCODING: "Encoding is invalid"
+  INVALID_ENCODING: "Encoding is invalid",
+  INVALID_CHALLENGE: "Challenge is invalid",
+  INVALID_CHALLENGE_STRING: "Challenge string is invalid"
 };
 
 /**
@@ -68,7 +71,11 @@ export const EncoderModule = {
 		 * @returns challenge string
 		 * */
     challengeToString: async (challenge: Challenge): Promise<string> => {
-      const { nonce, timestamp, verifier, claimant } = challenge;
+      if(!ChallengeChecker.isChallenge(challenge)) {
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE);
+      }
+      
+      const { nonce, timestamp, verifier, claimant, solution } = challenge;
 
       // convert nonce to string
       const nonceString = nonce.toString();
@@ -87,8 +94,8 @@ export const EncoderModule = {
       );
 
       // convert solution to string
-      const solutionString = challenge.solution
-        ? "::" + challenge.solution
+      const solutionString = solution
+        ? "::" + solution
         : "";
 
       return `${nonceString}::${timestampString}::${verifierString}::${claimantString}${solutionString}`;
@@ -101,28 +108,39 @@ export const EncoderModule = {
 		 * @returns challenge object
 		 * */
     stringToChallenge: async (challenge: string): Promise<Challenge> => {
-      const [ nonce, timestamp, verifier, claimant, solution ] =				challenge.split("::");
+      const [ nonce, timestamp, verifier, claimant, solution ] = challenge.split("::");
 
-      // convert nonce.toString() back to Uint8Array
-      const nonceUint8Array = new Uint8Array(nonce.split(",").map(Number));
+      let nonceUint8Array: Uint8Array;
+      let timestampNumber: number;
+      let verifierCryptoKey: PublicKey;
+      let claimantCryptoKey: PublicKey;
+      let solutionString: string | undefined;
 
-      // convert timestamp back to number
-      const timestampNumber = Number(timestamp);
-
-      // convert verifier's public key back to CryptoKey
-      const verifierCryptoKey = await EncoderModule.key.stringToPublicKey(
-        verifier
-      );
-
-      // convert claimant's public key back to CryptoKey
-      const claimantCryptoKey = await EncoderModule.key.stringToPublicKey(
-        claimant
-      );
-
-      // convert solution back to string
-      const solutionString = solution
-        ? solution
-        : undefined;
+      try {
+        // convert nonce.toString() back to Uint8Array
+        nonceUint8Array = new Uint8Array(nonce.split(",").map(Number));
+  
+        // convert timestamp back to number
+        timestampNumber = Number(timestamp);
+  
+        // convert verifier's public key back to CryptoKey
+        verifierCryptoKey = await EncoderModule.key.stringToPublicKey(
+          verifier
+        );
+  
+        // convert claimant's public key back to CryptoKey
+        claimantCryptoKey = await EncoderModule.key.stringToPublicKey(
+          claimant
+        );
+  
+        // convert solution back to string
+        solutionString = solution
+          ? solution
+          : undefined;
+        
+      } catch (error) {
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+      }
 
       return {
         nonce: nonceUint8Array,

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { expect } from "chai";
-import { TEST_ERROR } from "../config";
+import { TEST_ERROR } from "../../config/test";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../../config/algorithm";
 import { KeyType, Key, PassKey, SecretKey, PrivateKey } from "../../src/interfaces/key-interface";
 import { KeyModule, KeyChecker, KEY_ERROR_MESSAGE } from "../../src/modules/key-mod";
