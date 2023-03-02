@@ -101,9 +101,8 @@
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
   /* files to include when compiling */
-  "include": [
-    "src/**/*", 
-    "config/**/*" 
+  "include": [ 
+    "src/**/*" 
   ],
   /* files to exclude when compiling */
   "exclude": [

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { expect } from "chai";
-import { TEST_ERROR } from "../../config/test";
+import { TEST_ERROR } from "../config";
 import { Challenge } from "../../src/interfaces/challenge-interface";
 import { PublicKey } from "../../src/interfaces/key-interface";
 import { KeyModule } from "../../src/modules/key-mod";

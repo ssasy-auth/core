@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "chai";
-import { TEST_ERROR } from "../config/test";
+import { TEST_ERROR } from "./config";
 import { Ciphertext } from "../src/interfaces/ciphertext-interface";
 import { KeyPair, PrivateKey } from "../src/interfaces/key-interface";
 import { KeyModule } from "../src/modules/key-mod";

@@ -1,5 +1,5 @@
 import { webcrypto as WebCrypto } from "crypto";
-import { CRYPTO_CONFIG } from "../../config/algorithm";
+import { CRYPTO_CONFIG } from "../../src/config/algorithm";
 import { Ciphertext } from "../interfaces/ciphertext-interface";
 import { Key, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
 import { KeyChecker, KeyModule } from "./key-mod";
