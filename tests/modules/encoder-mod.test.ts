@@ -18,9 +18,9 @@ describe("EncoderModule Test Suite", () => {
       })
     })
 
-    describe("publicKeyToString()", () => {
+    describe("encodePublicKey()", () => {
       it("should convert a public key to a string", async () => {
-        const publicKeyString = await EncoderModule.key.publicKeyToString(publicKey);
+        const publicKeyString = await EncoderModule.encodePublicKey(publicKey);
 
         const publicKeyObject = JSON.parse(publicKeyString);
         expect(publicKeyObject).to.have.property("type");
@@ -42,7 +42,7 @@ describe("EncoderModule Test Suite", () => {
         const invalidKey = "invalid key" as any;
 
         try {
-          await EncoderModule.key.publicKeyToString(secretKey);
+          await EncoderModule.encodePublicKey(secretKey);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -50,7 +50,7 @@ describe("EncoderModule Test Suite", () => {
         }
 
         try {
-          await EncoderModule.key.publicKeyToString(invalidKey);
+          await EncoderModule.encodePublicKey(invalidKey);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -59,13 +59,13 @@ describe("EncoderModule Test Suite", () => {
       });
     })
 
-    describe("stringToPublicKey()", () => {
+    describe("decodePublicKey()", () => {
       it("should convert a string to a public key", async () => {
         // convert the public key to a string
-        const publicKeyString = await EncoderModule.key.publicKeyToString(publicKey);
+        const publicKeyString = await EncoderModule.encodePublicKey(publicKey);
 
         // convert the string back to a public key
-        const publicKeyObject = await EncoderModule.key.stringToPublicKey(publicKeyString);
+        const publicKeyObject = await EncoderModule.decodePublicKey(publicKeyString);
 
         if (publicKey.domain) {
           expect(publicKeyObject).to.have.property("domain");
@@ -83,7 +83,7 @@ describe("EncoderModule Test Suite", () => {
         const invalidPublicKeyString = "invalid public key string";
 
         try {
-          await EncoderModule.key.stringToPublicKey(invalidPublicKeyString);
+          await EncoderModule.decodePublicKey(invalidPublicKeyString);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -119,14 +119,14 @@ describe("EncoderModule Test Suite", () => {
       } as Challenge;
     })
 
-    describe("challengeToString()", () => {
+    describe("encodeChallenge()", () => {
       it("should convert a challenge to the <nonce>::<timestamp>::<verifier>::<claimant>::<solution> format", async () => {
         const challengeWithSolution = {
           ...challenge,
           solution: "test solution"
         } as Challenge;
 
-        const challengeString = await EncoderModule.challenge.challengeToString(challengeWithSolution); // <nonce>::<timestamp>::<verifier>
+        const challengeString = await EncoderModule.encodeChallenge(challengeWithSolution); // <nonce>::<timestamp>::<verifier>
         const challengeArray = challengeString.split("::");
 
         const isRightLength = challengeArray.length === 4 || challengeArray.length === 5;
@@ -135,25 +135,25 @@ describe("EncoderModule Test Suite", () => {
         expect(challengeArray[0]).to.equal(nonce.toString());
         expect(challengeArray[1]).to.equal(challenge.timestamp.toString());
 
-        const verifierPublicKeyString = await EncoderModule.key.publicKeyToString(challenge.verifier);
+        const verifierPublicKeyString = await EncoderModule.encodePublicKey(challenge.verifier);
         expect(challengeArray[2]).to.equal(verifierPublicKeyString);
 
-        const claimantPublicKeyString = await EncoderModule.key.publicKeyToString(challenge.claimant);
+        const claimantPublicKeyString = await EncoderModule.encodePublicKey(challenge.claimant);
         expect(challengeArray[3]).to.equal(claimantPublicKeyString);
       })
 
       it("should handle a challenge with no solution", async () => {
-        const challengeString = await EncoderModule.challenge.challengeToString(challenge); // <nonce>::<timestamp>::<verifier>
+        const challengeString = await EncoderModule.encodeChallenge(challenge); // <nonce>::<timestamp>::<verifier>
         const challengeArray = challengeString.split("::");
 
         expect(challengeArray.length).to.equal(4);
         expect(challengeArray[0]).to.equal(nonce.toString());
         expect(challengeArray[1]).to.equal(challenge.timestamp.toString());
 
-        const verifierPublicKeyString = await EncoderModule.key.publicKeyToString(challenge.verifier);
+        const verifierPublicKeyString = await EncoderModule.encodePublicKey(challenge.verifier);
         expect(challengeArray[2]).to.equal(verifierPublicKeyString);
 
-        const claimantPublicKeyString = await EncoderModule.key.publicKeyToString(challenge.claimant);
+        const claimantPublicKeyString = await EncoderModule.encodePublicKey(challenge.claimant);
         expect(challengeArray[3]).to.equal(claimantPublicKeyString);
       });
 
@@ -169,7 +169,7 @@ describe("EncoderModule Test Suite", () => {
         try {
           challengeCopy = { ...challenge };
           challengeCopy.nonce = "invalid nonce" as any;
-          await EncoderModule.challenge.challengeToString(challengeCopy);
+          await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -179,7 +179,7 @@ describe("EncoderModule Test Suite", () => {
         try {
           challengeCopy = { ...challenge };
           challengeCopy.timestamp = "invalid timestamp" as any;
-          await EncoderModule.challenge.challengeToString(challengeCopy);
+          await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -189,7 +189,7 @@ describe("EncoderModule Test Suite", () => {
         try {
           challengeCopy = { ...challenge };
           challengeCopy.timestamp = "invalid timestamp" as any;
-          await EncoderModule.challenge.challengeToString(challengeCopy);
+          await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -199,7 +199,7 @@ describe("EncoderModule Test Suite", () => {
         try {
           challengeCopy = { ...challenge };
           challengeCopy.claimant = "invalid claimant" as any;
-          await EncoderModule.challenge.challengeToString(challengeCopy);
+          await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -208,7 +208,7 @@ describe("EncoderModule Test Suite", () => {
       })
     })
 
-    describe("stringToChallenge()", () => {
+    describe("decodeChallenge()", () => {
       it("should convert format <nonce>::<timestamp>::<verifier>::<claimant>::<solution> to a challenge object", async () => {
         const challengeWithSolution = {
           ...challenge,
@@ -216,10 +216,10 @@ describe("EncoderModule Test Suite", () => {
         } as Challenge;
 
         // convert the challenge to a string
-        const challengeString = await EncoderModule.challenge.challengeToString(challengeWithSolution); // <nonce>::<timestamp>::<verifier>::<claimant>::<solution>
+        const challengeString = await EncoderModule.encodeChallenge(challengeWithSolution); // <nonce>::<timestamp>::<verifier>::<claimant>::<solution>
 
         // convert the string back to a challenge object
-        const challengeObject = await EncoderModule.challenge.stringToChallenge(challengeString);
+        const challengeObject = await EncoderModule.decodeChallenge(challengeString);
 
         expect(challengeObject.nonce).to.deep.equal(challenge.nonce);
         expect(challengeObject.timestamp).to.equal(challenge.timestamp);
@@ -230,10 +230,10 @@ describe("EncoderModule Test Suite", () => {
 
       it("should handle a challenge with no solution", async () => {
         // convert the challenge to a string
-        const challengeString = await EncoderModule.challenge.challengeToString(challenge); // <nonce>::<timestamp>::<verifier>::<claimant>::<solution>
+        const challengeString = await EncoderModule.encodeChallenge(challenge); // <nonce>::<timestamp>::<verifier>::<claimant>::<solution>
 
         // convert the string back to a challenge object
-        const challengeObject = await EncoderModule.challenge.stringToChallenge(challengeString);
+        const challengeObject = await EncoderModule.decodeChallenge(challengeString);
 
         expect(challengeObject.nonce).to.deep.equal(challenge.nonce);
         expect(challengeObject.timestamp).to.equal(challenge.timestamp);
@@ -250,7 +250,7 @@ describe("EncoderModule Test Suite", () => {
       it("should throw an error if invalid challenge string is passed", async () => {
         
         try {
-          await EncoderModule.challenge.stringToChallenge(`invalid-nonce::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
+          await EncoderModule.decodeChallenge(`invalid-nonce::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -258,7 +258,7 @@ describe("EncoderModule Test Suite", () => {
         }
 
         try {
-          await EncoderModule.challenge.stringToChallenge(`${challenge.nonce}::invalid-timestamp::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
+          await EncoderModule.decodeChallenge(`${challenge.nonce}::invalid-timestamp::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -266,7 +266,7 @@ describe("EncoderModule Test Suite", () => {
         }
 
         try {
-          await EncoderModule.challenge.stringToChallenge(`${challenge.nonce}::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
+          await EncoderModule.decodeChallenge(`${challenge.nonce}::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;

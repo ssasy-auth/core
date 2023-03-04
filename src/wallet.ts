@@ -131,7 +131,7 @@ export class Wallet {
     // generate a challenge
     const challenge = await ChallengeModule.generateChallenge(this.privateKey, claimant);
     // encode the challenge
-    const encodedChallenge = await EncoderModule.challenge.challengeToString(challenge);
+    const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
     // get the wallet's public key
     const publicKey = await this.getPublicKey();
     // generate a shared key
@@ -170,7 +170,7 @@ export class Wallet {
     const sharedKey = await KeyModule.generateSharedKey({ privateKey: this.privateKey, publicKey: ciphertext.sender });
     // decrypt the challenge
     const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
-    const challenge = await EncoderModule.challenge.stringToChallenge(encodedChallenge);
+    const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
 
     // throw error if the challenge is not meant for this wallet
     if(!await KeyChecker.isSameKey(challenge.claimant, publicKey)) {
@@ -180,7 +180,7 @@ export class Wallet {
     // solve the challenge
     const solvedChallenge = await ChallengeModule.solveChallenge(this.privateKey, challenge);
     // encode the solved challenge
-    const encodedSolvedChallenge = await EncoderModule.challenge.challengeToString(solvedChallenge);
+    const encodedSolvedChallenge = await EncoderModule.encodeChallenge(solvedChallenge);
     // encrypt the solved challenge with the shared key and return it
     return await CryptoModule.encrypt(sharedKey, encodedSolvedChallenge, publicKey, ciphertext.sender);
   }
@@ -216,7 +216,7 @@ export class Wallet {
 
     // decrypt the challenge
     const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
-    const challenge = await EncoderModule.challenge.stringToChallenge(encodedChallenge);
+    const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
     
     // throw error if the challenge is not meant for this wallet
     const verifierMatchesWallet = await KeyChecker.isSameKey(challenge.verifier, publicKey);

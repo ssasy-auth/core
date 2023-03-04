@@ -258,7 +258,7 @@ describe("Wallet Class Test Suite", () => {
       const sharedKey = await KeyModule.generateSharedKey({ privateKey: validKeyPair.private, publicKey: validFriendKeyPair.public });
       
       const decryptedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
-      const challenge = await EncoderModule.challenge.stringToChallenge(decryptedChallenge);
+      const challenge = await EncoderModule.decodeChallenge(decryptedChallenge);
 
       const solvedCiphertext = await wallet.solveChallenge(ciphertext);
       expect(solvedCiphertext.sender).to.deep.equal(challenge.claimant);
