@@ -1,7 +1,7 @@
 import { webcrypto as WebCrypto } from "crypto";
 import { CRYPTO_CONFIG } from "../../src/config/algorithm";
 import { Ciphertext } from "../interfaces/ciphertext-interface";
-import { Key, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
+import { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
 import { KeyChecker, KeyModule } from "./key-mod";
 
 /**
@@ -31,7 +31,7 @@ export const CryptoModule = {
    * @returns ciphertext
    */
   async encrypt(key: SecretKey | PassKey | SharedKey | string, plaintext: string, sender?: PublicKey, recipient?: PublicKey): Promise<Ciphertext> {
-    let encryptionKey: Key;
+    let encryptionKey: GenericKey;
 
     if(typeof key === "string") {
       encryptionKey = await KeyModule.generatePassKey({ passphrase: key });
@@ -83,7 +83,7 @@ export const CryptoModule = {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT);
     }
 
-    let decryptionKey: Key;
+    let decryptionKey: GenericKey;
 
     if(typeof key === "string") {
       if(!ciphertext.salt) {

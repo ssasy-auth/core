@@ -16,11 +16,13 @@
     "url": "https://github.com/this-oliver/ssasy/issues"
   },
   "main": "lib/index.js",
-  "type": "module",
+  "types": "lib/index.d.ts",
   "scripts": {
     "start": "node lib/index.js",
-    "build": "tsc --project tsconfig.json",
-    "test": "mocha --experimental-specifier-resolution=node"
+    "build": "tsc",
+    "test": "mocha",
+    "lint": "eslint",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",

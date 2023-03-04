@@ -1,0 +1,7 @@
+# only publish what is necessary, ignore everything else below
+src
+tests
+tsconfig.json
+tslint.json
+.eslintrc*
+.env.sample

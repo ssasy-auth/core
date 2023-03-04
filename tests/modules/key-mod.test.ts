@@ -3,7 +3,7 @@
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../../src/config/algorithm";
-import { KeyType, Key, PassKey, SecretKey, PrivateKey } from "../../src/interfaces/key-interface";
+import { KeyType, GenericKey, PassKey, SecretKey, PrivateKey } from "../../src/interfaces/key-interface";
 import { KeyModule, KeyChecker, KEY_ERROR_MESSAGE } from "../../src/modules/key-mod";
 
 describe("KeyModule Test Suite", () => {
@@ -369,7 +369,7 @@ describe("KeyModule Test Suite", () => {
     describe("isRawKey()", () => {
       it("should return true for a valid raw key", async () => {
         const key = await KeyModule.generateKey()
-        const rawKey = await KeyModule.exportKey(key) as Key;
+        const rawKey = await KeyModule.exportKey(key) as GenericKey;
 
         expect(isRawKey(rawKey)).to.be.true;
       })

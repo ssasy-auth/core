@@ -1,6 +1,6 @@
 import { webcrypto as WebCrypto } from "crypto";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../../src/config/algorithm";
-import { KeyType, Key, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
+import { KeyType, GenericKey, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
 
 export const KEY_ERROR_MESSAGE = {
   INVALID_PASSPHRASE: "Passphrase is not a valid string",
@@ -218,7 +218,7 @@ export const KeyModule = {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_PUBLIC_KEY);
     }
 
-    if ((privateKey as Key).type === (publicKey as Key).type) {
+    if ((privateKey as GenericKey).type === (publicKey as GenericKey).type) {
       throw new Error(KEY_ERROR_MESSAGE.DUPLICATE_SHARED_KEY_PARAMS);
     }
 
@@ -247,7 +247,7 @@ export const KeyModule = {
    * @param key - key to export
    * @returns json web key
    */
-  async exportKey(key: Key): Promise<RawKey> {
+  async exportKey(key: GenericKey): Promise<RawKey> {
     if (!KeyChecker.isKey(key)) {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_KEY);
     }
@@ -285,7 +285,7 @@ export const KeyModule = {
   async importKey(
     rawKey: RawKey
   ): Promise<SecretKey | PassKey | PrivateKey | PublicKey> {
-    if (!KeyChecker.isRawKey(rawKey as Key)) {
+    if (!KeyChecker.isRawKey(rawKey as GenericKey)) {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_RAW_KEY);
     }
 
@@ -349,7 +349,7 @@ export const KeyChecker = {
  * @param key - key to check
  * @returns boolean
  */
-  isKey(key: Key): boolean {
+  isKey(key: GenericKey): boolean {
     if (!key) {
       return false;
     }
@@ -377,7 +377,7 @@ export const KeyChecker = {
  * @param key key
  * @returns boolean
  */
-  isRawKey(key: Key): boolean {
+  isRawKey(key: GenericKey): boolean {
     if (!key) {
       return false;
     }
@@ -411,7 +411,7 @@ export const KeyChecker = {
  * @param key - key to check
  * @returns boolean
  */
-  isSymmetricKey(key: Key): boolean {
+  isSymmetricKey(key: GenericKey): boolean {
     if (!KeyChecker.isKey(key)) {
       return false;
     }
@@ -437,7 +437,7 @@ export const KeyChecker = {
  * @param key - key to check
  * @returns boolean
  */
-  isAsymmetricKey(key: Key): boolean {
+  isAsymmetricKey(key: GenericKey): boolean {
     if (!KeyChecker.isKey(key)) {
       return false;
     }
@@ -460,7 +460,7 @@ export const KeyChecker = {
  * @param key2 - key to compare
  * @returns boolean
  */
-  async isSameKey(key1: Key, key2: Key): Promise<boolean> {
+  async isSameKey(key1: GenericKey, key2: GenericKey): Promise<boolean> {
     if (
       !KeyChecker.isKey(key1) ||
       !KeyChecker.isKey(key2) ||

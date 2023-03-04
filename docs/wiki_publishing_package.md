@@ -26,6 +26,15 @@ Pre-requisites:
 2. enter your username and the GITHUB_TOKEN you created as the password.
 3. run `npm publish` to publish the package.
 
+## Testing the package locally
+
+At this point you should be able to publish the package to GitHub's package registry. However, if you are a clumsy developer like me,
+you may want to test the package locally before publishing it to NPM. To do this, you can use npm commands to build and pack the package locally and then install it in another project for testing.
+
+There are two ways to go about this:
+
+1. [create a link](https://flaviocopes.com/npm-local-package/) to the package using the `npm link` command.
+
 ## Installing a package
 
 ```ini
@@ -55,4 +64,13 @@ Pre-requisites:
 
 ## Something to consider
 
+### Uploading packages built with Typescript
+Skim this [article](https://itnext.io/step-by-step-building-and-publishing-an-npm-typescript-package-44fe7164964c) on how to build and publish a Typescript package to NPM.
+
+The biggest takeaway from this article is:
+
+1. build package prior to publishing
+2. add the `types` field to the `package.json` file and point it to the `index.d.ts` file in the `lib` folder so that Typescript can find the type definitions for the package.
+
+### Private vs. Public packages
 NPM offers free hosting for open source (a.k.a public) packages, however, users must upgrade to a paid plan if they want to host private packages. GitHub, on the other hand, offers free hosting for both public and private packages which is great for my use case - developing a proof of concept for my novel thesis project. However, the goal is to eventually publish the package to NPM so that it can be used by other developers.

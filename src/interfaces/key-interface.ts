@@ -91,10 +91,10 @@ export interface JsonWebKey {
 }
 
 /**
- * @interface Key
+ * @interface GenericKey
  * @description Cryptographic key
  */
-export interface Key {
+export interface GenericKey {
   /**
    * Key type
    */
@@ -115,7 +115,7 @@ export interface Key {
  * @interface RawKey
  * @description Cryptographic key with JsonWebKey in crypto property instead of WebCrypto.CryptoKey
  */
-export interface RawKey extends Omit<Key, "crypto"> {
+export interface RawKey extends Omit<GenericKey, "crypto"> {
   crypto: JsonWebKey;
 
   /**
@@ -141,7 +141,7 @@ export interface RawKey extends Omit<Key, "crypto"> {
  * @interface SecretKey
  * @description AES secret key
  */
-export interface SecretKey extends Key {
+export interface SecretKey extends GenericKey {
   type: KeyType.SecretKey;
 }
 
@@ -172,7 +172,7 @@ export interface PassKey extends Omit<SecretKey, "type"> {
  * @interface PrivateKey
  * @description Elliptic curve private key
  */
-export interface PrivateKey extends Key {
+export interface PrivateKey extends GenericKey {
   type: KeyType.PrivateKey;
 }
 
@@ -180,7 +180,7 @@ export interface PrivateKey extends Key {
  * @interface PublicKey
  * @description Elliptic curve public key
  */
-export interface PublicKey extends Key {
+export interface PublicKey extends GenericKey {
   type: KeyType.PublicKey;
 }
 
@@ -188,7 +188,7 @@ export interface PublicKey extends Key {
  * @interface SharedKey
  * @description AES secret key shared between two parties using Elliptic Curve Diffie-Hellman
  */
-export interface SharedKey extends Key {
+export interface SharedKey extends GenericKey {
   type: KeyType.SharedKey;
 }
 
