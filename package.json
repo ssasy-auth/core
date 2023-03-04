@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.0.5",
+  "version": "1.0.10",
   "description": "a self-sovereign authentication scheme",
   "homepage": "https://github.com/this-oliver/ssasy#readme",
   "author": {
@@ -18,10 +18,10 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "start": "node lib/index.js",
     "build": "tsc",
     "test": "mocha",
-    "lint": "eslint"
+    "lint": "eslint",
+    "release": "npm run lint && npm run build && bash ./build.sh && npm publish"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",
