@@ -1,5 +1,5 @@
 import { webcrypto as WebCrypto } from "crypto";
-import { CHALLENGE_MAX_AGE } from "../../src/config/challenge";
+import { CHALLENGE_MAX_AGE } from "../config/challenge";
 import { Challenge } from "../interfaces/challenge-interface";
 import { KeyType, PrivateKey, PublicKey } from "../interfaces/key-interface";
 import { CryptoModule } from "./crypto-mod";

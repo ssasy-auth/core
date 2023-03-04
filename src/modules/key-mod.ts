@@ -1,5 +1,5 @@
 import { webcrypto as WebCrypto } from "crypto";
-import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../../src/config/algorithm";
+import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../config/algorithm";
 import { KeyType, GenericKey, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
 
 export const KEY_ERROR_MESSAGE = {
