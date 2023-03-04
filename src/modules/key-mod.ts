@@ -1,4 +1,4 @@
-import { webcrypto as WebCrypto } from "crypto";
+import { WebCrypto } from "../config/web-crypto";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../config/algorithm";
 import { KeyType, GenericKey, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
 
@@ -354,16 +354,24 @@ export const KeyChecker = {
       return false;
     }
 
-    if (key.crypto)
-      if (!key.type || !Object.values(KeyType).includes(key.type)) {
-        // return false if key type is not present or is not a valid key type
-        return false;
-      }
+    if (!key.type || !Object.values(KeyType).includes(key.type)) {
+      // return false if key type is not present or is not a valid key type
+      return false;
+    }
+
+    function isCryptoKey(obj: any): obj is CryptoKey {
+      return typeof obj === "object" && obj !== null &&
+        typeof obj.type === "string" &&
+        typeof obj.algorithm === "object" &&
+        typeof obj.extractable === "boolean" &&
+        typeof obj.usages === "object" &&
+        typeof obj.algorithm.name === "string";
+    }
 
     // return false if key crypto is not present or is not a valid crypto key
     if (
       !key.crypto || // key.crypto is not present
-      (key.crypto instanceof WebCrypto.CryptoKey === false && !KeyChecker.isRawKey(key)) // key.crypto is not a valid crypto key or raw key
+      (!isCryptoKey(key.crypto) && !KeyChecker.isRawKey(key)) // key.crypto is not a valid crypto key or raw key
     ) {
       return false;
     }

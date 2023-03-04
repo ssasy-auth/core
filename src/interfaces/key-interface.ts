@@ -1,4 +1,4 @@
-import { webcrypto as WebCrypto } from "crypto";
+import { WebCrypto } from "../config/web-crypto";
 
 export enum KeyType {
   Key = "key",
@@ -103,7 +103,7 @@ export interface GenericKey {
   /**
    * Web crypto key object
    */
-  crypto: WebCrypto.CryptoKey;
+  crypto: any;
 
   /**
    * Key domain

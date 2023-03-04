@@ -1,4 +1,4 @@
-import { webcrypto as WebCrypto } from "crypto";
+import { WebCrypto } from "../config/web-crypto";
 import { CRYPTO_CONFIG } from "../config/algorithm";
 import { Ciphertext } from "../interfaces/ciphertext-interface";
 import { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
