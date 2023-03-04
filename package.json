@@ -1,27 +1,27 @@
 {
-  "name": "ssasy",
+  "name": "@this-oliver/ssasy",
+  "license": "MIT",
   "version": "1.0.0",
   "description": "a self-sovereign authentication scheme",
-  "main": "lib/src/index.js",
-  "type": "module",
-  "scripts": {
-    "start": "node --experimental-specifier-resolution=node lib/src/index.js",
-    "build": "tsc --project tsconfig.json",
-    "test": "mocha --experimental-specifier-resolution=node"
+  "homepage": "https://github.com/this-oliver/ssasy#readme",
+  "author": {
+    "name": "this-oliver",
+    "email": "hello@oliverrr.net"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/this-oliver/ssasy.git"
   },
-  "author": {
-    "name": "this-oliver",
-    "email": "hello@oliverrr.net"
-  },
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/this-oliver/ssasy/issues"
   },
-  "homepage": "https://github.com/this-oliver/ssasy#readme",
+  "main": "lib/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node lib/index.js",
+    "build": "tsc --project tsconfig.json",
+    "test": "mocha --experimental-specifier-resolution=node"
+  },
   "devDependencies": {
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",

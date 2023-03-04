@@ -21,9 +21,18 @@ export const WALLET_ERROR_MESSAGE = {
   MISSING_CIPHERTEXT_PARTIES: "Ciphertext is missing sender or recipient"
 }
 
+/**
+ * @class Wallet
+ * @classdesc Abstracts the key management and cryptographic operations
+ * @param {PrivateKey} privateKey - The private key of the wallet
+ */
 export class Wallet {
   private privateKey: PrivateKey;
 
+  /**
+   * Creates a new wallet
+   * @param privateKey - The private key of the wallet
+   */
   constructor(privateKey: PrivateKey) {
     if(!privateKey) {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_CONSTRUCTOR_PARAMS);
