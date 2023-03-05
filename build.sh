@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Run the tests
+npm test
+
+# Lint the code
+npm run lint
+
+# Build the code
+npm run build
+
 # Get the current branch name
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
@@ -20,7 +29,6 @@ git add package-lock.json
 OLD_COMMIT_MESSAGE=$(git log --format=%B -n 1 HEAD)$'\n'$'\n'
 NEW_VERSION_MESSAGE="Bumped version to $NEW_VERSION"
 NEW_COMMIT_MESSAGE="$OLD_COMMIT_MESSAGE$NEW_VERSION_MESSAGE"
-
 
 # Check if the previous commit has been pushed
 if git log origin/$BRANCH..HEAD >/dev/null 2>&1; then

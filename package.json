@@ -21,7 +21,7 @@
     "build": "tsc",
     "test": "mocha",
     "lint": "eslint",
-    "release": "npm run lint && npm run build && bash ./build.sh && npm publish"
+    "release": "bash ./build.sh"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",
