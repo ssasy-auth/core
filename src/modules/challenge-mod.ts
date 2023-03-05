@@ -1,4 +1,4 @@
-import { WebCrypto } from "../config/web-crypto";
+import { WebCryptoLib } from "../config/native";
 import { CHALLENGE_MAX_AGE } from "../config/challenge";
 import { Challenge } from "../interfaces/challenge-interface";
 import { KeyType, PrivateKey, PublicKey } from "../interfaces/key-interface";
@@ -28,7 +28,7 @@ export const ChallengeModule = {
 	 * @returns nonce
 	 */
   generateNonce(): Uint8Array {
-    return WebCrypto.getRandomValues(new Uint8Array(16));
+    return WebCryptoLib.getRandomValues(new Uint8Array(16));
   },
 
   /**

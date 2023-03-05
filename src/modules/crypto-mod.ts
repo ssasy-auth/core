@@ -1,4 +1,4 @@
-import { WebCrypto } from "../config/web-crypto";
+import { WebCryptoLib, BufferLib } from "../config/native";
 import { CRYPTO_CONFIG } from "../config/algorithm";
 import { Ciphertext } from "../interfaces/ciphertext-interface";
 import { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
@@ -47,21 +47,24 @@ export const CryptoModule = {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_PLAINTEXT);
     }
 
+    // convert plaintext to buffer
+    const plaintextBuffer = BufferLib.toBuffer(plaintext);
+
     // initialization vector
-    const initializationVector = WebCrypto.getRandomValues(new Uint8Array(12));
+    const initializationVector = WebCryptoLib.getRandomValues(new Uint8Array(12));
 
     // encrypt plaintext
-    const ciphertextBuffer = await WebCrypto.subtle.encrypt(
+    const ciphertextBuffer = await WebCryptoLib.subtle.encrypt(
       {
         ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
         iv: initializationVector
       },
       encryptionKey.crypto,
-      Buffer.from(plaintext)
+      plaintextBuffer
     );
 
     return {
-      data: Buffer.from(ciphertextBuffer).toString("base64"),
+      data: BufferLib.toString(ciphertextBuffer, "base64"),
       iv: initializationVector,
       salt: (encryptionKey as PassKey).salt,
       sender: sender,
@@ -102,14 +105,17 @@ export const CryptoModule = {
 
     let plaintextBuffer: ArrayBuffer;
 
+    // convert ciphertextdata to buffer
+    const ciphertextBuffer = BufferLib.toBuffer(ciphertext.data, "base64");
+
     try {
-      plaintextBuffer = await WebCrypto.subtle.decrypt(
+      plaintextBuffer = await WebCryptoLib.subtle.decrypt(
         {
           ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
           iv: ciphertext.iv
         },
         decryptionKey.crypto,
-        Buffer.from(ciphertext.data, "base64")
+        ciphertextBuffer
       );
     } catch (error) {
       if (
@@ -122,7 +128,7 @@ export const CryptoModule = {
       throw error;
     }
 
-    return Buffer.from(plaintextBuffer).toString();
+    return BufferLib.toString(plaintextBuffer);
   },
 
   /**
@@ -136,11 +142,11 @@ export const CryptoModule = {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_HASH_STRING);
     }
 
-    const hashBuffer = await WebCrypto.subtle.digest(
+    const hashBuffer = await WebCryptoLib.subtle.digest(
       CRYPTO_CONFIG.HASH.algorithm,
-      Buffer.from(data)
+      BufferLib.toBuffer(data)
     );
 
-    return Buffer.from(hashBuffer).toString("base64");
+    return BufferLib.toString(hashBuffer, "base64");
   }
 };

@@ -1,5 +1,3 @@
-import { WebCrypto } from "../config/web-crypto";
-
 export enum KeyType {
   Key = "key",
   SecretKey = "secret-key",
@@ -113,7 +111,7 @@ export interface GenericKey {
 
 /**
  * @interface RawKey
- * @description Cryptographic key with JsonWebKey in crypto property instead of WebCrypto.CryptoKey
+ * @description Cryptographic key with JsonWebKey in crypto property instead of WebCryptoLib.CryptoKey
  */
 export interface RawKey extends Omit<GenericKey, "crypto"> {
   crypto: JsonWebKey;

@@ -1,4 +1,4 @@
-import { WebCrypto } from "../config/web-crypto";
+import { WebCryptoLib } from "../config/native";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../config/algorithm";
 import { KeyType, GenericKey, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
 
@@ -66,7 +66,7 @@ export const KeyModule = {
    * @returns secret key
    * */
   async generateKey(params?: GenKeyParams): Promise<SecretKey> {
-    const cryptoKey = await WebCrypto.subtle.generateKey(
+    const cryptoKey = await WebCryptoLib.subtle.generateKey(
       CRYPTO_CONFIG.SYMMETRIC.algorithm,
       CRYPTO_CONFIG.SYMMETRIC.exportable,
       CRYPTO_CONFIG.SYMMETRIC.usages
@@ -101,7 +101,7 @@ export const KeyModule = {
     const encodedPassphrase = encoder.encode(passphrase);
 
     // prepare key material for PBKDF2
-    const keyMaterial = await WebCrypto.subtle.importKey(
+    const keyMaterial = await WebCryptoLib.subtle.importKey(
       "raw",
       encodedPassphrase,
       CRYPTO_ALGORITHMS.PBKDF2.name,
@@ -110,13 +110,13 @@ export const KeyModule = {
     );
 
     // prepare salt for key with provided salt or generate random salt
-    const keySalt = salt || WebCrypto.getRandomValues(new Uint8Array(16));
+    const keySalt = salt || WebCryptoLib.getRandomValues(new Uint8Array(16));
 
     // prepare iterations for key with provided iterations or use default iterations
     const keyIterations = iterations || CRYPTO_ALGORITHMS.PBKDF2.iterations;
 
     // generate key from key material
-    const cryptoKey = await WebCrypto.subtle.deriveKey(
+    const cryptoKey = await WebCryptoLib.subtle.deriveKey(
       {
         ...CRYPTO_ALGORITHMS.PBKDF2,
         salt: keySalt,
@@ -145,7 +145,7 @@ export const KeyModule = {
    * @returns private key
    * */
   async generatePrivateKey(params?: GenKeyParams): Promise<PrivateKey> {
-    const { privateKey } = await WebCrypto.subtle.generateKey(
+    const { privateKey } = await WebCryptoLib.subtle.generateKey(
       CRYPTO_CONFIG.ASYMMETRIC.algorithm,
       CRYPTO_CONFIG.ASYMMETRIC.exportable,
       CRYPTO_CONFIG.ASYMMETRIC.usages
@@ -177,7 +177,7 @@ export const KeyModule = {
     }
 
     // convert private key to public key
-    const privateJsonWebKey = await WebCrypto.subtle.exportKey(
+    const privateJsonWebKey = await WebCryptoLib.subtle.exportKey(
       "jwk",
       privateKey.crypto
     );
@@ -185,7 +185,7 @@ export const KeyModule = {
     delete privateJsonWebKey.d;
 
     // import public key from JsonWebKey (without private key properties)
-    const publicKey = await WebCrypto.subtle.importKey(
+    const publicKey = await WebCryptoLib.subtle.importKey(
       "jwk",
       privateJsonWebKey,
       CRYPTO_CONFIG.ASYMMETRIC.algorithm,
@@ -222,7 +222,7 @@ export const KeyModule = {
       throw new Error(KEY_ERROR_MESSAGE.DUPLICATE_SHARED_KEY_PARAMS);
     }
 
-    const sharedKey = await WebCrypto.subtle.deriveKey(
+    const sharedKey = await WebCryptoLib.subtle.deriveKey(
       {
         name: CRYPTO_CONFIG.ASYMMETRIC.algorithm.name,
         public: publicKey.crypto
@@ -252,7 +252,7 @@ export const KeyModule = {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_KEY);
     }
 
-    const jsonKey: JsonWebKey = await WebCrypto.subtle.exportKey(
+    const jsonKey: JsonWebKey = await WebCryptoLib.subtle.exportKey(
       "jwk",
       key.crypto
     );
@@ -293,7 +293,7 @@ export const KeyModule = {
       rawKey.type === KeyType.PrivateKey ||
       rawKey.type === KeyType.PublicKey
     ) {
-      const asymmetricKey = await WebCrypto.subtle.importKey(
+      const asymmetricKey = await WebCryptoLib.subtle.importKey(
         "jwk",
         rawKey.crypto,
         CRYPTO_CONFIG.ASYMMETRIC.algorithm,
@@ -311,7 +311,7 @@ export const KeyModule = {
         ? (key as PrivateKey)
         : (key as PublicKey);
     } else {
-      const cryptoKey = await WebCrypto.subtle.importKey(
+      const cryptoKey = await WebCryptoLib.subtle.importKey(
         "jwk",
         rawKey.crypto,
         CRYPTO_CONFIG.SYMMETRIC.algorithm,
@@ -359,6 +359,7 @@ export const KeyChecker = {
       return false;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function isCryptoKey(obj: any): obj is CryptoKey {
       return typeof obj === "object" && obj !== null &&
         typeof obj.type === "string" &&

@@ -1,4 +1,4 @@
-import { webcrypto as WebCrypto } from "crypto"
+import { webcrypto as WebCryptoLib } from "crypto"
 
 /**
  * [JSON Web Algorithms (JWA)](https://www.rfc-editor.org/rfc/rfc7518.html)
@@ -54,12 +54,12 @@ export const CRYPTO_CONFIG = {
   SYMMETRIC: {
     algorithm: CRYPTO_ALGORITHMS.AES,
     exportable: true, // key can be exported
-    usages: [ "encrypt", "decrypt" ] as WebCrypto.KeyUsage[] // key can be used for encryption and decryption (type assertion)
+    usages: [ "encrypt", "decrypt" ] as WebCryptoLib.KeyUsage[] // key can be used for encryption and decryption (type assertion)
   },
   ASYMMETRIC: {
     algorithm: CRYPTO_ALGORITHMS.ECDH,
     exportable: true, // key can be exported
-    usages: [ "deriveKey" ] as WebCrypto.KeyUsage[] // key can be used for generating other keys (type assertion)
+    usages: [ "deriveKey" ] as WebCryptoLib.KeyUsage[] // key can be used for generating other keys (type assertion)
   },
   HASH: {
     algorithm: CRYPTO_ALGORITHMS.HASH
