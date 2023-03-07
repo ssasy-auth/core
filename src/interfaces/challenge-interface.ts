@@ -1,4 +1,4 @@
-import { PublicKey } from "./key-interface";
+import type { PublicKey } from "./key-interface";
 
 /**
  * @interface Challenge

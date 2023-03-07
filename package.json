@@ -21,8 +21,8 @@
     "build": "tsc",
     "test": "mocha",
     "test:silent": "mocha --reporter landing",
-    "lint": "eslint",
-    "lint:fix": "eslint --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "release": "git push && npm publish",
     "pre-release": "npm install && npm run test:silent && npm run lint && npm run build",
     "postinstall": "simple-git-hooks"

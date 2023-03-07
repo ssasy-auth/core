@@ -101,7 +101,7 @@ export interface GenericKey {
   /**
    * Web crypto key object
    */
-  crypto: any;
+  crypto: CryptoKey;
 
   /**
    * Key domain

@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "chai";
 import { TEST_ERROR } from "./config";
-import { Ciphertext } from "../src/interfaces/ciphertext-interface";
-import { KeyPair, PrivateKey } from "../src/interfaces/key-interface";
 import { KeyModule } from "../src/modules/key-mod";
 import { CryptoModule } from "../src/modules/crypto-mod";
 import { EncoderModule } from "../src/modules/encoder-mod";
 import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
+import type { Ciphertext } from "../src/interfaces/ciphertext-interface";
+import type { KeyPair, PrivateKey } from "../src/interfaces/key-interface";
 
 describe("Wallet Class Test Suite", () => {
   const validPassphrase = "passphrase";

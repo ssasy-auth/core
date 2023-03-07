@@ -2,10 +2,10 @@
 
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
-import { Ciphertext } from "../../src/interfaces/ciphertext-interface";
 import { KeyModule } from "../../src/modules/key-mod";
 import { CryptoModule, CRYPTO_ERROR_MESSAGE } from "../../src/modules/crypto-mod";
-import { PassKey, SecretKey } from "../../src/interfaces/key-interface";
+import type { Ciphertext } from "../../src/interfaces/ciphertext-interface";
+import type { PassKey, SecretKey } from "../../src/interfaces/key-interface";
 
 describe("CryptoModule Test Suite", () => {
   let validKey: SecretKey;

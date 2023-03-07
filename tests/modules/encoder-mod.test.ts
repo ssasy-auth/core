@@ -2,11 +2,11 @@
 
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
-import { Challenge } from "../../src/interfaces/challenge-interface";
-import { PublicKey } from "../../src/interfaces/key-interface";
 import { KeyModule } from "../../src/modules/key-mod";
 import { ChallengeModule } from "../../src/modules/challenge-mod";
 import { EncoderModule, ENCODER_ERROR_MESSAGE } from "../../src/modules/encoder-mod";
+import type { PublicKey } from "../../src/interfaces/key-interface";
+import type { Challenge } from "../../src/interfaces/challenge-interface";
 
 describe("EncoderModule Test Suite", () => {
   describe("Key", () => {

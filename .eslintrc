@@ -41,5 +41,16 @@
     "operator-linebreak": ["error", "none", { "overrides": { "?": "before", ":": "before", "||": "after", "&&": "after" } }],
     // new line for function arguments
     "function-call-argument-newline": ["error", "consistent"]
-  }
+  },
+  // rules for typescript files only
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "rules": {
+        // force type imports to be used
+        "@typescript-eslint/consistent-type-imports": ["error", { "prefer": "type-imports" }]
+      }
+    }
+  ]
+
 }

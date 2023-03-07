@@ -1,13 +1,13 @@
-import { Ciphertext } from "./interfaces/ciphertext-interface";
-import {
-  KeyType,
-  PrivateKey,
-  PublicKey
-} from "./interfaces/key-interface";
+import { KeyType } from "./interfaces/key-interface";
 import { ChallengeModule } from "./modules/challenge-mod";
 import { CryptoModule } from "./modules/crypto-mod";
 import { EncoderModule } from "./modules/encoder-mod";
 import { KeyChecker, KeyModule } from "./modules/key-mod";
+import type { Ciphertext } from "./interfaces/ciphertext-interface";
+import type {
+  PrivateKey,
+  PublicKey
+} from "./interfaces/key-interface";
 
 export const WALLET_ERROR_MESSAGE = {
   INVALID_KEY: "The key provided is invalid or not supported by this method",

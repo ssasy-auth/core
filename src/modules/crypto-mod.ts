@@ -1,7 +1,7 @@
 import { WebCryptoLib, BufferLib } from "../config/native";
 import { CRYPTO_CONFIG } from "../config/algorithm";
-import { Ciphertext } from "../interfaces/ciphertext-interface";
-import { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
+import type { Ciphertext } from "../interfaces/ciphertext-interface";
+import type { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
 import { KeyChecker, KeyModule } from "./key-mod";
 
 /**

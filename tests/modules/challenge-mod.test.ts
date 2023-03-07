@@ -3,11 +3,11 @@
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { CHALLENGE_MAX_AGE } from "../../src/config/challenge";
-import { Challenge } from "../../src/interfaces/challenge-interface";
-import { KeyPair } from "../../src/interfaces/key-interface";
 import { KeyModule } from "../../src/modules/key-mod";
 import { CryptoModule } from "../../src/modules/crypto-mod";
 import { ChallengeModule, CHALLENGE_ERROR_MESSAGE } from "../../src/modules/challenge-mod";
+import type { KeyPair } from "../../src/interfaces/key-interface";
+import type { Challenge } from "../../src/interfaces/challenge-interface";
 
 describe("ChallengeModule Module Test Suite", () => {
   // verifier of the challenge

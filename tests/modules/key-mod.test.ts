@@ -3,8 +3,9 @@
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../../src/config/algorithm";
-import { KeyType, GenericKey, PassKey, SecretKey, PrivateKey } from "../../src/interfaces/key-interface";
+import { KeyType } from "../../src/interfaces/key-interface";
 import { KeyModule, KeyChecker, KEY_ERROR_MESSAGE } from "../../src/modules/key-mod";
+import type { GenericKey, PassKey, SecretKey, PrivateKey } from "../../src/interfaces/key-interface";
 
 describe("KeyModule Test Suite", () => {
   describe("KeyModule", () => {

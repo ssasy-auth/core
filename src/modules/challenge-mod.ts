@@ -1,7 +1,8 @@
+import type { Challenge } from "../interfaces/challenge-interface";
+import type { PrivateKey, PublicKey } from "../interfaces/key-interface";
 import { WebCryptoLib } from "../config/native";
 import { CHALLENGE_MAX_AGE } from "../config/challenge";
-import { Challenge } from "../interfaces/challenge-interface";
-import { KeyType, PrivateKey, PublicKey } from "../interfaces/key-interface";
+import { KeyType  } from "../interfaces/key-interface";
 import { CryptoModule } from "./crypto-mod";
 import { KeyModule, KeyChecker } from "./key-mod";
 

@@ -1,7 +1,8 @@
-import { Challenge } from "../interfaces/challenge-interface";
-import { KeyType, PublicKey, RawKey } from "../interfaces/key-interface";
+import { KeyType } from "../interfaces/key-interface";
 import { KeyModule, KeyChecker } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
+import type { PublicKey, RawKey } from "../interfaces/key-interface";
+import type { Challenge } from "../interfaces/challenge-interface";
 
 export const ENCODER_ERROR_MESSAGE = {
   MISSING_KEY: "Key is missing",
@@ -19,7 +20,7 @@ export const EncoderModule = {
      * Returns a stringified JSON representation of the public key
      *
      * @param key - the public key to convert to a string
-     * @returns string representation of the public key
+     * @returns encoded public key
      * */
   encodePublicKey: async (key: PublicKey): Promise<string> => {
     if (!KeyChecker.isAsymmetricKey(key) || key.type !== KeyType.PublicKey) {
@@ -33,7 +34,7 @@ export const EncoderModule = {
    * Returns a public key from a stringyfied JSON representation of the public key
    *
    * @param key - the string representation of the public key
-   * @returns the public key
+   * @returns public key
    * */
   decodePublicKey: async (key: string): Promise<PublicKey> => {
     if (!key) {
@@ -59,7 +60,7 @@ export const EncoderModule = {
      * String representation is in the format: `<nonce>::<timestamp>::<verifier>::<claimant>::<solution>`
      *
      * @param challenge - the challenge to convert to a string
-     * @returns challenge string
+     * @returns encoded challenge
      * */
   encodeChallenge: async (challenge: Challenge): Promise<string> => {
     if (!ChallengeChecker.isChallenge(challenge)) {
@@ -96,7 +97,7 @@ export const EncoderModule = {
    * Returns a challenge object from a string representation of a challenge
    *
    * @param challenge - the string representation of the challenge
-   * @returns challenge object
+   * @returns challenge
    * */
   decodeChallenge: async (challenge: string): Promise<Challenge> => {
     const [ nonce, timestamp, verifier, claimant, solution ] = challenge.split("::");
