@@ -1,8 +1,9 @@
 import { KeyType } from "../interfaces/key-interface";
 import { KeyModule, KeyChecker } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
-import type { PublicKey, RawKey } from "../interfaces/key-interface";
+import type { PublicKey, RawKey , GenericKey } from "../interfaces/key-interface";
 import type { Challenge } from "../interfaces/challenge-interface";
+import { BufferLib } from "../config";
 
 export const ENCODER_ERROR_MESSAGE = {
   MISSING_KEY: "Key is missing",
@@ -13,30 +14,52 @@ export const ENCODER_ERROR_MESSAGE = {
 };
 
 /**
+ * Returns true if key is a valid asymmetric **public** key
+ * 
+ * @param key - the key to check
+ * @returns boolean
+ */
+function isPublicKey(key: GenericKey): boolean {
+  return KeyChecker.isAsymmetricKey(key) && key.type === KeyType.PublicKey;
+}
+
+/**
  * Operations for encoding objects for transport.
  */
 export const EncoderModule = {
   /**
-     * Returns a stringified JSON representation of the public key
-     *
-     * @param key - the public key to convert to a string
-     * @returns encoded public key
-     * */
-  encodePublicKey: async (key: PublicKey): Promise<string> => {
-    if (!KeyChecker.isAsymmetricKey(key) || key.type !== KeyType.PublicKey) {
+	 * Returns a stringified JSON representation of the key
+	 *
+	 * @param key - the key to convert to a string
+	 * @returns encoded key
+	 * */
+  encodeKey: async (key: GenericKey): Promise<string> => {
+    if (!KeyChecker.isKey(key)) {
       throw new Error(ENCODER_ERROR_MESSAGE.KEY_NOT_SUPPORTED);
     }
 
+    if(KeyChecker.isRawKey(key)) {
+      return JSON.stringify(key);
+    }
+
     const rawKey = await KeyModule.exportKey(key);
+    
+    if(rawKey.salt) {
+      // convert Uint8Array to buffer
+      const buffer = rawKey.salt.buffer;
+      // convert buffer to string
+      rawKey.salt = BufferLib.toString(buffer, "base64") as unknown as Uint8Array;
+    }
+
     return JSON.stringify(rawKey);
   },
   /**
-   * Returns a public key from a stringyfied JSON representation of the public key
-   *
-   * @param key - the string representation of the public key
-   * @returns public key
-   * */
-  decodePublicKey: async (key: string): Promise<PublicKey> => {
+	 * Returns a key from a stringyfied JSON representation of the key
+	 *
+	 * @param key - the string representation of the key
+	 * @returns key
+	 * */
+  decodeKey: async (key: string): Promise<GenericKey> => {
     if (!key) {
       throw new Error(ENCODER_ERROR_MESSAGE.MISSING_KEY);
     }
@@ -53,15 +76,22 @@ export const EncoderModule = {
       throw error;
     }
 
+    if(rawKey.salt) {
+      // convert string to buffer
+      const buffer = BufferLib.toBuffer(rawKey.salt as unknown as string, "base64") as Uint8Array;
+      // convert buffer to Uint8Array
+      rawKey.salt = new Uint8Array(buffer);
+    }
+
     return (await KeyModule.importKey(rawKey)) as PublicKey;
   },
   /**
-     * Returns a string representation of the challenge.
-     * String representation is in the format: `<nonce>::<timestamp>::<verifier>::<claimant>::<solution>`
-     *
-     * @param challenge - the challenge to convert to a string
-     * @returns encoded challenge
-     * */
+	 * Returns a string representation of the challenge.
+	 * String representation is in the format: `<nonce>::<timestamp>::<verifier>::<claimant>::<solution>`
+	 *
+	 * @param challenge - the challenge to convert to a string
+	 * @returns encoded challenge
+	 * */
   encodeChallenge: async (challenge: Challenge): Promise<string> => {
     if (!ChallengeChecker.isChallenge(challenge)) {
       throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE);
@@ -76,31 +106,25 @@ export const EncoderModule = {
     const timestampString = timestamp.toString();
 
     // convert verifier's public key to string
-    const verifierString = await EncoderModule.encodePublicKey(
-      verifier
-    );
+    const verifierString = await EncoderModule.encodeKey(verifier);
 
     // convert claimant's public key to string
-    const claimantString = await EncoderModule.encodePublicKey(
-      claimant
-    );
+    const claimantString = await EncoderModule.encodeKey(claimant);
 
     // convert solution to string
-    const solutionString = solution
-      ? "::" + solution
-      : "";
+    const solutionString = solution ? "::" + solution : "";
 
     return `${nonceString}::${timestampString}::${verifierString}::${claimantString}${solutionString}`;
   },
 
   /**
-   * Returns a challenge object from a string representation of a challenge
-   *
-   * @param challenge - the string representation of the challenge
-   * @returns challenge
-   * */
+	 * Returns a challenge object from a string representation of a challenge
+	 *
+	 * @param challenge - the string representation of the challenge
+	 * @returns challenge
+	 * */
   decodeChallenge: async (challenge: string): Promise<Challenge> => {
-    const [ nonce, timestamp, verifier, claimant, solution ] = challenge.split("::");
+    const [ nonce, timestamp, verifier, claimant, solution ] =			challenge.split("::");
 
     let nonceUint8Array: Uint8Array;
     let timestampNumber: number;
@@ -116,20 +140,25 @@ export const EncoderModule = {
       timestampNumber = Number(timestamp);
 
       // convert verifier's public key back to CryptoKey
-      verifierCryptoKey = await EncoderModule.decodePublicKey(
-        verifier
-      );
+      const decodedVerifierKey = await EncoderModule.decodeKey(verifier);
+
+      if(!isPublicKey(decodedVerifierKey)) {
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+      }
+
+      verifierCryptoKey = decodedVerifierKey as PublicKey;
 
       // convert claimant's public key back to CryptoKey
-      claimantCryptoKey = await EncoderModule.decodePublicKey(
-        claimant
-      );
+      const decodedClaimantKey = await EncoderModule.decodeKey(claimant);
+
+      if(!isPublicKey(decodedClaimantKey)) {
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+      }
+
+      claimantCryptoKey = decodedClaimantKey as PublicKey;
 
       // convert solution back to string
-      solutionString = solution
-        ? solution
-        : undefined;
-
+      solutionString = solution ? solution : undefined;
     } catch (error) {
       throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
     }

@@ -18,9 +18,9 @@ describe("EncoderModule Test Suite", () => {
       })
     })
 
-    describe("encodePublicKey()", () => {
-      it("should convert a public key to a string", async () => {
-        const publicKeyString = await EncoderModule.encodePublicKey(publicKey);
+    describe("encodeKey()", () => {
+      it("should convert a key to a string", async () => {
+        const publicKeyString = await EncoderModule.encodeKey(publicKey);
 
         const publicKeyObject = JSON.parse(publicKeyString);
         expect(publicKeyObject).to.have.property("type");
@@ -37,20 +37,41 @@ describe("EncoderModule Test Suite", () => {
         expect(publicKeyObject.crypto).to.deep.equal(rawKey.crypto);
       })
 
-      it("should throw an error if the public key is invalid", async () => {
-        const secretKey = await KeyModule.generateKey() as any;
+      it("should support all key types", async () => {
+        
+        const secretKey = await KeyModule.generateKey();
+        const encodedSecretKey = await EncoderModule.encodeKey(secretKey);
+        expect(encodedSecretKey).to.be.a("string");
+        expect(JSON.parse(encodedSecretKey)).to.have.property("type");
+        expect(JSON.parse(encodedSecretKey)).to.have.property("crypto");
+        
+        const passKey = await KeyModule.generatePassKey({ passphrase: "password" });
+        const encodedPassKey = await EncoderModule.encodeKey(passKey);
+        expect(encodedPassKey).to.be.a("string");
+        expect(JSON.parse(encodedPassKey)).to.have.property("type");
+        expect(JSON.parse(encodedPassKey)).to.have.property("crypto");
+        expect(JSON.parse(encodedPassKey)).to.have.property("hash");
+        expect(JSON.parse(encodedPassKey)).to.have.property("salt");
+        expect(JSON.parse(encodedPassKey)).to.have.property("iterations");
+
+        const privateKey = await KeyModule.generatePrivateKey();
+        const encodedPrivateKey = await EncoderModule.encodeKey(privateKey);
+        expect(encodedPrivateKey).to.be.a("string");
+        expect(JSON.parse(encodedPrivateKey)).to.have.property("type");
+        expect(JSON.parse(encodedPrivateKey)).to.have.property("crypto");
+
+        const sharedKey = await KeyModule.generateSharedKey({ privateKey, publicKey })
+        const encodedSharedKey = await EncoderModule.encodeKey(sharedKey);
+        expect(encodedSharedKey).to.be.a("string");
+        expect(JSON.parse(encodedSharedKey)).to.have.property("type");
+        expect(JSON.parse(encodedSharedKey)).to.have.property("crypto");
+      });
+
+      it("should throw an error if the key is invalid", async () => {
         const invalidKey = "invalid key" as any;
-
+        
         try {
-          await EncoderModule.encodePublicKey(secretKey);
-          expect.fail(TEST_ERROR.DID_NOT_THROW)
-        } catch (e) {
-          const error = e as Error;
-          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.KEY_NOT_SUPPORTED);
-        }
-
-        try {
-          await EncoderModule.encodePublicKey(invalidKey);
+          await EncoderModule.encodeKey(invalidKey);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -59,13 +80,13 @@ describe("EncoderModule Test Suite", () => {
       });
     })
 
-    describe("decodePublicKey()", () => {
-      it("should convert a string to a public key", async () => {
-        // convert the public key to a string
-        const publicKeyString = await EncoderModule.encodePublicKey(publicKey);
+    describe("decodeKey()", () => {
+      it("should convert a string to a key", async () => {
+        // convert the key to a string
+        const publicKeyString = await EncoderModule.encodeKey(publicKey);
 
-        // convert the string back to a public key
-        const publicKeyObject = await EncoderModule.decodePublicKey(publicKeyString);
+        // convert the string back to a key
+        const publicKeyObject = await EncoderModule.decodeKey(publicKeyString);
 
         if (publicKey.domain) {
           expect(publicKeyObject).to.have.property("domain");
@@ -79,11 +100,39 @@ describe("EncoderModule Test Suite", () => {
         expect(publicKeyObject.crypto).to.deep.equal(publicKey.crypto);
       });
 
-      it("should throw an error if the string is an invalid public key", async () => {
-        const invalidPublicKeyString = "invalid public key string";
+      it("should support all key types", async () => {
+        
+        const secretKey = await KeyModule.generateKey();
+        const encodedSecretKey = await EncoderModule.encodeKey(secretKey);
+        const decodedSecretKey = await EncoderModule.decodeKey(encodedSecretKey);
+        expect(decodedSecretKey).to.deep.equal(secretKey);
+        
+        const passKey = await KeyModule.generatePassKey({ passphrase: "password" });
+        const encodedPassKey = await EncoderModule.encodeKey(passKey);
+        const decodedPassKey = await EncoderModule.decodeKey(encodedPassKey);
+        expect(decodedPassKey).to.deep.equal(passKey);
+        
+        const privateKey = await KeyModule.generatePrivateKey();
+        const encodedPrivateKey = await EncoderModule.encodeKey(privateKey);
+        const decodedPrivateKey = await EncoderModule.decodeKey(encodedPrivateKey);
+        expect(decodedPrivateKey.type).to.equal(privateKey.type);
+        expect(decodedPrivateKey.domain).to.equal(privateKey.domain);
+        expect(decodedPrivateKey.crypto).to.exist;
+        expect(decodedPrivateKey.crypto.algorithm).to.deep.equal(privateKey.crypto.algorithm);
+        expect(decodedPrivateKey.crypto.extractable).to.deep.equal(privateKey.crypto.extractable);
+        expect(decodedPrivateKey.crypto.usages).to.deep.equal(privateKey.crypto.usages);
+
+        const sharedKey = await KeyModule.generateSharedKey({ privateKey, publicKey })
+        const encodedSharedKey = await EncoderModule.encodeKey(sharedKey);
+        const decodedSharedKey = await EncoderModule.decodeKey(encodedSharedKey);
+        expect(decodedSharedKey).to.deep.equal(sharedKey);
+      });
+
+      it("should throw an error if the string is an invalid key", async () => {
+        const invalidPublicKeyString = "invalid key string";
 
         try {
-          await EncoderModule.decodePublicKey(invalidPublicKeyString);
+          await EncoderModule.decodeKey(invalidPublicKeyString);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
@@ -135,10 +184,10 @@ describe("EncoderModule Test Suite", () => {
         expect(challengeArray[0]).to.equal(nonce.toString());
         expect(challengeArray[1]).to.equal(challenge.timestamp.toString());
 
-        const verifierPublicKeyString = await EncoderModule.encodePublicKey(challenge.verifier);
+        const verifierPublicKeyString = await EncoderModule.encodeKey(challenge.verifier);
         expect(challengeArray[2]).to.equal(verifierPublicKeyString);
 
-        const claimantPublicKeyString = await EncoderModule.encodePublicKey(challenge.claimant);
+        const claimantPublicKeyString = await EncoderModule.encodeKey(challenge.claimant);
         expect(challengeArray[3]).to.equal(claimantPublicKeyString);
       })
 
@@ -150,10 +199,10 @@ describe("EncoderModule Test Suite", () => {
         expect(challengeArray[0]).to.equal(nonce.toString());
         expect(challengeArray[1]).to.equal(challenge.timestamp.toString());
 
-        const verifierPublicKeyString = await EncoderModule.encodePublicKey(challenge.verifier);
+        const verifierPublicKeyString = await EncoderModule.encodeKey(challenge.verifier);
         expect(challengeArray[2]).to.equal(verifierPublicKeyString);
 
-        const claimantPublicKeyString = await EncoderModule.encodePublicKey(challenge.claimant);
+        const claimantPublicKeyString = await EncoderModule.encodeKey(challenge.claimant);
         expect(challengeArray[3]).to.equal(claimantPublicKeyString);
       });
 
