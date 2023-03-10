@@ -8,6 +8,8 @@ import {
 import type {
   Ciphertext, PassKey, SecretKey 
 } from "../../src/interfaces";
+import { BufferLib, isStringUint8Array } from "../../src/utils";
+import { IV_LENGTH } from "../../src/config"
 
 describe("[CryptoModule Test Suite]", () => {
   let validKey: SecretKey;
@@ -99,6 +101,30 @@ describe("[CryptoModule Test Suite]", () => {
         // iv should be a valid Uint8Array string representation
         shouldBeStringBuffer(ciphertext.iv, expect);
       });
+
+      it("should attach a valid iv to ciphertext", async () => {
+        const ciphertext = await CryptoModule.encrypt(validKey, validPlaintext);
+        
+        const ivIsBufferString = isStringUint8Array(ciphertext.iv);
+        expect(ivIsBufferString).to.be.true;
+
+        const ivBuffer = BufferLib.toBuffer(ciphertext.iv, "base64");
+        expect(ivBuffer).to.be.instanceOf(Uint8Array);
+        expect((ivBuffer as Uint8Array).length).to.equal(IV_LENGTH);
+      })
+
+      it("should attach a valid salt to ciphertext if encryption uses passkey", async () => {
+        const ciphertext = await CryptoModule.encrypt(validPassKey, validPlaintext);
+
+        expect(ciphertext.salt).to.exist;
+        
+        const saltIsBufferString = isStringUint8Array(ciphertext.salt as string);
+        expect(saltIsBufferString).to.be.true;
+
+        const saltBuffer = BufferLib.toBuffer(ciphertext.salt as string, "base64");
+        expect(saltBuffer).to.be.instanceOf(Uint8Array);
+        expect((saltBuffer as Uint8Array).length).to.equal(IV_LENGTH);
+      })
   
       it("should add sender and recipient public keys to ciphertext when provided", async () => {
         const senderPrivateKey = await KeyModule.generatePrivateKey();

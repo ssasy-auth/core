@@ -108,7 +108,7 @@ export const KeyModule = {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_PASSPHRASE);
     }
 
-    if (salt && !(typeof salt === "string")) {
+    if (salt && typeof salt !== "string") {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_PASSPHRASE_SALT);
     }
 
