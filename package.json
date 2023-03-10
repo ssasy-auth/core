@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "a self-sovereign authentication scheme",
   "homepage": "https://github.com/this-oliver/ssasy#readme",
   "author": {
@@ -24,6 +24,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "bump": "./scripts/bump.sh",
+    "release": "npm run lint:fix && npm run test && npm run build && npm publish",
     "postinstall": "simple-git-hooks"
   },
   "devDependencies": {
