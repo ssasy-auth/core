@@ -5,6 +5,7 @@ import { TEST_ERROR } from "../config";
 import { CHALLENGE_MAX_AGE } from "../../src/config/challenge";
 import { KeyModule } from "../../src/modules/key-mod";
 import { CryptoModule } from "../../src/modules/crypto-mod";
+import { BufferLib } from "../../src/utils";
 import { ChallengeModule, CHALLENGE_ERROR_MESSAGE } from "../../src/modules/challenge-mod";
 import type { KeyPair } from "../../src/interfaces/key-interface";
 import type { Challenge } from "../../src/interfaces/challenge-interface";
@@ -19,6 +20,10 @@ describe("[ChallengeModule Module Test Suite]", () => {
   // attacker will try to solve the challenge
   const attacker: KeyPair = {} as unknown as KeyPair;
 
+  // nonce
+  let validNonce: Uint8Array;
+  let validNonceString: string;
+
   before(async function () {
     // setup private keys
     verifier.private = await KeyModule.generatePrivateKey();
@@ -29,6 +34,10 @@ describe("[ChallengeModule Module Test Suite]", () => {
     verifier.public = await KeyModule.generatePublicKey({ privateKey: verifier.private });
     claimant.public = await KeyModule.generatePublicKey({ privateKey: claimant.private });
     attacker.public = await KeyModule.generatePublicKey({ privateKey: attacker.private });
+
+    // generate nonce
+    validNonce = ChallengeModule.generateNonce();
+    validNonceString = BufferLib.toString(validNonce, "base64");
   })
     
   describe("generateNonce()", () => {
@@ -101,7 +110,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
     it("should return challenge with solution that is a hash of the nonce", async () => {
       // create challenge
       const challenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
         claimant: claimant.public
@@ -119,7 +128,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
 
     it("should throw error if claimant parameter is not a valid ECDH private key", async () => {
       const challenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
         claimant: claimant.public
@@ -144,7 +153,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
 
     it("should throw error if claimant public key is not challenge claimant", async () => {
       const challenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
         claimant: claimant.public
@@ -172,7 +181,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         
       // create challenge
       const challenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now() - PAST_EXPIRATION, // set timestamp to past expiration
         verifier: verifier.public,
         claimant: claimant.public
@@ -192,10 +201,11 @@ describe("[ChallengeModule Module Test Suite]", () => {
   describe("verifyChallenge()", () => {
     it("should return true if the solution is a hash of the nonce", async () => {
       const nonce = ChallengeModule.generateNonce();
-      const hash = await CryptoModule.hash(nonce.toString());
+      const nonceString = BufferLib.toString(nonce, "base64");
+      const hash = await CryptoModule.hash(nonceString);
 
       const solvedChallenge = {
-        nonce,
+        nonce: nonceString,
         timestamp: Date.now(),
         solution: hash,
         verifier: verifier.public,
@@ -212,7 +222,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
       const stumpHash = await CryptoModule.hash(stumpNonce.toString());
 
       const solvedChallenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now(),
         solution: stumpHash,
         verifier: verifier.public,
@@ -231,7 +241,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
       const PAST_EXPIRATION = CHALLENGE_MAX_AGE + 1;
       // create challenge
       const solvedChallenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now() - PAST_EXPIRATION, // set timestamp to past expiration
         solution: "invalid solution",
         verifier: verifier.public,
@@ -250,7 +260,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
     it("should throw error if verifier public key is not challenge's verifier", async () => {
       // create challenge
       const solvedChallenge = {
-        nonce: ChallengeModule.generateNonce(),
+        nonce: validNonceString,
         timestamp: Date.now(),
         solution: "invalid solution",
         verifier: verifier.public,

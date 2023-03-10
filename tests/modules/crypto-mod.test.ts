@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { expect } from "chai";
-import { TEST_ERROR } from "../config";
+import { TEST_ERROR, shouldBeStringBuffer } from "../config";
 import { KeyModule } from "../../src/modules/key-mod";
 import { CryptoModule, CryptoChecker, CRYPTO_ERROR_MESSAGE } from "../../src/modules/crypto-mod";
 import type { Ciphertext } from "../../src/interfaces/ciphertext-interface";
@@ -31,10 +31,10 @@ describe("[CryptoModule Test Suite]", () => {
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
         expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
-        // ciphertext should have a salt
+        // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
-        // salt should be a uint8array
-        expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
+        // iv should be a valid Uint8Array string representation
+        shouldBeStringBuffer(ciphertext.iv, expect);
       });
   
       it("should encrypt a plaintext with a PassKey and return a Ciphertext", async () => {
@@ -47,10 +47,10 @@ describe("[CryptoModule Test Suite]", () => {
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
         expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
-        // ciphertext should have a salt
+        // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
-        // salt should be a uint8array
-        expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
+        // iv should be a valid Uint8Array string representation
+        shouldBeStringBuffer(ciphertext.iv, expect);
       });
   
       it("should encrypt a plaintext with a passphrase string and return a Ciphertext with passkey salt", async () => {
@@ -64,12 +64,12 @@ describe("[CryptoModule Test Suite]", () => {
         expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
         // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
-        // iv should be a uint8array
-        expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
+        // iv should be a valid Uint8Array string representation
+        shouldBeStringBuffer(ciphertext.iv, expect);
         // ciphertext should have a salt
         expect(ciphertext.salt).to.exist;
-        // salt should be a uint8array
-        expect(ciphertext.salt).to.be.instanceOf(Uint8Array);
+        // salt should be a valid Uint8Array string representation
+        shouldBeStringBuffer(ciphertext.salt as string, expect);
       });
   
       it("should encrypt a plaintext with a SharedKey and return a Ciphertext", async () => {
@@ -86,10 +86,10 @@ describe("[CryptoModule Test Suite]", () => {
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
         expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
-        // ciphertext should have a salt
+        // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
-        // salt should be a uint8array
-        expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
+        // iv should be a valid Uint8Array string representation
+        shouldBeStringBuffer(ciphertext.iv, expect);
       });
   
       it("should add sender and recipient public keys to ciphertext when provided", async () => {
@@ -315,38 +315,42 @@ describe("[CryptoModule Test Suite]", () => {
       });
 
       it("should return false if ciphertext does not have valid salt", () => {
+        const invalidCiphertext = { ...validCiphertext, salt: 123 as any };
+
+        // salt should be string
+        let result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.false;
+
+        // salt should not be empty
+        invalidCiphertext.salt = "";
+        result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.false;
+        
+        invalidCiphertext.salt = null;
+        result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.false;
+
+        // salt should be base64 encoded
+        invalidCiphertext.salt = "invalid-salt";
+        result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.false;
+
+        // undefined salt is valid
+        invalidCiphertext.salt = undefined;
+        result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.true;
+      });
+      
+      it("should return true if ciphertext is valid", () => {
         const ciphertextWithoutSalt = { ...validCiphertext, salt: undefined };
 
         // should return true if salt is undefined
         let result = CryptoChecker.isCiphertext(ciphertextWithoutSalt);
         expect(result).to.be.true;
 
-        const invalidCiphertext = { ...validCiphertext, salt: 123 as any };
-
-        // salt should be string
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        expect(result).to.be.false;
-
-        // salt should be a 
-
-        // salt should be string
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        expect(result).to.be.false;
-
-        // salt should not be empty
-        invalidCiphertext.salt = "";
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        invalidCiphertext.salt = null;
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        invalidCiphertext.salt = undefined;
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-
-        // salt should be base64 encoded
-        invalidCiphertext.salt = "invalid-salt";
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        expect(result).to.be.false;
+        result = CryptoChecker.isCiphertext(validCiphertext);
+        expect(result).to.be.true;
       });
-      it("should return true if ciphertext is valid");
     })
   });
 });

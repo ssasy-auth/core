@@ -10,7 +10,10 @@
     "ecmaVersion": 13,
     "sourceType": "module"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint",
+    "mocha"
+  ],
   "rules": {
     /* ================ linting ================ */
     // disables the no-unused-vars rule

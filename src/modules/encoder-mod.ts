@@ -1,9 +1,9 @@
 import { KeyType } from "../interfaces/key-interface";
 import { KeyModule, KeyChecker } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
+import { BufferLib } from "../utils";
 import type { PublicKey, RawKey , GenericKey } from "../interfaces/key-interface";
 import type { Challenge } from "../interfaces/challenge-interface";
-import { BufferLib } from "../config";
 
 export const ENCODER_ERROR_MESSAGE = {
   MISSING_KEY: "Key is missing",
@@ -43,13 +43,6 @@ export const EncoderModule = {
     }
 
     const rawKey = await KeyModule.exportKey(key);
-    
-    if(rawKey.salt) {
-      // convert Uint8Array to buffer
-      const buffer = rawKey.salt.buffer;
-      // convert buffer to string
-      rawKey.salt = BufferLib.toString(buffer, "base64") as unknown as Uint8Array;
-    }
 
     return JSON.stringify(rawKey);
   },
@@ -76,13 +69,6 @@ export const EncoderModule = {
       throw error;
     }
 
-    if(rawKey.salt) {
-      // convert string to buffer
-      const buffer = BufferLib.toBuffer(rawKey.salt as unknown as string, "base64") as Uint8Array;
-      // convert buffer to Uint8Array
-      rawKey.salt = new Uint8Array(buffer);
-    }
-
     return (await KeyModule.importKey(rawKey)) as PublicKey;
   },
   /**
@@ -100,7 +86,7 @@ export const EncoderModule = {
     const { nonce, timestamp, verifier, claimant, solution } = challenge;
 
     // convert nonce to string
-    const nonceString = nonce.toString();
+    const nonceString = nonce;
 
     // convert timestamp to string
     const timestampString = timestamp.toString();
@@ -126,7 +112,7 @@ export const EncoderModule = {
   decodeChallenge: async (challenge: string): Promise<Challenge> => {
     const [ nonce, timestamp, verifier, claimant, solution ] =			challenge.split("::");
 
-    let nonceUint8Array: Uint8Array;
+    let nonceString: string;
     let timestampNumber: number;
     let verifierCryptoKey: PublicKey;
     let claimantCryptoKey: PublicKey;
@@ -134,7 +120,7 @@ export const EncoderModule = {
 
     try {
       // convert nonce.toString() back to Uint8Array
-      nonceUint8Array = new Uint8Array(nonce.split(",").map(Number));
+      nonceString = nonce
 
       // convert timestamp back to number
       timestampNumber = Number(timestamp);
@@ -164,7 +150,7 @@ export const EncoderModule = {
     }
 
     return {
-      nonce: nonceUint8Array,
+      nonce: nonceString,
       timestamp: timestampNumber,
       verifier: verifierCryptoKey,
       claimant: claimantCryptoKey,

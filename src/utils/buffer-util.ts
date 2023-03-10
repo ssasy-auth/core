@@ -1,9 +1,11 @@
 /**
- * The purpose of this file is to provide a single place to import the native
- * APIs based on the environment (browser or Node.js).
+ * This utility file provides buffer operations on top of 
+ * the native APIs based on the environment (browser or Node.js).
  */
 
-import { webcrypto } from "crypto";
+import { IV_LENGTH } from "../config";
+
+const isBrowser = typeof window !== "undefined";
 
 type Encoding = "utf8" | "base64";
 
@@ -20,19 +22,11 @@ interface BufferEncoder {
 	 * Returns a string from a buffer
 	 *
 	 * @param input - The buffer to decode
+   * @param encoding - The encoding to use
 	 * @returns string
 	 */
 	toString: (input: Uint8Array | ArrayBuffer, encoding?: Encoding) => string;
 }
-
-const isBrowser = typeof window !== "undefined";
-
-/**
- * The WebCrypto API
- */
-export const WebCryptoLib: Crypto = isBrowser
-  ? window.crypto
-  : (webcrypto as unknown as Crypto);
 
 /**
  * A Buffer encoder/decoder
@@ -66,3 +60,15 @@ export const BufferLib: BufferEncoder = isBrowser
         : Buffer.from(input).toString();
     }
   } as BufferEncoder);
+
+
+export function isStringUint8Array(base64String: string): boolean {
+  try {
+    // convert base64 string to valid buffer (uint8array)
+    const buffer = BufferLib.toBuffer(base64String, "base64");
+    
+    return (buffer as Uint8Array).length === IV_LENGTH;
+  } catch (error) {
+    return false;
+  }
+}

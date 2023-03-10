@@ -1,6 +1,6 @@
 import type { Challenge } from "../interfaces/challenge-interface";
 import type { PrivateKey, PublicKey } from "../interfaces/key-interface";
-import { WebCryptoLib } from "../config/native";
+import { WebCryptoLib, BufferLib, isStringUint8Array } from "../utils";
 import { CHALLENGE_MAX_AGE } from "../config/challenge";
 import { KeyType  } from "../interfaces/key-interface";
 import { CryptoModule } from "./crypto-mod";
@@ -68,9 +68,12 @@ export const ChallengeModule = {
       privateKey: verifier
     });
 
+    const nonce = ChallengeModule.generateNonce();
+    const nonceString = BufferLib.toString(nonce, "base64");
+
     // create challenge
     return {
-      nonce: ChallengeModule.generateNonce(),
+      nonce: nonceString,
       timestamp: Date.now(),
       verifier: verifierPublicKey,
       claimant: claimant
@@ -115,7 +118,7 @@ export const ChallengeModule = {
     }
 
     // create solution = hash(nonce)
-    challenge.solution = await CryptoModule.hash(challenge.nonce.toString());
+    challenge.solution = await CryptoModule.hash(challenge.nonce);
 
     return challenge;
   },
@@ -162,7 +165,7 @@ export const ChallengeModule = {
     }
 
     // verify that the solution is a hash of nonce
-    const hashedNonce = await CryptoModule.hash(challenge.nonce.toString());
+    const hashedNonce = await CryptoModule.hash(challenge.nonce);
 
     return hashedNonce === challenge.solution;
   }
@@ -178,7 +181,11 @@ export const ChallengeChecker = {
   isChallenge(obj: unknown): boolean {
     const challenge = obj as Challenge;
 
-    if (!challenge.nonce || !(challenge.nonce instanceof Uint8Array)) {
+    if (!challenge.nonce || typeof challenge.nonce !== "string") {
+      return false;
+    }
+
+    if(!isStringUint8Array(challenge.nonce)) {
       return false;
     }
 

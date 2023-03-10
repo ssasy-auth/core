@@ -7,8 +7,12 @@ import type { PublicKey } from "./key-interface";
 export interface Challenge {
   /**
    * A random nonce
+   * 
+   * Note: although the `nonce` is stored as a string, it is a 
+   * base64 encoded Uint8Array and should be converted to
+   * a Uint8Array before use.
    */
-  nonce: Uint8Array;
+  nonce: string;
 
   /**
    * A digest of the nonce

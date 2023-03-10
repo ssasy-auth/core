@@ -1,5 +1,5 @@
-import { WebCryptoLib, BufferLib } from "../config/native";
-import { CRYPTO_CONFIG } from "../config/algorithm";
+import { WebCryptoLib, BufferLib, isStringUint8Array } from "../utils";
+import { CRYPTO_CONFIG, IV_LENGTH } from "../config/algorithm";
 import type { Ciphertext } from "../interfaces/ciphertext-interface";
 import type { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
 import { KeyType } from "../interfaces/key-interface";
@@ -52,7 +52,7 @@ export const CryptoModule = {
     const plaintextBuffer = BufferLib.toBuffer(plaintext);
 
     // initialization vector
-    const initializationVector = WebCryptoLib.getRandomValues(new Uint8Array(12));
+    const initializationVector = WebCryptoLib.getRandomValues(new Uint8Array(IV_LENGTH));
 
     // encrypt plaintext
     const ciphertextBuffer = await WebCryptoLib.subtle.encrypt(
@@ -64,10 +64,14 @@ export const CryptoModule = {
       plaintextBuffer
     );
 
+    // convert iv and salt to base64 string
+    const ivString = BufferLib.toString(initializationVector, "base64");
+    const saltString = (encryptionKey as PassKey).salt ? (encryptionKey as PassKey).salt : undefined; // passkeys store salt as a string
+
     return {
       data: BufferLib.toString(ciphertextBuffer, "base64"),
-      iv: initializationVector,
-      salt: (encryptionKey as PassKey).salt,
+      iv: ivString,
+      salt: saltString,
       sender: sender,
       recipient: recipient
     }
@@ -87,21 +91,30 @@ export const CryptoModule = {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT);
     }
 
+    // convert iv and salt to buffer
+    const ivBuffer = BufferLib.toBuffer(ciphertext.iv, "base64") as Uint8Array;
+    
+
     let decryptionKey: GenericKey;
 
-    if(typeof key === "string") {
-      if(!ciphertext.salt) {
-        throw new Error(CRYPTO_ERROR_MESSAGE.MISSING_PASSPHRASE_SALT);
-      }
+    if(typeof key === "string" && !ciphertext.salt) {
+      // throw error if key is a string and salt is missing
+      throw new Error(CRYPTO_ERROR_MESSAGE.MISSING_PASSPHRASE_SALT);
 
+    } else if(typeof key === "string") {
+      // convert passphrase to key if key is a string
       decryptionKey = await KeyModule.generatePassKey({ passphrase: key, salt: ciphertext.salt });
-    } else {
-    // throw error if key is not a shared or pass key
-      if (!KeyChecker.isSymmetricKey(key)) {
-        throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
-      }
-      
+
+    } 
+    else if (!KeyChecker.isSymmetricKey(key)) {
+      // throw error if key is not a shared or pass key
+      throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
+
+    } 
+    else {
+      // use key if key is a shared or pass key
       decryptionKey = key;
+
     }
 
     let plaintextBuffer: ArrayBuffer;
@@ -113,7 +126,7 @@ export const CryptoModule = {
       plaintextBuffer = await WebCryptoLib.subtle.decrypt(
         {
           ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
-          iv: ciphertext.iv
+          iv: ivBuffer
         },
         decryptionKey.crypto,
         ciphertextBuffer
@@ -167,11 +180,13 @@ export const CryptoChecker = {
 
     if(!input.data || !input.iv) return false;
 
-    // return false if iv is not a Uint8Array with length 16
-    if(
-      input.iv.constructor.name !== "Uint8Array" || 
-      input.iv.length !== 12
-    ) {
+    // return false if iv is not a string
+    if(typeof input.iv !== "string") {
+      return false;
+    }
+
+    // return false if iv is not buffer-like
+    if(!isStringUint8Array(input.iv)) {
       return false;
     }
 
@@ -186,18 +201,20 @@ export const CryptoChecker = {
       return false;
     }
 
-    if(input.salt) {
+    if(input.salt !== undefined) {
 
-      // return false if salt is not a Uint8Array with length 16
-      if(
-        input.salt.constructor.name !== "Uint8Array" || 
-        input.salt.length !== 16
-      ) {
+      // return false if salt is not a string
+      if(typeof input.salt !== "string") {
+        return false;
+      }
+
+      // return false if salt is not buffer-like
+      if(!isStringUint8Array(input.salt)) {
         return false;
       }
     }
 
-    if(input.sender) {
+    if(input.sender !== undefined) {
       if(
         !KeyChecker.isAsymmetricKey(input.sender) && 
         (input.sender as unknown as PublicKey).type !== KeyType.PublicKey
@@ -206,7 +223,7 @@ export const CryptoChecker = {
       }
     }
 
-    if(input.recipient) {
+    if(input.recipient !== undefined) {
       if(
         !KeyChecker.isAsymmetricKey(input.recipient) && 
         (input.recipient as unknown as PublicKey).type !== KeyType.PublicKey

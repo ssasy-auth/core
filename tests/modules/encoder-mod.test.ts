@@ -4,6 +4,7 @@ import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { KeyModule } from "../../src/modules/key-mod";
 import { ChallengeModule } from "../../src/modules/challenge-mod";
+import { BufferLib } from "../../src/utils";
 import { EncoderModule, ENCODER_ERROR_MESSAGE } from "../../src/modules/encoder-mod";
 import type { PublicKey } from "../../src/interfaces/key-interface";
 import type { Challenge } from "../../src/interfaces/challenge-interface";
@@ -143,14 +144,15 @@ describe("[EncoderModule Test Suite]", () => {
   })
 
   describe("Challenge", () => {
-    let nonce: Uint8Array;
+    let nonce: string;
     let verifierPublicKey: PublicKey;
     let claimantPublicKey: PublicKey;
     let challenge: Challenge;
 
     before(async () => {
       // set random number
-      nonce = ChallengeModule.generateNonce();
+      const n = ChallengeModule.generateNonce();
+      nonce = BufferLib.toString(n, "base64");
       // set verifier's public key
       verifierPublicKey = await KeyModule.generatePublicKey({
         privateKey: await KeyModule.generatePrivateKey()

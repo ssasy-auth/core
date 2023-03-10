@@ -1,11 +1,11 @@
-import { WebCryptoLib } from "../config/native";
-import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../config/algorithm";
+import { WebCryptoLib, BufferLib } from "../utils";
+import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH } from "../config/algorithm";
 import type { GenericKey, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
 import { KeyType } from "../interfaces/key-interface";
 
 export const KEY_ERROR_MESSAGE = {
   INVALID_PASSPHRASE: "Passphrase is not a valid string",
-  INVALID_PASSPHRASE_SALT: "Passphrase salt is not a valid Uint8Array",
+  INVALID_PASSPHRASE_SALT: "Passphrase salt is not a valid string based Uint8Array",
   INVALID_ASYMMETRIC_KEY: "Key is not a valid asymmetric key (ECDH)",
   INVALID_PRIVATE_KEY: "Key is not a private key",
   INVALID_PUBLIC_KEY: "Key is not a public key",
@@ -29,8 +29,12 @@ interface GenPassKeyParams extends GenKeyParams {
 
   /**
    * salt to use to derive the key from the passphrase
+   * 
+   * Note: although the `salt` is stored as a string, it is a 
+   * base64 encoded Uint8Array and should be converted to
+   * a Uint8Array before use.
    */
-  salt?: Uint8Array;
+  salt?: string;
 
   /**
    * number of iterations to use to derive the key from the passphrase
@@ -93,7 +97,7 @@ export const KeyModule = {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_PASSPHRASE);
     }
 
-    if (salt && !(salt instanceof Uint8Array)) {
+    if (salt && !(typeof salt === "string")) {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_PASSPHRASE_SALT);
     }
 
@@ -111,7 +115,13 @@ export const KeyModule = {
     );
 
     // prepare salt for key with provided salt or generate random salt
-    const keySalt = salt || WebCryptoLib.getRandomValues(new Uint8Array(16));
+    let keySalt: Uint8Array;
+    if(salt) {
+      // convert salt to Uint8Array
+      keySalt = BufferLib.toBuffer(salt, "base64") as Uint8Array;
+    } else {
+      keySalt = WebCryptoLib.getRandomValues(new Uint8Array(SALT_LENGTH));
+    }
 
     // prepare iterations for key with provided iterations or use default iterations
     const keyIterations = iterations || CRYPTO_ALGORITHMS.PBKDF2.iterations;
@@ -129,11 +139,14 @@ export const KeyModule = {
       CRYPTO_CONFIG.SYMMETRIC.usages
     );
 
+    // convert salt to base64 string
+    const saltString = BufferLib.toString(keySalt, "base64");
+
     return {
       type: KeyType.PassKey,
       domain: domain,
       crypto: cryptoKey,
-      salt: keySalt,
+      salt: saltString,
       iterations: keyIterations,
       hash: CRYPTO_ALGORITHMS.PBKDF2.hash
     };

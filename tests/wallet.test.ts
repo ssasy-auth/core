@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "chai";
-import { TEST_ERROR } from "./config";
+import { TEST_ERROR, shouldBeStringBuffer } from "./config";
 import { KeyModule } from "../src/modules/key-mod";
 import { CryptoModule } from "../src/modules/crypto-mod";
 import { EncoderModule } from "../src/modules/encoder-mod";
@@ -107,7 +107,8 @@ describe("[Wallet Class Test Suite]", () => {
       const ciphertext = await wallet.encrypt(validFriendKeyPair.public, payload);
       expect(ciphertext.data).to.not.equal(payload);
       expect(ciphertext.data).to.not.include(payload);
-      expect(ciphertext.iv).to.be.instanceOf(Uint8Array);
+      // iv should be a valid Uint8Array string representation
+      shouldBeStringBuffer(ciphertext.iv, expect);
     })
 
     it("should return an encrypted ciphertext with sender as wallet public key and recipient as provided public key", async () => {
