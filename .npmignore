@@ -1,8 +1,11 @@
 # only publish what is necessary, ignore everything else below
 src
 tests
+scripts
 tsconfig.json
 tslint.json
-.eslintrc*
 .env.sample
+.eslintrc
+.eslintignore
+.mocharc.json
 .vscode
