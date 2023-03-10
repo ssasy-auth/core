@@ -1,7 +1,18 @@
 import { WebCryptoLib, BufferLib } from "../utils";
-import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH } from "../config/algorithm";
-import type { GenericKey, JsonWebKey, SecretKey, PassKey, PrivateKey, PublicKey, SharedKey, RawKey } from "../interfaces/key-interface";
-import { KeyType } from "../interfaces/key-interface";
+import {
+  CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH 
+} from "../config";
+import type { 
+  GenericKey, 
+  JsonWebKey, 
+  SecretKey, 
+  PassKey, 
+  PrivateKey, 
+  PublicKey, 
+  SharedKey, 
+  RawKey 
+} from "../interfaces";
+import { KeyType } from "../interfaces";
 
 export const KEY_ERROR_MESSAGE = {
   INVALID_PASSPHRASE: "Passphrase is not a valid string",

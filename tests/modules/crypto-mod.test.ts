@@ -2,10 +2,12 @@
 
 import { expect } from "chai";
 import { TEST_ERROR, shouldBeStringBuffer } from "../config";
-import { KeyModule } from "../../src/modules/key-mod";
-import { CryptoModule, CryptoChecker, CRYPTO_ERROR_MESSAGE } from "../../src/modules/crypto-mod";
-import type { Ciphertext } from "../../src/interfaces/ciphertext-interface";
-import type { PassKey, SecretKey } from "../../src/interfaces/key-interface";
+import {
+  KeyModule, CryptoModule, CryptoChecker, CRYPTO_ERROR_MESSAGE
+} from "../../src/modules";
+import type {
+  Ciphertext, PassKey, SecretKey 
+} from "../../src/interfaces";
 
 describe("[CryptoModule Test Suite]", () => {
   let validKey: SecretKey;
@@ -16,7 +18,9 @@ describe("[CryptoModule Test Suite]", () => {
 
   before(async () => {
     validKey = await KeyModule.generateKey();
-    validPassKey = await KeyModule.generatePassKey({ passphrase: validPassphrase });
+    validPassKey = await KeyModule.generatePassKey({
+      passphrase: validPassphrase 
+    });
   });
   
   describe("CryptoModule", () => {
@@ -75,8 +79,12 @@ describe("[CryptoModule Test Suite]", () => {
       it("should encrypt a plaintext with a SharedKey and return a Ciphertext", async () => {
         const senderPrivateKey = await KeyModule.generatePrivateKey();
         const receiverPrivateKey = await KeyModule.generatePrivateKey();
-        const receiverPublicKey = await KeyModule.generatePublicKey({ privateKey: receiverPrivateKey });
-        const sharedKey = await KeyModule.generateSharedKey({ privateKey: senderPrivateKey, publicKey: receiverPublicKey });
+        const receiverPublicKey = await KeyModule.generatePublicKey({
+          privateKey: receiverPrivateKey 
+        });
+        const sharedKey = await KeyModule.generateSharedKey({
+          privateKey: senderPrivateKey, publicKey: receiverPublicKey 
+        });
   
         const ciphertext = await CryptoModule.encrypt(sharedKey, validPlaintext);
   
@@ -94,10 +102,16 @@ describe("[CryptoModule Test Suite]", () => {
   
       it("should add sender and recipient public keys to ciphertext when provided", async () => {
         const senderPrivateKey = await KeyModule.generatePrivateKey();
-        const senderPublicKey = await KeyModule.generatePublicKey({ privateKey: senderPrivateKey });
+        const senderPublicKey = await KeyModule.generatePublicKey({
+          privateKey: senderPrivateKey 
+        });
         const receiverPrivateKey = await KeyModule.generatePrivateKey();
-        const receiverPublicKey = await KeyModule.generatePublicKey({ privateKey: receiverPrivateKey });
-        const sharedKey = await KeyModule.generateSharedKey({ privateKey: senderPrivateKey, publicKey: receiverPublicKey });
+        const receiverPublicKey = await KeyModule.generatePublicKey({
+          privateKey: receiverPrivateKey 
+        });
+        const sharedKey = await KeyModule.generateSharedKey({
+          privateKey: senderPrivateKey, publicKey: receiverPublicKey 
+        });
   
         const ciphertext = await CryptoModule.encrypt(sharedKey, validPlaintext, senderPublicKey, receiverPublicKey);
   
@@ -139,7 +153,9 @@ describe("[CryptoModule Test Suite]", () => {
       });
   
       it("should decrypt PassKey's Ciphertext", async () => {
-        const validPassKeyCopy = await KeyModule.generatePassKey({ passphrase: validPassphrase, salt: validPassKey.salt });
+        const validPassKeyCopy = await KeyModule.generatePassKey({
+          passphrase: validPassphrase, salt: validPassKey.salt 
+        });
         const ciphertext = await CryptoModule.encrypt(validPassKey, validPlaintext);
   
         const plaintext = await CryptoModule.decrypt(validPassKeyCopy, ciphertext);
@@ -169,15 +185,23 @@ describe("[CryptoModule Test Suite]", () => {
   
       it("should decrypt SharedKey's Ciphertext", async () => {
         const senderPrivateKey = await KeyModule.generatePrivateKey();
-        const senderPublicKey = await KeyModule.generatePublicKey({ privateKey: senderPrivateKey });
+        const senderPublicKey = await KeyModule.generatePublicKey({
+          privateKey: senderPrivateKey 
+        });
         const receiverPrivateKey = await KeyModule.generatePrivateKey();
-        const receiverPublicKey = await KeyModule.generatePublicKey({ privateKey: receiverPrivateKey });
+        const receiverPublicKey = await KeyModule.generatePublicKey({
+          privateKey: receiverPrivateKey 
+        });
   
-        const senderSharedKey = await KeyModule.generateSharedKey({ privateKey: senderPrivateKey, publicKey: receiverPublicKey });
+        const senderSharedKey = await KeyModule.generateSharedKey({
+          privateKey: senderPrivateKey, publicKey: receiverPublicKey 
+        });
         const senderMessage = "hello world from sender";
         const senderCiphertext = await CryptoModule.encrypt(senderSharedKey, senderMessage);
   
-        const receiverSharedKey = await KeyModule.generateSharedKey({ privateKey: receiverPrivateKey, publicKey: senderPublicKey });
+        const receiverSharedKey = await KeyModule.generateSharedKey({
+          privateKey: receiverPrivateKey, publicKey: senderPublicKey 
+        });
         const receiverMessage = "hello world from receiver";
         const receiverCiphertext = await CryptoModule.encrypt(receiverSharedKey, receiverMessage);
   
@@ -277,7 +301,9 @@ describe("[CryptoModule Test Suite]", () => {
       });
       
       it("should return false if ciphertext does not have valid iv", () => {
-        const invalidCiphertext = { ...validCiphertext, iv: "invalid-iv" as any };
+        const invalidCiphertext = {
+          ...validCiphertext, iv: "invalid-iv" as any 
+        };
 
         let result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.false;
@@ -294,7 +320,9 @@ describe("[CryptoModule Test Suite]", () => {
       });
 
       it("should return false if ciphertext does not have valid data", () => {
-        const invalidCiphertext = { ...validCiphertext, data: 123 as any };
+        const invalidCiphertext = {
+          ...validCiphertext, data: 123 as any 
+        };
 
         // data should be string
         let result = CryptoChecker.isCiphertext(invalidCiphertext);
@@ -315,7 +343,9 @@ describe("[CryptoModule Test Suite]", () => {
       });
 
       it("should return false if ciphertext does not have valid salt", () => {
-        const invalidCiphertext = { ...validCiphertext, salt: 123 as any };
+        const invalidCiphertext = {
+          ...validCiphertext, salt: 123 as any 
+        };
 
         // salt should be string
         let result = CryptoChecker.isCiphertext(invalidCiphertext);
@@ -342,7 +372,9 @@ describe("[CryptoModule Test Suite]", () => {
       });
       
       it("should return true if ciphertext is valid", () => {
-        const ciphertextWithoutSalt = { ...validCiphertext, salt: undefined };
+        const ciphertextWithoutSalt = {
+          ...validCiphertext, salt: undefined 
+        };
 
         // should return true if salt is undefined
         let result = CryptoChecker.isCiphertext(ciphertextWithoutSalt);

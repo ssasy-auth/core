@@ -1,31 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "chai";
 import { TEST_ERROR, shouldBeStringBuffer } from "./config";
-import { KeyModule } from "../src/modules/key-mod";
-import { CryptoModule } from "../src/modules/crypto-mod";
-import { EncoderModule } from "../src/modules/encoder-mod";
+import {
+  KeyModule, CryptoModule, EncoderModule 
+} from "../src/modules";
 import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
 import type { Ciphertext } from "../src/interfaces/ciphertext-interface";
 import type { KeyPair, PrivateKey } from "../src/interfaces/key-interface";
 
 describe("[Wallet Class Test Suite]", () => {
   const validPassphrase = "passphrase";
-  const validKeyPair: KeyPair = { } as KeyPair;
-  const validFriendKeyPair: KeyPair = { } as KeyPair;
-  const validThirdPartyKeyPair: KeyPair = { } as KeyPair;
+  const validKeyPair: KeyPair = {
+ 
+  } as KeyPair;
+  const validFriendKeyPair: KeyPair = {
+ 
+  } as KeyPair;
+  const validThirdPartyKeyPair: KeyPair = {
+ 
+  } as KeyPair;
 
   before(async () => {
     // Generate a keypair
     validKeyPair.private = await KeyModule.generatePrivateKey();
-    validKeyPair.public = await KeyModule.generatePublicKey({ privateKey: validKeyPair.private });
+    validKeyPair.public = await KeyModule.generatePublicKey({
+      privateKey: validKeyPair.private 
+    });
 
     // Generate a friend keypair
     validFriendKeyPair.private = await KeyModule.generatePrivateKey();
-    validFriendKeyPair.public = await KeyModule.generatePublicKey({ privateKey: validFriendKeyPair.private });
+    validFriendKeyPair.public = await KeyModule.generatePublicKey({
+      privateKey: validFriendKeyPair.private 
+    });
 
     // Generate a third party keypair
     validThirdPartyKeyPair.private = await KeyModule.generatePrivateKey();
-    validThirdPartyKeyPair.public = await KeyModule.generatePublicKey({ privateKey: validThirdPartyKeyPair.private });
+    validThirdPartyKeyPair.public = await KeyModule.generatePublicKey({
+      privateKey: validThirdPartyKeyPair.private 
+    });
   })
 
   describe("constructor()", () => {
@@ -256,7 +268,9 @@ describe("[Wallet Class Test Suite]", () => {
     })
 
     it("should set ciphertext sender to the claimant's public key and recipient to the verifier's public key", async () => {
-      const sharedKey = await KeyModule.generateSharedKey({ privateKey: validKeyPair.private, publicKey: validFriendKeyPair.public });
+      const sharedKey = await KeyModule.generateSharedKey({
+        privateKey: validKeyPair.private, publicKey: validFriendKeyPair.public 
+      });
       
       const decryptedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
       const challenge = await EncoderModule.decodeChallenge(decryptedChallenge);

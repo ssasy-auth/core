@@ -1,9 +1,9 @@
-import { KeyType } from "../interfaces/key-interface";
+import { KeyType } from "../interfaces";
 import { KeyModule, KeyChecker } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
-import { BufferLib } from "../utils";
-import type { PublicKey, RawKey , GenericKey } from "../interfaces/key-interface";
-import type { Challenge } from "../interfaces/challenge-interface";
+import type {
+  PublicKey, RawKey , GenericKey, Challenge
+} from "../interfaces";
 
 export const ENCODER_ERROR_MESSAGE = {
   MISSING_KEY: "Key is missing",

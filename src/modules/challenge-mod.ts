@@ -1,8 +1,11 @@
-import type { Challenge } from "../interfaces/challenge-interface";
-import type { PrivateKey, PublicKey } from "../interfaces/key-interface";
-import { WebCryptoLib, BufferLib, isStringUint8Array } from "../utils";
-import { CHALLENGE_MAX_AGE } from "../config/challenge";
-import { KeyType  } from "../interfaces/key-interface";
+import { CHALLENGE_MAX_AGE } from "../config";
+import type {
+  Challenge, PrivateKey, PublicKey 
+} from "../interfaces";
+import {
+  WebCryptoLib, BufferLib, isStringUint8Array 
+} from "../utils";
+import { KeyType  } from "../interfaces";
 import { CryptoModule } from "./crypto-mod";
 import { KeyModule, KeyChecker } from "./key-mod";
 

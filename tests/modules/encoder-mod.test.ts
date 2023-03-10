@@ -2,12 +2,11 @@
 
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
-import { KeyModule } from "../../src/modules/key-mod";
-import { ChallengeModule } from "../../src/modules/challenge-mod";
+import {
+  KeyModule, EncoderModule, ENCODER_ERROR_MESSAGE, ChallengeModule 
+} from "../../src/modules";
 import { BufferLib } from "../../src/utils";
-import { EncoderModule, ENCODER_ERROR_MESSAGE } from "../../src/modules/encoder-mod";
-import type { PublicKey } from "../../src/interfaces/key-interface";
-import type { Challenge } from "../../src/interfaces/challenge-interface";
+import type { PublicKey, Challenge } from "../../src/interfaces";
 
 describe("[EncoderModule Test Suite]", () => {
   describe("Key", () => {
@@ -46,7 +45,9 @@ describe("[EncoderModule Test Suite]", () => {
         expect(JSON.parse(encodedSecretKey)).to.have.property("type");
         expect(JSON.parse(encodedSecretKey)).to.have.property("crypto");
         
-        const passKey = await KeyModule.generatePassKey({ passphrase: "password" });
+        const passKey = await KeyModule.generatePassKey({
+          passphrase: "password" 
+        });
         const encodedPassKey = await EncoderModule.encodeKey(passKey);
         expect(encodedPassKey).to.be.a("string");
         expect(JSON.parse(encodedPassKey)).to.have.property("type");
@@ -61,7 +62,9 @@ describe("[EncoderModule Test Suite]", () => {
         expect(JSON.parse(encodedPrivateKey)).to.have.property("type");
         expect(JSON.parse(encodedPrivateKey)).to.have.property("crypto");
 
-        const sharedKey = await KeyModule.generateSharedKey({ privateKey, publicKey })
+        const sharedKey = await KeyModule.generateSharedKey({
+          privateKey, publicKey 
+        })
         const encodedSharedKey = await EncoderModule.encodeKey(sharedKey);
         expect(encodedSharedKey).to.be.a("string");
         expect(JSON.parse(encodedSharedKey)).to.have.property("type");
@@ -108,7 +111,9 @@ describe("[EncoderModule Test Suite]", () => {
         const decodedSecretKey = await EncoderModule.decodeKey(encodedSecretKey);
         expect(decodedSecretKey).to.deep.equal(secretKey);
         
-        const passKey = await KeyModule.generatePassKey({ passphrase: "password" });
+        const passKey = await KeyModule.generatePassKey({
+          passphrase: "password" 
+        });
         const encodedPassKey = await EncoderModule.encodeKey(passKey);
         const decodedPassKey = await EncoderModule.decodeKey(encodedPassKey);
         expect(decodedPassKey).to.deep.equal(passKey);
@@ -123,7 +128,9 @@ describe("[EncoderModule Test Suite]", () => {
         expect(decodedPrivateKey.crypto.extractable).to.deep.equal(privateKey.crypto.extractable);
         expect(decodedPrivateKey.crypto.usages).to.deep.equal(privateKey.crypto.usages);
 
-        const sharedKey = await KeyModule.generateSharedKey({ privateKey, publicKey })
+        const sharedKey = await KeyModule.generateSharedKey({
+          privateKey, publicKey 
+        })
         const encodedSharedKey = await EncoderModule.encodeKey(sharedKey);
         const decodedSharedKey = await EncoderModule.decodeKey(encodedSharedKey);
         expect(decodedSharedKey).to.deep.equal(sharedKey);
@@ -218,7 +225,9 @@ describe("[EncoderModule Test Suite]", () => {
         let challengeCopy: Challenge;
 
         try {
-          challengeCopy = { ...challenge };
+          challengeCopy = {
+            ...challenge 
+          };
           challengeCopy.nonce = "invalid nonce" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
@@ -228,7 +237,9 @@ describe("[EncoderModule Test Suite]", () => {
         }
 
         try {
-          challengeCopy = { ...challenge };
+          challengeCopy = {
+            ...challenge 
+          };
           challengeCopy.timestamp = "invalid timestamp" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
@@ -238,7 +249,9 @@ describe("[EncoderModule Test Suite]", () => {
         }
 
         try {
-          challengeCopy = { ...challenge };
+          challengeCopy = {
+            ...challenge 
+          };
           challengeCopy.timestamp = "invalid timestamp" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
@@ -248,7 +261,9 @@ describe("[EncoderModule Test Suite]", () => {
         }
 
         try {
-          challengeCopy = { ...challenge };
+          challengeCopy = {
+            ...challenge 
+          };
           challengeCopy.claimant = "invalid claimant" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)

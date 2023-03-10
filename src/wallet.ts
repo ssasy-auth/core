@@ -1,13 +1,10 @@
-import { KeyType } from "./interfaces/key-interface";
-import { ChallengeModule } from "./modules/challenge-mod";
-import { CryptoModule } from "./modules/crypto-mod";
-import { EncoderModule } from "./modules/encoder-mod";
-import { KeyChecker, KeyModule } from "./modules/key-mod";
-import type { Ciphertext } from "./interfaces/ciphertext-interface";
+import { KeyType } from "./interfaces";
+import {
+  EncoderModule, ChallengeModule, CryptoModule, KeyModule, KeyChecker 
+} from "./modules";
 import type {
-  PrivateKey,
-  PublicKey
-} from "./interfaces/key-interface";
+  Ciphertext, PrivateKey, PublicKey 
+} from "./interfaces";
 
 export const WALLET_ERROR_MESSAGE = {
   INVALID_KEY: "The key provided is invalid or not supported by this method",
@@ -51,7 +48,9 @@ export class Wallet {
    * @returns public key
    */
   async getPublicKey(): Promise<PublicKey> {
-    return KeyModule.generatePublicKey({ privateKey: this.privateKey });
+    return KeyModule.generatePublicKey({
+      privateKey: this.privateKey 
+    });
   }
 
   /**
@@ -76,7 +75,9 @@ export class Wallet {
     } if (KeyChecker.isAsymmetricKey(key) && key.type === KeyType.PublicKey) {
       
       const publicKey = await this.getPublicKey();
-      const sharedKey = await KeyModule.generateSharedKey({ privateKey: this.privateKey, publicKey: key });
+      const sharedKey = await KeyModule.generateSharedKey({
+        privateKey: this.privateKey, publicKey: key 
+      });
       return await CryptoModule.encrypt(sharedKey, payload, publicKey, key);
 
     } else {
@@ -106,7 +107,9 @@ export class Wallet {
 
     } else if (KeyChecker.isAsymmetricKey(key) && key.type === KeyType.PublicKey) {
       
-      const sharedKey = await KeyModule.generateSharedKey({ privateKey: this.privateKey, publicKey: key });
+      const sharedKey = await KeyModule.generateSharedKey({
+        privateKey: this.privateKey, publicKey: key 
+      });
       return await CryptoModule.decrypt(sharedKey, ciphertext);
 
     } else {
@@ -135,7 +138,9 @@ export class Wallet {
     // get the wallet's public key
     const publicKey = await this.getPublicKey();
     // generate a shared key
-    const sharedKey = await KeyModule.generateSharedKey({ privateKey: this.privateKey, publicKey: claimant });
+    const sharedKey = await KeyModule.generateSharedKey({
+      privateKey: this.privateKey, publicKey: claimant 
+    });
     // encrypt the challenge with the shared key and return it
     return await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant);
   }
@@ -167,7 +172,9 @@ export class Wallet {
     }
     
     // generate a shared key
-    const sharedKey = await KeyModule.generateSharedKey({ privateKey: this.privateKey, publicKey: ciphertext.sender });
+    const sharedKey = await KeyModule.generateSharedKey({
+      privateKey: this.privateKey, publicKey: ciphertext.sender 
+    });
     // decrypt the challenge
     const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
     const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
@@ -212,7 +219,9 @@ export class Wallet {
     }
 
     // generate a shared key
-    const sharedKey = await KeyModule.generateSharedKey({ privateKey: this.privateKey, publicKey: ciphertext.sender });
+    const sharedKey = await KeyModule.generateSharedKey({
+      privateKey: this.privateKey, publicKey: ciphertext.sender 
+    });
 
     // decrypt the challenge
     const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);

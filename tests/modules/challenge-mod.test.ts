@@ -2,23 +2,26 @@
 
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
-import { CHALLENGE_MAX_AGE } from "../../src/config/challenge";
-import { KeyModule } from "../../src/modules/key-mod";
-import { CryptoModule } from "../../src/modules/crypto-mod";
+import { CHALLENGE_MAX_AGE } from "../../src/config";
 import { BufferLib } from "../../src/utils";
-import { ChallengeModule, CHALLENGE_ERROR_MESSAGE } from "../../src/modules/challenge-mod";
+import {
+  KeyModule, CryptoModule, ChallengeModule, CHALLENGE_ERROR_MESSAGE 
+} from "../../src/modules";
 import type { KeyPair } from "../../src/interfaces/key-interface";
-import type { Challenge } from "../../src/interfaces/challenge-interface";
+import type { Challenge } from "../../src/interfaces";
 
 describe("[ChallengeModule Module Test Suite]", () => {
   // verifier of the challenge
-  const verifier: KeyPair = {} as unknown as KeyPair;
+  const verifier: KeyPair = {
+  } as unknown as KeyPair;
 
   // claimant to the challenge
-  const claimant: KeyPair = {} as unknown as KeyPair;
+  const claimant: KeyPair = {
+  } as unknown as KeyPair;
 
   // attacker will try to solve the challenge
-  const attacker: KeyPair = {} as unknown as KeyPair;
+  const attacker: KeyPair = {
+  } as unknown as KeyPair;
 
   // nonce
   let validNonce: Uint8Array;
@@ -31,9 +34,15 @@ describe("[ChallengeModule Module Test Suite]", () => {
     attacker.private = await KeyModule.generatePrivateKey();
       
     // setup public keys
-    verifier.public = await KeyModule.generatePublicKey({ privateKey: verifier.private });
-    claimant.public = await KeyModule.generatePublicKey({ privateKey: claimant.private });
-    attacker.public = await KeyModule.generatePublicKey({ privateKey: attacker.private });
+    verifier.public = await KeyModule.generatePublicKey({
+      privateKey: verifier.private 
+    });
+    claimant.public = await KeyModule.generatePublicKey({
+      privateKey: claimant.private 
+    });
+    attacker.public = await KeyModule.generatePublicKey({
+      privateKey: attacker.private 
+    });
 
     // generate nonce
     validNonce = ChallengeModule.generateNonce();

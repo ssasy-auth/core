@@ -1,8 +1,11 @@
-import { WebCryptoLib, BufferLib, isStringUint8Array } from "../utils";
-import { CRYPTO_CONFIG, IV_LENGTH } from "../config/algorithm";
-import type { Ciphertext } from "../interfaces/ciphertext-interface";
-import type { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
-import { KeyType } from "../interfaces/key-interface";
+import {
+  WebCryptoLib, BufferLib, isStringUint8Array 
+} from "../utils";
+import { CRYPTO_CONFIG, IV_LENGTH } from "../config";
+import type {
+  Ciphertext, GenericKey, SecretKey, PassKey, PublicKey, SharedKey 
+} from "../interfaces";
+import { KeyType } from "../interfaces";
 import { KeyChecker, KeyModule } from "./key-mod";
 
 /**
@@ -35,7 +38,9 @@ export const CryptoModule = {
     let encryptionKey: GenericKey;
 
     if(typeof key === "string") {
-      encryptionKey = await KeyModule.generatePassKey({ passphrase: key });
+      encryptionKey = await KeyModule.generatePassKey({
+        passphrase: key 
+      });
     } else {
       if (!KeyChecker.isSymmetricKey(key)) {
         throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
@@ -103,7 +108,9 @@ export const CryptoModule = {
 
     } else if(typeof key === "string") {
       // convert passphrase to key if key is a string
-      decryptionKey = await KeyModule.generatePassKey({ passphrase: key, salt: ciphertext.salt });
+      decryptionKey = await KeyModule.generatePassKey({
+        passphrase: key, salt: ciphertext.salt 
+      });
 
     } 
     else if (!KeyChecker.isSymmetricKey(key)) {
