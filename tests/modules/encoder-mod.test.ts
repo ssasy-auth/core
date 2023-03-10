@@ -8,7 +8,7 @@ import { EncoderModule, ENCODER_ERROR_MESSAGE } from "../../src/modules/encoder-
 import type { PublicKey } from "../../src/interfaces/key-interface";
 import type { Challenge } from "../../src/interfaces/challenge-interface";
 
-describe("EncoderModule Test Suite", () => {
+describe("[EncoderModule Test Suite]", () => {
   describe("Key", () => {
     let publicKey: PublicKey;
 

@@ -8,7 +8,7 @@ import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
 import type { Ciphertext } from "../src/interfaces/ciphertext-interface";
 import type { KeyPair, PrivateKey } from "../src/interfaces/key-interface";
 
-describe("Wallet Class Test Suite", () => {
+describe("[Wallet Class Test Suite]", () => {
   const validPassphrase = "passphrase";
   const validKeyPair: KeyPair = { } as KeyPair;
   const validFriendKeyPair: KeyPair = { } as KeyPair;

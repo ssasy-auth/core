@@ -9,7 +9,7 @@ import { ChallengeModule, CHALLENGE_ERROR_MESSAGE } from "../../src/modules/chal
 import type { KeyPair } from "../../src/interfaces/key-interface";
 import type { Challenge } from "../../src/interfaces/challenge-interface";
 
-describe("ChallengeModule Module Test Suite", () => {
+describe("[ChallengeModule Module Test Suite]", () => {
   // verifier of the challenge
   const verifier: KeyPair = {} as unknown as KeyPair;
 

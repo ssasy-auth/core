@@ -2,6 +2,7 @@ import { WebCryptoLib, BufferLib } from "../config/native";
 import { CRYPTO_CONFIG } from "../config/algorithm";
 import type { Ciphertext } from "../interfaces/ciphertext-interface";
 import type { GenericKey, SecretKey, PassKey, PublicKey, SharedKey } from "../interfaces/key-interface";
+import { KeyType } from "../interfaces/key-interface";
 import { KeyChecker, KeyModule } from "./key-mod";
 
 /**
@@ -148,5 +149,72 @@ export const CryptoModule = {
     );
 
     return BufferLib.toString(hashBuffer, "base64");
+  }
+};
+
+export const CryptoChecker = {
+  /**
+   * Checks if the input is a valid ciphertext.
+   * 
+   * @param input - input to check
+   * @returns boolean
+   * */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  isCiphertext(input: any): boolean {
+    if(!input) return false;
+
+    if(typeof input !== "object") return false;
+
+    if(!input.data || !input.iv) return false;
+
+    // return false if iv is not a Uint8Array with length 16
+    if(
+      input.iv.constructor.name !== "Uint8Array" || 
+      input.iv.length !== 12
+    ) {
+      return false;
+    }
+
+    // return false if data is not a string
+    if(typeof input.data !== "string") {
+      return false;
+    }
+
+    // return false if data is not a base64 string
+    const base64Regex = new RegExp("^[a-zA-Z0-9+/]*={0,2}$");
+    if(!base64Regex.test(input.data)) {
+      return false;
+    }
+
+    if(input.salt) {
+
+      // return false if salt is not a Uint8Array with length 16
+      if(
+        input.salt.constructor.name !== "Uint8Array" || 
+        input.salt.length !== 16
+      ) {
+        return false;
+      }
+    }
+
+    if(input.sender) {
+      if(
+        !KeyChecker.isAsymmetricKey(input.sender) && 
+        (input.sender as unknown as PublicKey).type !== KeyType.PublicKey
+      ) {
+        return false;
+      }
+    }
+
+    if(input.recipient) {
+      if(
+        !KeyChecker.isAsymmetricKey(input.recipient) && 
+        (input.recipient as unknown as PublicKey).type !== KeyType.PublicKey
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 };

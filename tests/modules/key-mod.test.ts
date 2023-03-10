@@ -7,7 +7,7 @@ import { KeyType } from "../../src/interfaces/key-interface";
 import { KeyModule, KeyChecker, KEY_ERROR_MESSAGE } from "../../src/modules/key-mod";
 import type { GenericKey, PassKey, SecretKey, PrivateKey } from "../../src/interfaces/key-interface";
 
-describe("KeyModule Test Suite", () => {
+describe("[KeyModule Test Suite]", () => {
   describe("KeyModule", () => {
     describe("generateKey()", () => {
       it("should generate a symmetric key", async () => {
