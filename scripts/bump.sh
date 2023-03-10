@@ -28,9 +28,9 @@ if echo "$commit_msg" | grep -qE '\[[0-9]+\.[0-9]+\.[0-9]+\]'; then
 fi
 
 # determine the version type
-if echo "$commit_msg" | grep -qE '^(feature|config):'; then
+if echo "$commit_msg" | grep -qE '(feature|config):'; then
   version_type="minor"
-elif echo "$commit_msg" | grep -qE '^(patch|fix):'; then
+elif echo "$commit_msg" | grep -qE '(patch|fix):'; then
   version_type="patch"
 else
   echo "[bump.sh] no version bump needed."
