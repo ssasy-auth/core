@@ -28,23 +28,37 @@ if echo "$commit_msg" | grep -qE '\[[0-9]+\.[0-9]+\.[0-9]+\]'; then
 fi
 
 # determine the version type
-if echo "$commit_msg" | grep -qE '(feature|config):'; then
+if echo "$commit_msg" | grep -qE '(\[)?\s*(feature|config)\s*(\])?\s*:'; then
   version_type="minor"
-elif echo "$commit_msg" | grep -qE '(patch|fix):'; then
+elif echo "$commit_msg" | grep -qE '(\[)?\s*(patch|fix)\s*(\])?\s*:'; then
   version_type="patch"
 else
   echo "[bump.sh] no version bump needed."
   exit 0
 fi
 
-# bump version and update package.json
-npm version $version_type --no-git-tag-version
+# update version with npm or pnpm depending on which is installed
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm version $version_type --no-git-tag-version
+elif command -v npm >/dev/null 2>&1; then
+  npm version $version_type --no-git-tag-version
+else
+  echo "[bump.sh] no package manager found."
+  exit 1
+fi
 
 # get the new version number
 version=$(node -p "require('./package.json').version")
 
-# stage changes to the staging area
-git add package.json package-lock.json
+# stage package.json
+git add package.json
+
+# stage pnpm-lock.yaml or package-lock.json if they exist
+if [ -f pnpm-lock.yaml ]; then
+  git add pnpm-lock.yaml
+elif [ -f package-lock.json ]; then
+  git add package-lock.json
+fi
 
 # add [$version] to the beginning of the commit message
 new_commit_msg="[$version] $commit_msg"
