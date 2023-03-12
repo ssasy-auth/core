@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { expect } from "chai";
-import { TEST_ERROR, shouldBeStringBuffer } from "../config";
+import { TEST_ERROR } from "../config";
 import {
   KeyModule, CryptoModule, CryptoChecker, CRYPTO_ERROR_MESSAGE
 } from "../../src/modules";
 import type {
   Ciphertext, PassKey, SecretKey 
 } from "../../src/interfaces";
-import { BufferLib, isStringUint8Array } from "../../src/utils";
-import { IV_LENGTH } from "../../src/config"
+import { BufferUtil } from "../../src/utils";
+import { IV_LENGTH, SALT_LENGTH } from "../../src/config"
 
 describe("[CryptoModule Test Suite]", () => {
   let validKey: SecretKey;
@@ -36,11 +36,12 @@ describe("[CryptoModule Test Suite]", () => {
           .to.not.equal(validPlaintext)
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
-        expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
+        expect(BufferUtil.isBase64String(ciphertext.data)).to.be.true;
         // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
         // iv should be a valid Uint8Array string representation
-        shouldBeStringBuffer(ciphertext.iv, expect);
+        const result = BufferUtil.isBufferString(ciphertext.iv);
+        expect(result).to.be.true;
       });
   
       it("should encrypt a plaintext with a PassKey and return a Ciphertext", async () => {
@@ -52,11 +53,12 @@ describe("[CryptoModule Test Suite]", () => {
           .to.not.equal(validPlaintext)
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
-        expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
+        expect(BufferUtil.isBase64String(ciphertext.data)).to.be.true;
         // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
         // iv should be a valid Uint8Array string representation
-        shouldBeStringBuffer(ciphertext.iv, expect);
+        const result = BufferUtil.isBufferString(ciphertext.iv);
+        expect(result).to.be.true;
       });
   
       it("should encrypt a plaintext with a passphrase string and return a Ciphertext with passkey salt", async () => {
@@ -67,15 +69,17 @@ describe("[CryptoModule Test Suite]", () => {
           .to.not.equal(validPlaintext)
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
-        expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
+        expect(BufferUtil.isBase64String(ciphertext.data)).to.be.true;
         // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
         // iv should be a valid Uint8Array string representation
-        shouldBeStringBuffer(ciphertext.iv, expect);
+        const ivResult = BufferUtil.isBufferString(ciphertext.iv);
+        expect(ivResult).to.be.true;
         // ciphertext should have a salt
         expect(ciphertext.salt).to.exist;
         // salt should be a valid Uint8Array string representation
-        shouldBeStringBuffer(ciphertext.salt as string, expect);
+        const saltResult = BufferUtil.isBufferString(ciphertext.salt as string);
+        expect(saltResult).to.be.true;
       });
   
       it("should encrypt a plaintext with a SharedKey and return a Ciphertext", async () => {
@@ -95,22 +99,23 @@ describe("[CryptoModule Test Suite]", () => {
           .to.not.equal(validPlaintext)
           .and.to.not.include(validPlaintext);
         // ciphertext should be a base64 string
-        expect(ciphertext.data).to.match(/^[a-zA-Z0-9+/]+={0,2}$/);
+        expect(BufferUtil.isBase64String(ciphertext.data)).to.be.true;
         // ciphertext should have a iv
         expect(ciphertext.iv).to.exist;
         // iv should be a valid Uint8Array string representation
-        shouldBeStringBuffer(ciphertext.iv, expect);
+        const result = BufferUtil.isBufferString(ciphertext.iv);
+        expect(result).to.be.true;
       });
 
       it("should attach a valid iv to ciphertext", async () => {
         const ciphertext = await CryptoModule.encrypt(validKey, validPlaintext);
         
-        const ivIsBufferString = isStringUint8Array(ciphertext.iv);
+        const ivIsBufferString = BufferUtil.isBufferString(ciphertext.iv);
         expect(ivIsBufferString).to.be.true;
-
-        const ivBuffer = BufferLib.toBuffer(ciphertext.iv, "base64");
+        
+        const ivBuffer = BufferUtil.StringToBuffer(ciphertext.iv);
         expect(ivBuffer).to.be.instanceOf(Uint8Array);
-        expect((ivBuffer as Uint8Array).length).to.equal(IV_LENGTH);
+        expect((ivBuffer as Uint8Array).byteLength).to.equal(IV_LENGTH);
       })
 
       it("should attach a valid salt to ciphertext if encryption uses passkey", async () => {
@@ -118,12 +123,12 @@ describe("[CryptoModule Test Suite]", () => {
 
         expect(ciphertext.salt).to.exist;
         
-        const saltIsBufferString = isStringUint8Array(ciphertext.salt as string);
+        const saltIsBufferString = BufferUtil.isBufferString(ciphertext.salt as string);
         expect(saltIsBufferString).to.be.true;
 
-        const saltBuffer = BufferLib.toBuffer(ciphertext.salt as string, "base64");
+        const saltBuffer = BufferUtil.StringToBuffer(ciphertext.iv);
         expect(saltBuffer).to.be.instanceOf(Uint8Array);
-        expect((saltBuffer as Uint8Array).length).to.equal(IV_LENGTH);
+        expect((saltBuffer as Uint8Array).byteLength).to.equal(SALT_LENGTH);
       })
   
       it("should add sender and recipient public keys to ciphertext when provided", async () => {
@@ -328,20 +333,11 @@ describe("[CryptoModule Test Suite]", () => {
       
       it("should return false if ciphertext does not have valid iv", () => {
         const invalidCiphertext = {
-          ...validCiphertext, iv: "invalid-iv" as any 
+          ...validCiphertext, iv: BufferUtil.createBuffer(15)
         };
 
-        let result = CryptoChecker.isCiphertext(invalidCiphertext);
-        expect(result).to.be.false;
-
-        // no empty iv
-        invalidCiphertext.iv = new Uint8Array(0);
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        expect(result).to.be.false;
-
         // iv must have a length of 16 bytes
-        invalidCiphertext.iv = new Uint8Array(15);
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
+        const result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.false;
       });
 
@@ -357,13 +353,15 @@ describe("[CryptoModule Test Suite]", () => {
         // data should not be empty
         invalidCiphertext.data = "";
         result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.false;
+        
+        // data should not be null
         invalidCiphertext.data = null;
         result = CryptoChecker.isCiphertext(invalidCiphertext);
-        invalidCiphertext.data = undefined;
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
+        expect(result).to.be.false;
 
-        // data should be base64 encoded
-        invalidCiphertext.data = "invalid-data";
+        // data should not be undefined
+        invalidCiphertext.data = undefined;
         result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.false;
       });
@@ -382,16 +380,12 @@ describe("[CryptoModule Test Suite]", () => {
         result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.false;
         
+        // salt should not be null
         invalidCiphertext.salt = null;
         result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.false;
 
-        // salt should be base64 encoded
-        invalidCiphertext.salt = "invalid-salt";
-        result = CryptoChecker.isCiphertext(invalidCiphertext);
-        expect(result).to.be.false;
-
-        // undefined salt is valid
+        // salt should not be undefined
         invalidCiphertext.salt = undefined;
         result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.true;

@@ -3,7 +3,7 @@
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { CHALLENGE_MAX_AGE } from "../../src/config";
-import { BufferLib } from "../../src/utils";
+import { BufferUtil } from "../../src/utils";
 import {
   KeyModule, CryptoModule, ChallengeModule, CHALLENGE_ERROR_MESSAGE 
 } from "../../src/modules";
@@ -46,7 +46,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
 
     // generate nonce
     validNonce = ChallengeModule.generateNonce();
-    validNonceString = BufferLib.toString(validNonce, "base64");
+    validNonceString = BufferUtil.BufferToString(validNonce);
   })
     
   describe("generateNonce()", () => {
@@ -210,7 +210,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
   describe("verifyChallenge()", () => {
     it("should return true if the solution is a hash of the nonce", async () => {
       const nonce = ChallengeModule.generateNonce();
-      const nonceString = BufferLib.toString(nonce, "base64");
+      const nonceString = BufferUtil.BufferToString(nonce);
       const hash = await CryptoModule.hash(nonceString);
 
       const solvedChallenge = {

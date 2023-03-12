@@ -1,10 +1,8 @@
-import { CHALLENGE_MAX_AGE } from "../config";
+import { CHALLENGE_MAX_AGE, NONCE_LENGTH } from "../config";
 import type {
   Challenge, PrivateKey, PublicKey 
 } from "../interfaces";
-import {
-  WebCryptoLib, BufferLib, isStringUint8Array 
-} from "../utils";
+import { WebCryptoLib, BufferUtil } from "../utils";
 import { KeyType  } from "../interfaces";
 import { CryptoModule } from "./crypto-mod";
 import { KeyModule, KeyChecker } from "./key-mod";
@@ -32,7 +30,10 @@ export const ChallengeModule = {
 	 * @returns nonce
 	 */
   generateNonce(): Uint8Array {
-    return WebCryptoLib.getRandomValues(new Uint8Array(16));
+    // create buffer
+    const buffer = BufferUtil.createBuffer(NONCE_LENGTH)
+
+    return WebCryptoLib.getRandomValues(buffer);
   },
 
   /**
@@ -72,7 +73,7 @@ export const ChallengeModule = {
     });
 
     const nonce = ChallengeModule.generateNonce();
-    const nonceString = BufferLib.toString(nonce, "base64");
+    const nonceString = BufferUtil.BufferToString(nonce);
 
     // create challenge
     return {
@@ -188,7 +189,7 @@ export const ChallengeChecker = {
       return false;
     }
 
-    if(!isStringUint8Array(challenge.nonce)) {
+    if(!BufferUtil.isBufferString(challenge.nonce)) {
       return false;
     }
 

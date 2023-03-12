@@ -1,9 +1,7 @@
-import {
-  WebCryptoLib, BufferLib, isStringUint8Array 
-} from "../utils";
+import { WebCryptoLib, BufferUtil } from "../utils";
 import { CRYPTO_CONFIG, IV_LENGTH } from "../config";
 import type {
-  Ciphertext, GenericKey, SecretKey, PassKey, PublicKey, SharedKey 
+  Ciphertext, SecretKey, PassKey, PublicKey, SharedKey 
 } from "../interfaces";
 import { KeyType } from "../interfaces";
 import { KeyChecker, KeyModule } from "./key-mod";
@@ -35,46 +33,49 @@ export const CryptoModule = {
    * @returns ciphertext
    */
   async encrypt(key: SecretKey | PassKey | SharedKey | string, plaintext: string, sender?: PublicKey, recipient?: PublicKey): Promise<Ciphertext> {
-    let encryptionKey: GenericKey;
-
-    if(typeof key === "string") {
-      encryptionKey = await KeyModule.generatePassKey({
-        passphrase: key 
-      });
-    } else {
-      if (!KeyChecker.isSymmetricKey(key)) {
-        throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
-      }
-
-      encryptionKey = key;
+    
+    if (typeof key !== "string" && !KeyChecker.isSymmetricKey(key)) {
+      throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
     }
     
     if (typeof plaintext !== "string") {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_PLAINTEXT);
     }
 
-    // convert plaintext to buffer
-    const plaintextBuffer = BufferLib.toBuffer(plaintext);
+    // generate passkey if key is a passphrase
+    if(typeof key === "string") {
+      key =await KeyModule.generatePassKey({
+        passphrase: key 
+      });
+    }
+
+    // convert plaintext to buffer (string > utf8 > base64 > array buffer)
+    const plaintextUtf8Buffer = BufferUtil.StringToBuffer(plaintext, "utf8");
+    const plaintextBase64Buffer = BufferUtil.StringToBuffer(BufferUtil.BufferToString(plaintextUtf8Buffer), "base64");
 
     // initialization vector
-    const initializationVector = WebCryptoLib.getRandomValues(new Uint8Array(IV_LENGTH));
+    const buffer = BufferUtil.createBuffer(IV_LENGTH);
+    const initializationVector = WebCryptoLib.getRandomValues(buffer);
 
-    // encrypt plaintext
+    // encrypt plaintext (returns an Array Buffer)
     const ciphertextBuffer = await WebCryptoLib.subtle.encrypt(
       {
         ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
         iv: initializationVector
       },
-      encryptionKey.crypto,
-      plaintextBuffer
+      key.crypto,
+      plaintextBase64Buffer
     );
 
-    // convert iv and salt to base64 string
-    const ivString = BufferLib.toString(initializationVector, "base64");
-    const saltString = (encryptionKey as PassKey).salt ? (encryptionKey as PassKey).salt : undefined; // passkeys store salt as a string
+    // convert iv to base64 string
+    const ivString = BufferUtil.BufferToString(initializationVector);
+    // convert salt to base64 string
+    const saltString = (key as PassKey).salt ? (key as PassKey).salt : undefined; // passkeys store salt as a string
+    // convert data to base64 string
+    const dataString = BufferUtil.BufferToString(ciphertextBuffer, "base64");
 
     return {
-      data: BufferLib.toString(ciphertextBuffer, "base64"),
+      data: dataString,
       iv: ivString,
       salt: saltString,
       sender: sender,
@@ -96,60 +97,53 @@ export const CryptoModule = {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT);
     }
 
-    // convert iv and salt to buffer
-    const ivBuffer = BufferLib.toBuffer(ciphertext.iv, "base64") as Uint8Array;
-    
-
-    let decryptionKey: GenericKey;
-
+    // throw error if key is a string and salt is missing
     if(typeof key === "string" && !ciphertext.salt) {
-      // throw error if key is a string and salt is missing
       throw new Error(CRYPTO_ERROR_MESSAGE.MISSING_PASSPHRASE_SALT);
-
-    } else if(typeof key === "string") {
-      // convert passphrase to key if key is a string
-      decryptionKey = await KeyModule.generatePassKey({
-        passphrase: key, salt: ciphertext.salt 
-      });
-
-    } 
-    else if (!KeyChecker.isSymmetricKey(key)) {
-      // throw error if key is not a shared or pass key
-      throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
-
-    } 
-    else {
-      // use key if key is a shared or pass key
-      decryptionKey = key;
-
     }
 
-    let plaintextBuffer: ArrayBuffer;
+    // throw error if key is not a symmetric (secret, shared or passkey)
+    if (typeof key !== "string" && !KeyChecker.isSymmetricKey(key)) {
+      throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
+    }
 
-    // convert ciphertextdata to buffer
-    const ciphertextBuffer = BufferLib.toBuffer(ciphertext.data, "base64");
+    // generate passkey if key is a passphrase
+    if(typeof key === "string") {
+      key = await KeyModule.generatePassKey({
+        passphrase: key, salt: ciphertext.salt
+      })
+    }
 
+    // convert iv to buffer
+    const ivBuffer = BufferUtil.StringToBuffer(ciphertext.iv);
+    // convert data to buffer (base64 > buffer)
+    const ciphertextBuffer = BufferUtil.StringToBuffer(ciphertext.data, "base64");
+
+    let plaintextBuffer: Uint8Array;
+    
     try {
-      plaintextBuffer = await WebCryptoLib.subtle.decrypt(
+      const buffer = await WebCryptoLib.subtle.decrypt(
         {
           ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
           iv: ivBuffer
         },
-        decryptionKey.crypto,
+        key.crypto,
         ciphertextBuffer
       );
+
+      // convert buffer to buffer view
+      plaintextBuffer = new Uint8Array(buffer);
     } catch (error) {
-      if (
-        error instanceof Error &&
-        (error.name === "InvalidAccessError" || error.message === "Cipher job failed")
-      ) {
+      if ( (error as Error).name === "InvalidAccessError" || (error as Error).message === "Cipher job failed") {
         throw new Error(CRYPTO_ERROR_MESSAGE.WRONG_KEY);
       }
 
-      throw error;
+      throw `Error decrypting data: ${error}`
     }
 
-    return BufferLib.toString(plaintextBuffer);
+    // convert buffer to string (buffer > base64 > utf8 > string)
+    const base64String = BufferUtil.BufferToString(plaintextBuffer, "base64");
+    return BufferUtil.BufferToString(BufferUtil.StringToBuffer(base64String, "base64"), "utf8");
   },
 
   /**
@@ -163,12 +157,17 @@ export const CryptoModule = {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_HASH_STRING);
     }
 
+    // convert data to buffer (string > utf8 > base64 > array buffer)
+    const utf8Encoding = BufferUtil.StringToBuffer(data, "utf8");
+    const base64Encoding = BufferUtil.StringToBuffer(BufferUtil.BufferToString(utf8Encoding), "base64");
+
     const hashBuffer = await WebCryptoLib.subtle.digest(
       CRYPTO_CONFIG.HASH.algorithm,
-      BufferLib.toBuffer(data)
+      base64Encoding
     );
 
-    return BufferLib.toString(hashBuffer, "base64");
+    // convert array buffer to string
+    return BufferUtil.BufferToString(hashBuffer);
   }
 };
 
@@ -183,60 +182,48 @@ export const CryptoChecker = {
   isCiphertext(input: any): boolean {
     if(!input) return false;
 
-    if(typeof input !== "object") return false;
+    // input must be an object
+    if( typeof input !== "object") return false;
 
-    if(!input.data || !input.iv) return false;
+    // data must be present and must be a string
+    if( !input.data || typeof input.data !== "string") return false;
 
-    // return false if iv is not a string
-    if(typeof input.iv !== "string") {
-      return false;
-    }
+    // iv must be present and must be a string
+    if( !input.iv || typeof input.iv !== "string") return false;
 
-    // return false if iv is not buffer-like
-    if(!isStringUint8Array(input.iv)) {
-      return false;
-    }
+    try {
+      // data must be buffer-like
+      if(!BufferUtil.isBufferString(input.data)) return false;
+      
+      // iv must be buffer-like
+      if(!BufferUtil.isBufferString(input.iv)) return false;
+  
+      if(input.salt !== undefined) {
 
-    // return false if data is not a string
-    if(typeof input.data !== "string") {
-      return false;
-    }
+        // salt must be a string
+        if(typeof input.salt !== "string") return false;
 
-    // return false if data is not a base64 string
-    const base64Regex = new RegExp("^[a-zA-Z0-9+/]*={0,2}$");
-    if(!base64Regex.test(input.data)) {
-      return false;
-    }
-
-    if(input.salt !== undefined) {
-
-      // return false if salt is not a string
-      if(typeof input.salt !== "string") {
-        return false;
+        // salt must be buffer-like
+        if(!BufferUtil.isBufferString(input.salt)) return false;
       }
 
-      // return false if salt is not buffer-like
-      if(!isStringUint8Array(input.salt)) {
-        return false;
-      }
-    }
+      if(input.sender !== undefined) {
+        // sender must be an asymmetric key
+        if(!KeyChecker.isAsymmetricKey(input.sender)) return false;
 
-    if(input.sender !== undefined) {
-      if(
-        !KeyChecker.isAsymmetricKey(input.sender) && 
-        (input.sender as unknown as PublicKey).type !== KeyType.PublicKey
-      ) {
-        return false;
+        // sender must be a public key
+        if((input.sender as unknown as PublicKey).type !== KeyType.PublicKey) return false;
       }
-    }
 
-    if(input.recipient !== undefined) {
-      if(
-        !KeyChecker.isAsymmetricKey(input.recipient) && 
-        (input.recipient as unknown as PublicKey).type !== KeyType.PublicKey
-      ) {
-        return false;
+      if(input.recipient !== undefined) {
+        // recipient must be an asymmetric key
+        if(!KeyChecker.isAsymmetricKey(input.recipient)) return false;
+
+        // recipient must be a public key
+        if((input.recipient as unknown as PublicKey).type !== KeyType.PublicKey) return false;
       }
+    } catch (error) {
+      return false;
     }
 
     return true;

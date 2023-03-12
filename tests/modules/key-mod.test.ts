@@ -10,6 +10,7 @@ import {
 import type {
   GenericKey, PassKey, SecretKey, PrivateKey 
 } from "../../src/interfaces";
+import { BufferUtil } from "../../src/utils";
 
 describe("[KeyModule Test Suite]", () => {
   describe("KeyModule", () => {
@@ -37,6 +38,18 @@ describe("[KeyModule Test Suite]", () => {
         expect(passKey.type).to.equal(KeyType.PassKey);
         expect(passKey.crypto.algorithm.name).to.equal(CRYPTO_CONFIG.SYMMETRIC.algorithm.name);
         expect(passKey.salt).to.exist;
+      });
+
+      it("should save salt buffer as a base64 string", async () => {
+        const passphrase = "password";
+        const passKey: PassKey = await KeyModule
+          .generatePassKey({
+            passphrase: passphrase
+          });
+
+        expect(passKey.salt).to.be.a("string");
+        const result = BufferUtil.isBase64String(passKey.salt);
+        expect(result).to.be.true;
       });
 
       it("should generate the same key from the same passphrase and salt", async () => {
@@ -331,6 +344,10 @@ describe("[KeyModule Test Suite]", () => {
         // check that domain was maintained
         expect(rawPublicKey.domain).to.equal(publicKey.domain);
       });
+
+      it("should return a raw key in json format if format is not specified");
+      
+      it("should return a raw key in json format if format is not specified");
 
       it("should throw an error if key is not valid", async () => {
         const key = "invalid-key" as any;

@@ -28,23 +28,30 @@ function isPublicKey(key: GenericKey): boolean {
  */
 export const EncoderModule = {
   /**
-	 * Returns a stringified JSON representation of the key
+	 * Returns a string representation of the key
 	 *
-	 * @param key - the key to convert to a string
-	 * @returns encoded key
+	 * @param key - key
+	 * @returns string
 	 * */
   encodeKey: async (key: GenericKey): Promise<string> => {
+    let rawKey: RawKey;
+
     if (!KeyChecker.isKey(key)) {
       throw new Error(ENCODER_ERROR_MESSAGE.KEY_NOT_SUPPORTED);
     }
 
     if(KeyChecker.isRawKey(key)) {
-      return JSON.stringify(key);
+      rawKey = key as RawKey;
+    } else {
+      rawKey = await KeyModule.exportKey(key);
     }
 
-    const rawKey = await KeyModule.exportKey(key);
+    const keyString = JSON.stringify(rawKey);
 
-    return JSON.stringify(rawKey);
+    // TODO: convert string (utf-8) to buffer (uint8array)
+
+    // TODO: convert buffer to base64 string
+    return keyString
   },
   /**
 	 * Returns a key from a stringyfied JSON representation of the key
@@ -52,24 +59,28 @@ export const EncoderModule = {
 	 * @param key - the string representation of the key
 	 * @returns key
 	 * */
-  decodeKey: async (key: string): Promise<GenericKey> => {
-    if (!key) {
+  decodeKey: async (string: string): Promise<GenericKey> => {
+    if (!string) {
       throw new Error(ENCODER_ERROR_MESSAGE.MISSING_KEY);
     }
+
+    // TODO: convert base64 string to buffer
+
+    // TODO: convert buffer to string (utf-8)
 
     let rawKey: RawKey;
 
     try {
-      rawKey = JSON.parse(key);
+      rawKey = JSON.parse(string);
     } catch (error) {
       if (error instanceof Error && error.name === "SyntaxError") {
         throw new Error(ENCODER_ERROR_MESSAGE.INVALID_ENCODING);
       }
 
-      throw error;
+      throw `Error parsing key: ${error}`
     }
 
-    return (await KeyModule.importKey(rawKey)) as PublicKey;
+    return await KeyModule.importKey(rawKey) as PublicKey;
   },
   /**
 	 * Returns a string representation of the challenge.

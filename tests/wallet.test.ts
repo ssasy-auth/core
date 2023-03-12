@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "chai";
-import { TEST_ERROR, shouldBeStringBuffer } from "./config";
+import { TEST_ERROR } from "./config";
+import { BufferUtil } from "../src/utils";
 import {
   KeyModule, CryptoModule, EncoderModule 
 } from "../src/modules";
@@ -120,7 +121,8 @@ describe("[Wallet Class Test Suite]", () => {
       expect(ciphertext.data).to.not.equal(payload);
       expect(ciphertext.data).to.not.include(payload);
       // iv should be a valid Uint8Array string representation
-      shouldBeStringBuffer(ciphertext.iv, expect);
+      const result = BufferUtil.isBufferString(ciphertext.iv);
+      expect(result).to.be.true;
     })
 
     it("should return an encrypted ciphertext with sender as wallet public key and recipient as provided public key", async () => {

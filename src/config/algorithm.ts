@@ -9,6 +9,11 @@ export const IV_LENGTH = 16;
 export const SALT_LENGTH = 16;
 
 /**
+ * Length of the nonce in bytes (for challenge-response)
+ */
+export const NONCE_LENGTH = 16;
+
+/**
  * [JSON Web Algorithms (JWA)](https://www.rfc-editor.org/rfc/rfc7518.html)
  * */
 type JSON_WEB_ALGORITHM = {

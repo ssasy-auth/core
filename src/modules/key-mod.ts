@@ -1,4 +1,4 @@
-import { WebCryptoLib, BufferLib } from "../utils";
+import { WebCryptoLib, BufferUtil } from "../utils";
 import {
   CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH 
 } from "../config";
@@ -113,8 +113,7 @@ export const KeyModule = {
     }
 
     // encode passphrase
-    const encoder = new TextEncoder();
-    const encodedPassphrase = encoder.encode(passphrase);
+    const encodedPassphrase = BufferUtil.StringToBuffer(passphrase);
 
     // prepare key material for PBKDF2
     const keyMaterial = await WebCryptoLib.subtle.importKey(
@@ -125,15 +124,11 @@ export const KeyModule = {
       [ "deriveBits", "deriveKey" ]
     );
 
-    // prepare salt for key with provided salt or generate random salt
-    let keySalt: Uint8Array;
-    if(salt) {
-      // convert salt to Uint8Array
-      keySalt = BufferLib.toBuffer(salt, "base64") as Uint8Array;
-    } else {
-      keySalt = WebCryptoLib.getRandomValues(new Uint8Array(SALT_LENGTH));
-    }
-
+    // if salt exists, convert to buffer otherwise generate random salt
+    const saltBuffer = salt 
+      ? BufferUtil.StringToBuffer(salt) 
+      : WebCryptoLib.getRandomValues(BufferUtil.createBuffer(SALT_LENGTH));
+    
     // prepare iterations for key with provided iterations or use default iterations
     const keyIterations = iterations || CRYPTO_ALGORITHMS.PBKDF2.iterations;
 
@@ -141,7 +136,7 @@ export const KeyModule = {
     const cryptoKey = await WebCryptoLib.subtle.deriveKey(
       {
         ...CRYPTO_ALGORITHMS.PBKDF2,
-        salt: keySalt,
+        salt: saltBuffer,
         iterations: keyIterations
       },
       keyMaterial,
@@ -151,7 +146,7 @@ export const KeyModule = {
     );
 
     // convert salt to base64 string
-    const saltString = BufferLib.toString(keySalt, "base64");
+    const saltString = BufferUtil.BufferToString(saltBuffer);
 
     return {
       type: KeyType.PassKey,

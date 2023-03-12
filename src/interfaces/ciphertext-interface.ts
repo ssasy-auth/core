@@ -7,20 +7,12 @@ export interface Ciphertext {
   data: string;
   
   /**
-   * Initialization vector used to encrypt the data.
-   * 
-   * Note: although the `iv` is stored as a string, it is a 
-   * base64 encoded Uint8Array and should be converted to
-   * a Uint8Array before use.
+   * Initialization vector buffer used to encrypt the data. (note: base64 encoded)
    */
   iv: string;
 
   /**
-   * Salt (initialization vector) used to build passkey
-   * 
-   * Note: although the `salt` is stored as a string, it is a 
-   * base64 encoded Uint8Array and should be converted to
-   * a Uint8Array before use.
+   * Salt buffer used to build passkey. (note: base64 encoded)
    */
   salt?: string;
 

@@ -5,7 +5,7 @@ import { TEST_ERROR } from "../config";
 import {
   KeyModule, EncoderModule, ENCODER_ERROR_MESSAGE, ChallengeModule 
 } from "../../src/modules";
-import { BufferLib } from "../../src/utils";
+import { BufferUtil } from "../../src/utils";
 import type { PublicKey, Challenge } from "../../src/interfaces";
 
 describe("[EncoderModule Test Suite]", () => {
@@ -36,6 +36,8 @@ describe("[EncoderModule Test Suite]", () => {
         const rawKey = await KeyModule.exportKey(publicKey);
         expect(publicKeyObject.crypto).to.deep.equal(rawKey.crypto);
       })
+
+      it("should return a base64 encoded string");
 
       it("should support all key types", async () => {
         
@@ -158,8 +160,8 @@ describe("[EncoderModule Test Suite]", () => {
 
     before(async () => {
       // set random number
-      const n = ChallengeModule.generateNonce();
-      nonce = BufferLib.toString(n, "base64");
+      const nonceBufferArray = ChallengeModule.generateNonce();
+      nonce = BufferUtil.BufferToString(nonceBufferArray);
       // set verifier's public key
       verifierPublicKey = await KeyModule.generatePublicKey({
         privateKey: await KeyModule.generatePrivateKey()
@@ -228,7 +230,8 @@ describe("[EncoderModule Test Suite]", () => {
           challengeCopy = {
             ...challenge 
           };
-          challengeCopy.nonce = "invalid nonce" as any;
+          // empty nonce not allowed
+          challengeCopy.nonce = BufferUtil.BufferToString(new Uint8Array(0))
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {

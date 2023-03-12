@@ -123,19 +123,15 @@ export interface RawKey extends Omit<GenericKey, "crypto"> {
   hash?: string;
 
   /** 
-   * Salt used to derive the key from a password 
+   * Salt buffer used to derive the key from a password (note: base64 encoded)
    * (only for PassKey)
-   * 
-   * Note: although the `salt` is stored as a string, it is a 
-   * base64 encoded Uint8Array and should be converted to
-   * a Uint8Array before use.
-   * */
+   */
   salt?: string;
 
   /**
    * Number of iterations used to derive the key from a password
    * (only for PassKey)
-   * */
+   */
   iterations?: number;
 }
 
@@ -160,11 +156,8 @@ export interface PassKey extends Omit<SecretKey, "type"> {
   hash: string;
 
   /**
-   * Salt used to derive the key from a password
+   * Salt buffer used to derive the key from a password (note: base64 encoded)
    * 
-   * Note: although the `salt` is stored as a string, it is a 
-   * base64 encoded Uint8Array and should be converted to
-   * a Uint8Array before use.
    */
   salt: string;
 
