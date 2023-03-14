@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "a self-sovereign authentication scheme",
   "homepage": "https://github.com/this-oliver/ssasy#readme",
   "author": {
@@ -23,7 +23,7 @@
     "test:silent": "mocha --reporter landing",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "bump": "./scripts/bump.sh",
+    "bump": "npx fist-bump",
     "release": "npm run lint:fix && npm run test && npm run build && npm publish",
     "postinstall": "simple-git-hooks"
   },
@@ -36,6 +36,7 @@
     "chai": "^4.3.7",
     "eslint": "^8.34.0",
     "eslint-plugin-mocha": "^10.1.0",
+    "fist-bump": "^1.1.0",
     "lint-staged": "^13.1.2",
     "mocha": "^10.2.0",
     "simple-git-hooks": "^2.8.1",
