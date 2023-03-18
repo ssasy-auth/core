@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "a self-sovereign authentication scheme",
   "homepage": "https://github.com/this-oliver/ssasy#readme",
   "author": {
@@ -25,7 +25,7 @@
     "lint:fix": "eslint --fix .",
     "bump": "npx fist-bump",
     "release": "npm run lint:fix && npm run test && npm run build && npm publish",
-    "postinstall": "simple-git-hooks"
+    "hook": "simple-git-hooks"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",
