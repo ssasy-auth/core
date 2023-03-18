@@ -88,20 +88,11 @@ export interface JsonWebKey {
   d?: string;
 }
 
-/**
- * @interface GenericKey
- * @description Cryptographic key
- */
-export interface GenericKey {
-  /**
+export interface BaseKey {
+    /**
    * Key type
    */
   type: KeyType;
-  
-  /**
-   * Web crypto key object
-   */
-  crypto: CryptoKey;
 
   /**
    * Key domain
@@ -110,10 +101,21 @@ export interface GenericKey {
 }
 
 /**
+ * @interface ProcessedKey
+ * @description Cryptographic key with WebCryptoLib.CryptoKey in crypto property
+ */
+export interface ProcessedKey extends BaseKey {
+  /**
+   * Web crypto key object
+   */
+  crypto: CryptoKey;
+}
+
+/**
  * @interface RawKey
  * @description Cryptographic key with JsonWebKey in crypto property instead of WebCryptoLib.CryptoKey
  */
-export interface RawKey extends Omit<GenericKey, "crypto"> {
+export interface RawKey extends BaseKey {
   crypto: JsonWebKey;
 
   /**
@@ -136,10 +138,16 @@ export interface RawKey extends Omit<GenericKey, "crypto"> {
 }
 
 /**
+ * @interface GenericKey
+ * @description A generic cryptographic key interface that can be used to represent any type of key whether their crypto property is a `CryptoKey` or a `JsonWebKey`
+ */
+export type GenericKey = ProcessedKey | RawKey;
+
+/**
  * @interface SecretKey
  * @description AES secret key
  */
-export interface SecretKey extends GenericKey {
+export interface SecretKey extends ProcessedKey {
   type: KeyType.SecretKey;
 }
 
@@ -171,7 +179,7 @@ export interface PassKey extends Omit<SecretKey, "type"> {
  * @interface PrivateKey
  * @description Elliptic curve private key
  */
-export interface PrivateKey extends GenericKey {
+export interface PrivateKey extends ProcessedKey {
   type: KeyType.PrivateKey;
 }
 
@@ -179,7 +187,7 @@ export interface PrivateKey extends GenericKey {
  * @interface PublicKey
  * @description Elliptic curve public key
  */
-export interface PublicKey extends GenericKey {
+export interface PublicKey extends ProcessedKey {
   type: KeyType.PublicKey;
 }
 
@@ -187,7 +195,7 @@ export interface PublicKey extends GenericKey {
  * @interface SharedKey
  * @description AES secret key shared between two parties using Elliptic Curve Diffie-Hellman
  */
-export interface SharedKey extends GenericKey {
+export interface SharedKey extends ProcessedKey {
   type: KeyType.SharedKey;
 }
 

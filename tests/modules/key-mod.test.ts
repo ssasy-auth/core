@@ -8,7 +8,7 @@ import {
   KeyModule, KeyChecker, KEY_ERROR_MESSAGE 
 } from "../../src/modules";
 import type {
-  GenericKey, PassKey, SecretKey, PrivateKey 
+  PassKey, SecretKey, PrivateKey 
 } from "../../src/interfaces";
 import { BufferUtil } from "../../src/utils";
 
@@ -433,7 +433,7 @@ describe("[KeyModule Test Suite]", () => {
     describe("isRawKey()", () => {
       it("should return true for a valid raw key", async () => {
         const key = await KeyModule.generateKey()
-        const rawKey = await KeyModule.exportKey(key) as GenericKey;
+        const rawKey = await KeyModule.exportKey(key);
 
         expect(isRawKey(rawKey)).to.be.true;
       })

@@ -122,7 +122,7 @@ describe("[EncoderModule Test Suite]", () => {
         
         const privateKey = await KeyModule.generatePrivateKey();
         const encodedPrivateKey = await EncoderModule.encodeKey(privateKey);
-        const decodedPrivateKey = await EncoderModule.decodeKey(encodedPrivateKey);
+        const decodedPrivateKey = await EncoderModule.decodeKey(encodedPrivateKey) as PublicKey;
         expect(decodedPrivateKey.type).to.equal(privateKey.type);
         expect(decodedPrivateKey.domain).to.equal(privateKey.domain);
         expect(decodedPrivateKey.crypto).to.exist;

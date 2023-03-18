@@ -2,85 +2,88 @@ import { WebCryptoLib, BufferUtil } from "../utils";
 import {
   CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH 
 } from "../config";
-import type { 
-  GenericKey, 
-  JsonWebKey, 
-  SecretKey, 
-  PassKey, 
-  PrivateKey, 
-  PublicKey, 
-  SharedKey, 
-  RawKey 
+import type {
+  GenericKey,
+  JsonWebKey,
+  ProcessedKey,
+  RawKey,
+  SecretKey,
+  PassKey,
+  PrivateKey,
+  PublicKey,
+  SharedKey
 } from "../interfaces";
 import { KeyType } from "../interfaces";
 
 export const KEY_ERROR_MESSAGE = {
   INVALID_PASSPHRASE: "Passphrase is not a valid string",
-  INVALID_PASSPHRASE_SALT: "Passphrase salt is not a valid string based Uint8Array",
+  INVALID_PASSPHRASE_SALT:
+		"Passphrase salt is not a valid string based Uint8Array",
   INVALID_ASYMMETRIC_KEY: "Key is not a valid asymmetric key (ECDH)",
   INVALID_PRIVATE_KEY: "Key is not a private key",
   INVALID_PUBLIC_KEY: "Key is not a public key",
   INVALID_KEY: "Key is not a valid key",
   INVALID_RAW_KEY: "Key is not a valid raw key",
-  DUPLICATE_SHARED_KEY_PARAMS: "Cannot generate a shared key with the same key type"
+  DUPLICATE_SHARED_KEY_PARAMS:
+		"Cannot generate a shared key with the same key type"
 };
 
 interface GenKeyParams {
-  /**
-   * domain to generate the key for
-   */
-  domain?: string;
+	/**
+	 * domain to generate the key for
+	 */
+	domain?: string;
 }
 
 interface GenPassKeyParams extends GenKeyParams {
-  /**
-   * passphrase to generate the key from
-   */
-  passphrase: string;
+	/**
+	 * passphrase to generate the key from
+	 */
+	passphrase: string;
 
-  /**
-   * salt to use to derive the key from the passphrase
-   * 
-   * Note: although the `salt` is stored as a string, it is a 
-   * base64 encoded Uint8Array and should be converted to
-   * a Uint8Array before use.
-   */
-  salt?: string;
+	/**
+	 * salt to use to derive the key from the passphrase
+	 *
+	 * Note: although the `salt` is stored as a string, it is a
+	 * base64 encoded Uint8Array and should be converted to
+	 * a Uint8Array before use.
+	 */
+	salt?: string;
 
-  /**
-   * number of iterations to use to derive the key from the passphrase
-   * */
-  iterations?: number;
+	/**
+	 * number of iterations to use to derive the key from the passphrase
+	 * */
+	iterations?: number;
 }
 
 interface GenPublicKeyParams extends GenKeyParams {
-  /**
-   * private source key
-   */
-  privateKey: PrivateKey;
+	/**
+	 * private source key
+	 */
+	privateKey: PrivateKey;
 }
 
 interface GenSharedKeyParams extends GenKeyParams {
-  /**
-   * a private ECDH key
-   */
-  privateKey: PrivateKey;
-  /**
-   * a public ECDH key
-   */
-  publicKey: PublicKey;
+	/**
+	 * a private ECDH key
+	 */
+	privateKey: PrivateKey;
+	/**
+	 * a public ECDH key
+	 */
+	publicKey: PublicKey;
 }
 
 /**
- * Operations for generating symmetric and asymmetric keys 
+ * Operations for generating symmetric and asymmetric keys
  */
 export const KeyModule = {
   /**
-   * Returns a symmetric key using the AES-GCM cryptography algorithm.
-   * This operation is for **symmetric** key cryptography.
-   *
-   * @returns secret key
-   * */
+	 * Returns a symmetric key using the AES-GCM cryptography algorithm.
+	 * This operation is for **symmetric** key cryptography.
+	 *
+	 * @returns secret key
+	 * */
   async generateKey(params?: GenKeyParams): Promise<SecretKey> {
     const cryptoKey = await WebCryptoLib.subtle.generateKey(
       CRYPTO_CONFIG.SYMMETRIC.algorithm,
@@ -96,11 +99,11 @@ export const KeyModule = {
   },
 
   /**
-   * Returns a symmetric key using the AES-GCM cryptography algorithm and a passphrase.
-   * This operation is for **symmetric** key cryptography.
-   *
-   * @returns password key
-   * */
+	 * Returns a symmetric key using the AES-GCM cryptography algorithm and a passphrase.
+	 * This operation is for **symmetric** key cryptography.
+	 *
+	 * @returns password key
+	 * */
   async generatePassKey(params: GenPassKeyParams): Promise<PassKey> {
     const { domain, passphrase, salt, iterations } = params;
 
@@ -125,10 +128,10 @@ export const KeyModule = {
     );
 
     // if salt exists, convert to buffer otherwise generate random salt
-    const saltBuffer = salt 
-      ? BufferUtil.StringToBuffer(salt) 
+    const saltBuffer = salt
+      ? BufferUtil.StringToBuffer(salt)
       : WebCryptoLib.getRandomValues(BufferUtil.createBuffer(SALT_LENGTH));
-    
+
     // prepare iterations for key with provided iterations or use default iterations
     const keyIterations = iterations || CRYPTO_ALGORITHMS.PBKDF2.iterations;
 
@@ -159,11 +162,11 @@ export const KeyModule = {
   },
 
   /**
-   * Returns a new private and public key pair using the ECDH cryptography algorithm.
-   * This operation is for **asymmetric** key cryptography.
-   *
-   * @returns private key
-   * */
+	 * Returns a new private and public key pair using the ECDH cryptography algorithm.
+	 * This operation is for **asymmetric** key cryptography.
+	 *
+	 * @returns private key
+	 * */
   async generatePrivateKey(params?: GenKeyParams): Promise<PrivateKey> {
     const { privateKey } = await WebCryptoLib.subtle.generateKey(
       CRYPTO_CONFIG.ASYMMETRIC.algorithm,
@@ -179,12 +182,12 @@ export const KeyModule = {
   },
 
   /**
-   * Returns a public key that is derived from the private source key. At a lower level, the public key
-   * is actually an AES key that is derived from the private key.
-   * This operation is for **asymmetric** key cryptography.
-   *
-   * @returns public key
-   */
+	 * Returns a public key that is derived from the private source key. At a lower level, the public key
+	 * is actually an AES key that is derived from the private key.
+	 * This operation is for **asymmetric** key cryptography.
+	 *
+	 * @returns public key
+	 */
   async generatePublicKey(params: GenPublicKeyParams): Promise<PublicKey> {
     const { domain, privateKey } = params;
 
@@ -221,12 +224,12 @@ export const KeyModule = {
   },
 
   /**
-   * Returns a shared key that is derived from the private key of one party
-   * and the public key of another party.
-   * This operation is for **asymmetric** key cryptography.
-   *
-   * @returns shared key
-   */
+	 * Returns a shared key that is derived from the private key of one party
+	 * and the public key of another party.
+	 * This operation is for **asymmetric** key cryptography.
+	 *
+	 * @returns shared key
+	 */
   async generateSharedKey(params: GenSharedKeyParams): Promise<SharedKey> {
     const { domain, privateKey, publicKey } = params;
 
@@ -261,20 +264,24 @@ export const KeyModule = {
   },
 
   /**
-   * Returns a json web key representation of the key.
-   * This operation is for **symmetric** and **asymmetric** key cryptography.
-   *
-   * @param key - key to export
-   * @returns json web key
-   */
+	 * Returns a json web key representation of the key.
+	 * This operation is for **symmetric** and **asymmetric** key cryptography.
+	 *
+	 * @param key - key to export
+	 * @returns json web key
+	 */
   async exportKey(key: GenericKey): Promise<RawKey> {
     if (!KeyChecker.isKey(key)) {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_KEY);
     }
 
+    if(KeyChecker.isRawKey(key)) {
+      return key as RawKey;
+    }
+
     const jsonKey: JsonWebKey = await WebCryptoLib.subtle.exportKey(
       "jwk",
-      key.crypto
+      (key as ProcessedKey).crypto
     );
 
     if (key.type === KeyType.PassKey) {
@@ -296,12 +303,12 @@ export const KeyModule = {
   },
 
   /**
-   * Returns a key from the json web key representation.
-   * This operation is for **symmetric** and **asymmetric** key cryptography.
-   *
-   * @param rawKey - json web key to import
-   * @returns key
-   */
+	 * Returns a key from the json web key representation.
+	 * This operation is for **symmetric** and **asymmetric** key cryptography.
+	 *
+	 * @param rawKey - json web key to import
+	 * @returns key
+	 */
   async importKey(
     rawKey: RawKey
   ): Promise<SecretKey | PassKey | PrivateKey | PublicKey> {
@@ -311,7 +318,7 @@ export const KeyModule = {
 
     if (
       rawKey.type === KeyType.PrivateKey ||
-      rawKey.type === KeyType.PublicKey
+			rawKey.type === KeyType.PublicKey
     ) {
       const asymmetricKey = await WebCryptoLib.subtle.importKey(
         "jwk",
@@ -364,11 +371,11 @@ export const KeyModule = {
  * */
 export const KeyChecker = {
   /**
- * Returns true if key is a valid Key
- *
- * @param key - key to check
- * @returns boolean
- */
+	 * Returns true if key is a valid Key
+	 *
+	 * @param key - key to check
+	 * @returns boolean
+	 */
   isKey(key: GenericKey): boolean {
     if (!key) {
       return false;
@@ -381,18 +388,21 @@ export const KeyChecker = {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function isCryptoKey(obj: any): obj is CryptoKey {
-      return typeof obj === "object" && obj !== null &&
-        typeof obj.type === "string" &&
-        typeof obj.algorithm === "object" &&
-        typeof obj.extractable === "boolean" &&
-        typeof obj.usages === "object" &&
-        typeof obj.algorithm.name === "string";
+      return (
+        typeof obj === "object" &&
+				obj !== null &&
+				typeof obj.type === "string" &&
+				typeof obj.algorithm === "object" &&
+				typeof obj.extractable === "boolean" &&
+				typeof obj.usages === "object" &&
+				typeof obj.algorithm.name === "string"
+      );
     }
 
     // return false if key crypto is not present or is not a valid crypto key
     if (
       !key.crypto || // key.crypto is not present
-      (!isCryptoKey(key.crypto) && !KeyChecker.isRawKey(key)) // key.crypto is not a valid crypto key or raw key
+			(!isCryptoKey(key.crypto) && !KeyChecker.isRawKey(key)) // key.crypto is not a valid crypto key or raw key
     ) {
       return false;
     }
@@ -401,11 +411,11 @@ export const KeyChecker = {
   },
 
   /**
- * Returns true if the key is a valid raw key
- *
- * @param key key
- * @returns boolean
- */
+	 * Returns true if the key is a valid raw key
+	 *
+	 * @param key key
+	 * @returns boolean
+	 */
   isRawKey(key: GenericKey): boolean {
     if (!key) {
       return false;
@@ -418,28 +428,43 @@ export const KeyChecker = {
 
     const crypto = key.crypto as JsonWebKey;
 
-    if (
-      !crypto.kty || // rawKey.crypto.kty is not present
-      !crypto.key_ops || // rawKey.crypto.key_ops is not present
-      // rawKey.crypto.kty is oct and k property is not present
-      (crypto.kty === CRYPTO_ALGORITHMS.AES.jwk.kty &&
-        !crypto.k &&
-        // rawKey.crypto.kty is EC and x, y property are not present (d is optional)
-        crypto.kty === CRYPTO_ALGORITHMS.ECDH.jwk.kty &&
-        (!crypto.x || !crypto.y))
-    ) {
-      return false;
-    }
+    /**
+     * Checks if the key is a symmetric key (AES) and whether it has the required properties (k)
+     */
+    const isValidSymmetricKey: boolean = (
+      crypto.kty === CRYPTO_ALGORITHMS.AES.jwk.kty && 
+      crypto.k !== undefined
+    );
+    
+    /**
+     * Checks if the key is an asymmetric key (EC) and whether it has the required properties (x, y). 
+     * 
+     * note: this does not fully validate private asymmetric keys
+     */
+    const isValidAsymmetricKey: boolean = (
+      crypto.kty === CRYPTO_ALGORITHMS.ECDH.jwk.kty && 
+      crypto.x !== undefined && 
+      crypto.y !== undefined
+    );
+    
+    /**
+     * Checks if the key is a valid symmetric or asymmetric key
+     */
+    const isValidKey: boolean = (
+      crypto.kty !== undefined && 
+      crypto.key_ops !== undefined && 
+      (isValidSymmetricKey || isValidAsymmetricKey)
+    );
 
-    return true;
+    return isValidKey;
   },
 
   /**
- * Returns true if key is a valid symmetric key (AES)
- *
- * @param key - key to check
- * @returns boolean
- */
+	 * Returns true if key is a valid symmetric key (AES)
+	 *
+	 * @param key - key to check
+	 * @returns boolean
+	 */
   isSymmetricKey(key: GenericKey): boolean {
     if (!KeyChecker.isKey(key)) {
       return false;
@@ -447,25 +472,31 @@ export const KeyChecker = {
 
     if (
       key.type !== KeyType.SecretKey &&
-      key.type !== KeyType.PassKey &&
-      key.type !== KeyType.SharedKey
+			key.type !== KeyType.PassKey &&
+			key.type !== KeyType.SharedKey
     ) {
       return false;
     }
 
-    if (key.crypto.algorithm.name !== CRYPTO_ALGORITHMS.AES.name) {
-      return false;
+    if(KeyChecker.isRawKey(key)) {
+      if((key as RawKey).crypto.alg !== CRYPTO_ALGORITHMS.AES.jwk.algo) {
+        return false;
+      }
+    } else {
+      if ((key as ProcessedKey).crypto.algorithm.name !== CRYPTO_ALGORITHMS.AES.name) {
+        return false;
+      }
     }
 
     return true;
   },
 
   /**
- * Returns true if key is a valid asymmetric key (ECDH)
- *
- * @param key - key to check
- * @returns boolean
- */
+	 * Returns true if key is a valid asymmetric key (ECDH)
+	 *
+	 * @param key - key to check
+	 * @returns boolean
+	 */
   isAsymmetricKey(key: GenericKey): boolean {
     if (!KeyChecker.isKey(key)) {
       return false;
@@ -475,26 +506,32 @@ export const KeyChecker = {
       return false;
     }
 
-    if (key.crypto.algorithm.name !== CRYPTO_ALGORITHMS.ECDH.name) {
-      return false;
+    if(KeyChecker.isRawKey(key)) {
+      if((key as RawKey).crypto.alg !== CRYPTO_ALGORITHMS.ECDH.jwk.algo) {
+        return false;
+      }
+    } else {
+      if ((key as ProcessedKey).crypto.algorithm.name !== CRYPTO_ALGORITHMS.ECDH.name) {
+        return false;
+      }
     }
 
     return true;
   },
 
   /**
- * Returns true if the public keys are the same (deep comparison)
- * 
- * @param key1 - key to compare
- * @param key2 - key to compare
- * @returns boolean
- */
+	 * Returns true if the public keys are the same (deep comparison)
+	 *
+	 * @param key1 - key to compare
+	 * @param key2 - key to compare
+	 * @returns boolean
+	 */
   async isSameKey(key1: GenericKey, key2: GenericKey): Promise<boolean> {
     if (
       !KeyChecker.isKey(key1) ||
-      !KeyChecker.isKey(key2) ||
-      KeyChecker.isRawKey(key1) ||
-      KeyChecker.isRawKey(key2)
+			!KeyChecker.isKey(key2) ||
+			KeyChecker.isRawKey(key1) ||
+			KeyChecker.isRawKey(key2)
     ) {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_KEY);
     }
