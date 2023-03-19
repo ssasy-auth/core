@@ -1,17 +1,32 @@
 import { KeyType } from "../interfaces";
 import { KeyModule, KeyChecker } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
+import { CryptoChecker } from "./crypto-mod";
 import type {
-  PublicKey, RawKey , GenericKey, Challenge
+  PublicKey,
+  RawKey,
+  GenericKey,
+  Challenge,
+  Ciphertext
 } from "../interfaces";
 
 export const ENCODER_ERROR_MESSAGE = {
-  MISSING_KEY: "Key is missing",
-  KEY_NOT_SUPPORTED: "Key is not supported",
-  INVALID_ENCODING: "Encoding is invalid",
-  INVALID_CHALLENGE: "Challenge is invalid",
-  INVALID_CHALLENGE_STRING: "Challenge string is invalid"
+  INVALID_KEY: "Key is invalid or not supported",
+  INVALID_KEY_STRING: "Key is missing or invalid",
+  INVALID_CHALLENGE: "Challenge is missing or invalid",
+  INVALID_CHALLENGE_STRING: "Challenge string is invalid",
+  INVALID_CIPHERTEXT: "Ciphertext is invalid",
+  INVALID_CIPHERTEXT_STRING: "Ciphertext string is invalid or missing"
 };
+
+/**
+ * a ciphertext that has been encoded for transport. This means that the
+ * sender and recipient public keys have been encoded to strings.
+ */
+interface ShallowCiphertext extends Omit<Ciphertext, "sender" | "recipient"> {
+  sender?: string;
+  recipient?: string;
+}
 
 /**
  * Returns true if key is a valid asymmetric **public** key
@@ -37,7 +52,7 @@ export const EncoderModule = {
     let rawKey: RawKey;
 
     if (!KeyChecker.isKey(key)) {
-      throw new Error(ENCODER_ERROR_MESSAGE.KEY_NOT_SUPPORTED);
+      throw new Error(ENCODER_ERROR_MESSAGE.INVALID_KEY);
     }
 
     if(KeyChecker.isRawKey(key)) {
@@ -48,9 +63,6 @@ export const EncoderModule = {
 
     const keyString = JSON.stringify(rawKey);
 
-    // TODO: convert string (utf-8) to buffer (uint8array)
-
-    // TODO: convert buffer to base64 string
     return keyString
   },
   /**
@@ -59,22 +71,18 @@ export const EncoderModule = {
 	 * @param key - the string representation of the key
 	 * @returns key
 	 * */
-  decodeKey: async (string: string): Promise<GenericKey> => {
-    if (!string) {
-      throw new Error(ENCODER_ERROR_MESSAGE.MISSING_KEY);
+  decodeKey: async (keyString: string): Promise<GenericKey> => {
+    if (!keyString) {
+      throw new Error(ENCODER_ERROR_MESSAGE.INVALID_KEY_STRING);
     }
-
-    // TODO: convert base64 string to buffer
-
-    // TODO: convert buffer to string (utf-8)
 
     let rawKey: RawKey;
 
     try {
-      rawKey = JSON.parse(string);
+      rawKey = JSON.parse(keyString);
     } catch (error) {
       if (error instanceof Error && error.name === "SyntaxError") {
-        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_ENCODING);
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_KEY_STRING);
       }
 
       throw `Error parsing key: ${error}`
@@ -120,8 +128,8 @@ export const EncoderModule = {
 	 * @param challenge - the string representation of the challenge
 	 * @returns challenge
 	 * */
-  decodeChallenge: async (challenge: string): Promise<Challenge> => {
-    const [ nonce, timestamp, verifier, claimant, solution ] =			challenge.split("::");
+  decodeChallenge: async (challengeString: string): Promise<Challenge> => {
+    const [ nonce, timestamp, verifier, claimant, solution ] = challengeString.split("::");
 
     let nonceString: string;
     let timestampNumber: number;
@@ -167,5 +175,47 @@ export const EncoderModule = {
       claimant: claimantCryptoKey,
       solution: solutionString
     };
+  },
+  /**
+   * Returns a string representation of the ciphertext
+   * 
+   * @param ciphertext - the ciphertext to convert to a string
+   */
+  encodeCiphertext: async (ciphertext: Ciphertext): Promise<string> => {
+    if(!CryptoChecker.isCiphertext(ciphertext)) {
+      throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CIPHERTEXT);
+    }
+
+    const shallowCiphertext: ShallowCiphertext = {
+      ...ciphertext,
+      sender: ciphertext.sender ? await EncoderModule.encodeKey(ciphertext.sender) : undefined,
+      recipient: ciphertext.recipient ? await EncoderModule.encodeKey(ciphertext.recipient) : undefined
+    }
+
+    return JSON.stringify(shallowCiphertext);
+  },
+  /**
+   * Returns a ciphertext object from a string representation of a ciphertext
+   * 
+   * @param ciphertextString - the string representation of the ciphertext
+   */
+  decodeCiphertext: async (ciphertextString: string): Promise<Ciphertext> => {
+    let shallowCiphertext: ShallowCiphertext;
+
+    try {
+      shallowCiphertext = JSON.parse(ciphertextString);
+    } catch (error) {
+      if (error instanceof Error && error.name === "SyntaxError") {
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
+      }
+
+      throw `Error parsing ciphertext: ${error}`
+    }
+
+    return {
+      ...shallowCiphertext,
+      sender: shallowCiphertext.sender ? await EncoderModule.decodeKey(shallowCiphertext.sender) : undefined,
+      recipient: shallowCiphertext.recipient ? await EncoderModule.decodeKey(shallowCiphertext.recipient) : undefined
+    } as Ciphertext;
   }
 };

@@ -2,11 +2,22 @@
 
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
-import {
-  KeyModule, EncoderModule, ENCODER_ERROR_MESSAGE, ChallengeModule 
-} from "../../src/modules";
 import { BufferUtil } from "../../src/utils";
-import type { PublicKey, Challenge } from "../../src/interfaces";
+import {
+  KeyModule,
+  EncoderModule,
+  ChallengeModule, 
+  CryptoModule,
+  CryptoChecker,
+  ENCODER_ERROR_MESSAGE
+} from "../../src/modules";
+import type {
+  PublicKey,
+  SharedKey,
+  Challenge, 
+  KeyPair,
+  Ciphertext
+} from "../../src/interfaces";
 
 describe("[EncoderModule Test Suite]", () => {
   describe("Key", () => {
@@ -36,8 +47,6 @@ describe("[EncoderModule Test Suite]", () => {
         const rawKey = await KeyModule.exportKey(publicKey);
         expect(publicKeyObject.crypto).to.deep.equal(rawKey.crypto);
       })
-
-      it("should return a base64 encoded string");
 
       it("should support all key types", async () => {
         
@@ -81,7 +90,7 @@ describe("[EncoderModule Test Suite]", () => {
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
-          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.KEY_NOT_SUPPORTED);
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_KEY);
         }
       });
     })
@@ -146,7 +155,7 @@ describe("[EncoderModule Test Suite]", () => {
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
           const error = e as Error;
-          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_ENCODING);
+          expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_KEY_STRING);
         }
       });
     })
@@ -344,4 +353,107 @@ describe("[EncoderModule Test Suite]", () => {
       })
     })
   });
+
+  describe("Ciphertext", () => {
+    const plaintext = "test plaintext";
+    
+    let verifierKeyPair: KeyPair;
+    let claimantKeyPair: KeyPair;
+    let sharedKey: SharedKey;
+    let ciphertext: Ciphertext;
+
+    before(async () => {
+      // set verifier's key pair
+      verifierKeyPair = {
+      } as KeyPair;
+      verifierKeyPair.private = await KeyModule.generatePrivateKey();
+      verifierKeyPair.public = await KeyModule.generatePublicKey({
+        privateKey: verifierKeyPair.private 
+      });
+
+      // set claimant's key pair
+      claimantKeyPair = {
+      } as KeyPair;
+      claimantKeyPair.private = await KeyModule.generatePrivateKey();
+      claimantKeyPair.public = await KeyModule.generatePublicKey({
+        privateKey: claimantKeyPair.private
+      });
+
+      // set shared key
+      sharedKey = await KeyModule.generateSharedKey({
+        privateKey: verifierKeyPair.private,
+        publicKey: claimantKeyPair.public
+      });
+
+      // set ciphertext
+      ciphertext = await CryptoModule.encrypt(
+        sharedKey, 
+        plaintext, 
+        verifierKeyPair.public, 
+        claimantKeyPair.public
+      );
+    })
+
+
+    describe("encodeCiphertext()", () => {
+      it("should return a string", async () => {
+        const encodedCiphertext = await EncoderModule.encodeCiphertext(ciphertext);
+        expect(encodedCiphertext).to.be.a("string");
+      })
+
+      it("should throw an error if invalid ciphertext is passed", async () => {
+        const invalidCiphertexts = [
+          "invalid",
+          {
+            ...ciphertext, data: 123
+          },
+          {
+            ...ciphertext, sender: "invalid-public-key"
+          }
+        ]
+
+        for (const invalidCiphertext of invalidCiphertexts) {
+          try {
+            await EncoderModule.encodeCiphertext(invalidCiphertext as any);
+            expect.fail(TEST_ERROR.DID_NOT_THROW)
+          } catch (e) {
+            const error = e as Error;
+            expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CIPHERTEXT);
+          }
+        }
+      })
+    });
+
+    describe("decodeCiphertext()", () => {
+      it("should return a ciphertext object", async () => {
+        const encodedCiphertext = await EncoderModule.encodeCiphertext(ciphertext);
+        const decodedCiphertext = await EncoderModule.decodeCiphertext(encodedCiphertext);
+
+        const isCiphertext = CryptoChecker.isCiphertext(decodedCiphertext);
+        expect(isCiphertext).to.be.true;
+
+        expect(decodedCiphertext.data).to.equal(ciphertext.data);
+        expect(decodedCiphertext.sender).to.deep.equal(ciphertext.sender);
+        expect(decodedCiphertext.recipient).to.deep.equal(ciphertext.recipient);
+      })
+
+      it("should throw an error if invalid ciphertext string is passed", async () => {
+        const invalidCiphertextStrings = [
+          "invalid",
+          `${ciphertext.data}::${ciphertext.sender}::${ciphertext.recipient}`,
+          `${ciphertext.data}::${ciphertext.sender}::${ciphertext.recipient}::invalid`
+        ]
+
+        for (const invalidCiphertextString of invalidCiphertextStrings) {
+          try {
+            await EncoderModule.decodeCiphertext(invalidCiphertextString);
+            expect.fail(TEST_ERROR.DID_NOT_THROW)
+          } catch (e) {
+            const error = e as Error;
+            expect(error.message).to.equal(ENCODER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
+          }
+        }
+      })
+    });
+  })
 })
