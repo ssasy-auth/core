@@ -28,6 +28,34 @@ export const WALLET_ERROR_MESSAGE = {
   MISSING_CIPHERTEXT_PARTIES: "Ciphertext is missing sender or recipient"
 }
 
+export interface ChallengeCiphertext extends Ciphertext {
+  sender: PublicKey;
+  recipient: PublicKey;
+}
+
+/**
+ * Checks that the ciphertext is valid and has the correct sender and recipient
+ */
+function processChallengeCiphertext(challengeCiphertext: Ciphertext): ChallengeCiphertext {
+  if (!challengeCiphertext) {
+    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
+  }
+
+  if(!challengeCiphertext.sender || !challengeCiphertext.recipient) {
+    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
+  }
+  
+  if (!challengeCiphertext.data) {
+    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
+  }
+  
+  if(!CryptoChecker.isCiphertext(challengeCiphertext)){
+    throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT);
+  }
+
+  return challengeCiphertext as ChallengeCiphertext;
+}
+
 /**
  * @class Wallet
  * @classdesc Abstracts the key management and cryptographic operations
@@ -132,7 +160,7 @@ export class Wallet {
 	 *
 	 * @param claimant - The public key of the claimant
 	 */
-  async generateChallenge(claimant: PublicKey): Promise<string> {
+  async generateChallenge(claimant: PublicKey): Promise<Ciphertext> {
     if(!claimant) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_KEY);
     }
@@ -153,31 +181,16 @@ export class Wallet {
     });
     
     // encrypt the challenge with the shared key and return it
-    const ciphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant);
-
-    return await EncoderModule.encodeCiphertext(ciphertext);
+    return await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant);
   }
 
   /**
 	 * Returns an encrypted challenge that has been solved
 	 *
-	 * @param encodedChallengeCiphertext - a encoded ciphertext of a challenge
+	 * @param ciphertext - ciphertext with a challenge payload
 	 */
-  async solveChallenge(encodedChallengeCiphertext: string): Promise<string> {
-    if (!encodedChallengeCiphertext) {
-      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
-    }
-
-    // decode the ciphertext
-    const challengeCiphertext = await EncoderModule.decodeCiphertext(encodedChallengeCiphertext);
-
-    if(!CryptoChecker.isCiphertext(challengeCiphertext)){
-      throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT);
-    }
-
-    if(!challengeCiphertext.sender || !challengeCiphertext.recipient) {
-      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
-    }
+  async solveChallenge(ciphertext: Ciphertext): Promise<Ciphertext> {
+    const challengeCiphertext: ChallengeCiphertext = processChallengeCiphertext(ciphertext);
     
     const publicKey = await this.getPublicKey();
 
@@ -226,50 +239,35 @@ export class Wallet {
     const encodedSolution = await EncoderModule.encodeChallenge(solution);
     
     // encrypt the solved challenge with the shared key and return it
-    const solutionCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender);
-
-    return await EncoderModule.encodeCiphertext(solutionCiphertext);
+    return await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender);
   }
 
   /**
 	 * Returns claimant's public key if the challenge is solved
 	 *
-	 * @param encodedSolutionCiphertext - a encoded ciphertext of a challenge
-	 */
-  async verifyChallenge(encodedSolutionCiphertext: string): Promise<PublicKey | null> {
-    if (!encodedSolutionCiphertext) {
-      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
-    }
-
-    // decode the ciphertext
-    const decodedSolutionCiphertext = await EncoderModule.decodeCiphertext(encodedSolutionCiphertext);
-
-    if (!decodedSolutionCiphertext.data) {
-      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
-    }
-
-    if (!decodedSolutionCiphertext.sender || !decodedSolutionCiphertext.recipient) {
-      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
-    }
-
+   * @param ciphertext - ciphertext with a challenge payload
+  */
+  async verifyChallenge(ciphertext: Ciphertext): Promise<PublicKey | null> {
+    const solutionCiphertext: ChallengeCiphertext = processChallengeCiphertext(ciphertext);
+    
     const publicKey = await this.getPublicKey();
 
     // throw error if ciphertext is not meant for this wallet
-    const recipientMatchesWallet = await KeyChecker.isSameKey(decodedSolutionCiphertext.recipient, publicKey);
+    const recipientMatchesWallet = await KeyChecker.isSameKey(solutionCiphertext.recipient, publicKey);
     if (!recipientMatchesWallet) {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
     }
 
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.privateKey, publicKey: decodedSolutionCiphertext.sender 
+      privateKey: this.privateKey, publicKey: solutionCiphertext.sender 
     });
 
     // decrypt the solution
     let encodedSolution: string;
 
     try {
-      encodedSolution = await CryptoModule.decrypt(sharedKey, decodedSolutionCiphertext);
+      encodedSolution = await CryptoModule.decrypt(sharedKey, solutionCiphertext);
     } catch (error) {
 
       if((error as Error).message === CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT){
