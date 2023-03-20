@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "a self-sovereign authentication scheme",
   "homepage": "https://github.com/this-oliver/ssasy#readme",
   "author": {

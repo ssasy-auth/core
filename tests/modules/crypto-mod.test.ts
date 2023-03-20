@@ -320,7 +320,25 @@ describe("[CryptoModule Test Suite]", () => {
           expect(error.message).to.equal(CRYPTO_ERROR_MESSAGE.INVALID_HASH_STRING);
         }
       })
-    })
+    });
+
+    describe("generateNonce()", () => {
+      it("should generate a unique nonce", () => {
+        const SAMPLE_SIZE = 100;
+        const samples: any[] = [];
+        for (let i = 0; i < SAMPLE_SIZE; i++) {
+        // create nonce
+          const nonce = CryptoModule.generateNonce();
+          // check current sample for any identical nonces
+          for (let x = 0; x < i; x++) {
+            const currNonce = samples[x] as Uint8Array;
+            expect(nonce).to.not.deep.equal(currNonce);
+          }
+          // add nonce to samples
+          samples.push(nonce)
+        }
+      });
+    });
   })
 
   describe("CryptoChecker", () => {

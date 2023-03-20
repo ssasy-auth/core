@@ -1,8 +1,10 @@
-import { CHALLENGE_MAX_AGE, NONCE_LENGTH } from "../config";
+import { CHALLENGE_MAX_AGE } from "../config";
 import type {
-  Challenge, PrivateKey, PublicKey 
+  Challenge,
+  PrivateKey,
+  PublicKey 
 } from "../interfaces";
-import { WebCryptoLib, BufferUtil } from "../utils";
+import { BufferUtil } from "../utils";
 import { KeyType  } from "../interfaces";
 import { CryptoModule } from "./crypto-mod";
 import { KeyModule, KeyChecker } from "./key-mod";
@@ -25,17 +27,6 @@ export const CHALLENGE_ERROR_MESSAGE = {
  * Operations for authenticating ownership of a public key with challenges
  */
 export const ChallengeModule = {
-  /**
-	 * Returns a random nonce
-	 * @returns nonce
-	 */
-  generateNonce(): Uint8Array {
-    // create buffer
-    const buffer = BufferUtil.createBuffer(NONCE_LENGTH)
-
-    return WebCryptoLib.getRandomValues(buffer);
-  },
-
   /**
 	 * Returns a challenge object
 	 *
@@ -72,7 +63,7 @@ export const ChallengeModule = {
       privateKey: verifier
     });
 
-    const nonce = ChallengeModule.generateNonce();
+    const nonce = CryptoModule.generateNonce();
     const nonceString = BufferUtil.BufferToString(nonce);
 
     // create challenge

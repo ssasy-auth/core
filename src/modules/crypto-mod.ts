@@ -1,5 +1,9 @@
 import { WebCryptoLib, BufferUtil } from "../utils";
-import { CRYPTO_CONFIG, IV_LENGTH } from "../config";
+import {
+  CRYPTO_CONFIG,
+  IV_LENGTH,
+  NONCE_LENGTH 
+} from "../config";
 import type {
   Ciphertext,
   SecretKey,
@@ -185,6 +189,17 @@ export const CryptoModule = {
 
     // convert array buffer to string
     return BufferUtil.BufferToString(hashBuffer);
+  },
+
+  /**
+	 * Returns a random nonce
+	 * @returns nonce
+	 */
+  generateNonce(): Uint8Array {
+    // create buffer
+    const buffer = BufferUtil.createBuffer(NONCE_LENGTH)
+
+    return WebCryptoLib.getRandomValues(buffer);
   }
 };
 

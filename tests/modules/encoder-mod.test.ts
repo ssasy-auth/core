@@ -6,7 +6,6 @@ import { BufferUtil } from "../../src/utils";
 import {
   KeyModule,
   EncoderModule,
-  ChallengeModule, 
   CryptoModule,
   CryptoChecker,
   ENCODER_ERROR_MESSAGE
@@ -169,7 +168,7 @@ describe("[EncoderModule Test Suite]", () => {
 
     before(async () => {
       // set random number
-      const nonceBufferArray = ChallengeModule.generateNonce();
+      const nonceBufferArray = CryptoModule.generateNonce();
       nonce = BufferUtil.BufferToString(nonceBufferArray);
       // set verifier's public key
       verifierPublicKey = await KeyModule.generatePublicKey({

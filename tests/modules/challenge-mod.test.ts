@@ -5,7 +5,10 @@ import { TEST_ERROR } from "../config";
 import { CHALLENGE_MAX_AGE } from "../../src/config";
 import { BufferUtil } from "../../src/utils";
 import {
-  KeyModule, CryptoModule, ChallengeModule, CHALLENGE_ERROR_MESSAGE 
+  KeyModule,
+  CryptoModule,
+  ChallengeModule,
+  CHALLENGE_ERROR_MESSAGE 
 } from "../../src/modules";
 import type { KeyPair } from "../../src/interfaces/key-interface";
 import type { Challenge } from "../../src/interfaces";
@@ -45,27 +48,9 @@ describe("[ChallengeModule Module Test Suite]", () => {
     });
 
     // generate nonce
-    validNonce = ChallengeModule.generateNonce();
+    validNonce = CryptoModule.generateNonce();
     validNonceString = BufferUtil.BufferToString(validNonce);
   })
-    
-  describe("generateNonce()", () => {
-    it("should generate a unique nonce", () => {
-      const SAMPLE_SIZE = 100;
-      const samples: any[] = [];
-      for (let i = 0; i < SAMPLE_SIZE; i++) {
-        // create nonce
-        const nonce = ChallengeModule.generateNonce();
-        // check current sample for any identical nonces
-        for (let x = 0; x < i; x++) {
-          const currNonce = samples[x] as Uint8Array;
-          expect(nonce).to.not.deep.equal(currNonce);
-        }
-        // add nonce to samples
-        samples.push(nonce)
-      }
-    });
-  });
   
   describe("generateChallenge()", () => {
     it("should return challenge with valid sender and recipient public keys", async () => {
@@ -209,7 +194,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
     
   describe("verifyChallenge()", () => {
     it("should return true if the solution is a hash of the nonce", async () => {
-      const nonce = ChallengeModule.generateNonce();
+      const nonce = CryptoModule.generateNonce();
       const nonceString = BufferUtil.BufferToString(nonce);
       const hash = await CryptoModule.hash(nonceString);
 
@@ -227,7 +212,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
       
     it("should return false if solution is wrong or invalid", async () => {
       let verified: boolean;
-      const stumpNonce = ChallengeModule.generateNonce();
+      const stumpNonce = CryptoModule.generateNonce();
       const stumpHash = await CryptoModule.hash(stumpNonce.toString());
 
       const solvedChallenge = {
