@@ -3,11 +3,134 @@ import { expect } from "chai";
 import { TEST_ERROR } from "./config";
 import { BufferUtil } from "../src/utils";
 import {
-  KeyModule, CryptoModule, EncoderModule 
+  KeyModule,
+  CryptoModule,
+  EncoderModule, 
+  ChallengeModule,
+  KeyChecker
 } from "../src/modules";
 import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
-import type { Ciphertext } from "../src/interfaces/ciphertext-interface";
-import type { KeyPair, PrivateKey } from "../src/interfaces/key-interface";
+import type {
+  Ciphertext,
+  Challenge,
+  KeyPair,
+  PrivateKey,
+  PublicKey
+} from "../src/interfaces";
+
+
+/**
+ * [START] ========================= HaCkeY Mocks of some wallet functions =========================
+ * 
+ * Before I begin, I would like to apologize for the following test suite. I am not proud of it.
+ * 
+ * Below is a hackey way to mimick the `wallet.generateChallenge()` method so that the 
+ * ciphertext can manipulate for the purpose of testing the `wallet.solveChallenge()` 
+ * and `wallet.verifyChallenge()` methods.
+ * 
+ * TODO: Need to find a better way to test this
+ */
+
+interface TestChallenge {
+  challenge: Challenge;
+  encodedChallenge: string;
+  challengeCiphertext: Ciphertext;
+  encodedChallengeCiphertext: string;
+}
+async function mockWalletGenerateChallenge(
+  verifierPrivateKey: PrivateKey, 
+  verifierPublicKey: PublicKey, 
+  claimantPublicKey: PublicKey
+): Promise<TestChallenge> {
+  // generate a challenge
+  const challenge = await ChallengeModule.generateChallenge(verifierPrivateKey, claimantPublicKey);
+  // encode the challenge
+  const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
+  // get the wallet's public key
+  const publicKey = verifierPublicKey;
+  // generate a shared key
+  const sharedKey = await KeyModule.generateSharedKey({
+    privateKey: verifierPrivateKey, publicKey: claimantPublicKey
+  });
+    
+  // encrypt the challenge with the shared key and return it
+  const challengeCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimantPublicKey);
+
+  const encodedChallengeCiphertext = await EncoderModule.encodeCiphertext(challengeCiphertext);
+
+  return {
+    challenge,
+    encodedChallenge,
+    challengeCiphertext,
+    encodedChallengeCiphertext
+  }
+}
+
+interface TestSolution {
+  solution: Challenge;
+  encodedSolution: string;
+  solutionCiphertext: Ciphertext;
+  encodedSolutionCiphertext: string;
+}
+async function mockWalletSolveSolution(
+  claimantPrivateKey: PrivateKey,
+  claimantPublicKey: PublicKey,
+  encodedCiphertextForChallenge: string
+): Promise<TestSolution>{
+  if (!encodedCiphertextForChallenge) {
+    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
+  }
+
+  // decode the ciphertext
+  const ciphertext = await EncoderModule.decodeCiphertext(encodedCiphertextForChallenge);
+
+  if (!ciphertext.data) {
+    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
+  }
+
+  if(!ciphertext.sender || !ciphertext.recipient) {
+    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
+  }
+    
+  const publicKey = claimantPublicKey;
+
+  // throw error if the ciphertext is not meant for claimant
+  const recipientMatchesWallet = await KeyChecker.isSameKey(ciphertext.recipient, publicKey);
+  if (!recipientMatchesWallet) {
+    throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
+  }
+    
+  // generate a shared key
+  const sharedKey = await KeyModule.generateSharedKey({
+    privateKey: claimantPrivateKey, publicKey: ciphertext.sender 
+  });
+    // decrypt the challenge
+  const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
+  const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
+
+  // throw error if the challenge is not meant for claimant
+  if(!await KeyChecker.isSameKey(challenge.claimant, publicKey)) {
+    throw new Error(WALLET_ERROR_MESSAGE.INVALID_CHALLENGE_ORIGIN);
+  }
+
+  // solve the challenge
+  const solution = await ChallengeModule.solveChallenge(claimantPrivateKey, challenge);
+  // encode the solved challenge
+  const encodedSolution = await EncoderModule.encodeChallenge(solution);
+  // encrypt the solved challenge with the shared key and return it
+  const solutionCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, ciphertext.sender);
+
+  const encodedSolutionCiphertext = await EncoderModule.encodeCiphertext(solutionCiphertext);
+
+  return {
+    solution,
+    encodedSolution,
+    solutionCiphertext,
+    encodedSolutionCiphertext
+  }
+}
+
+/** [END] ========================= HaCkeY Mocks of some wallet functions ========================= */
 
 describe("[Wallet Class Test Suite]", () => {
   const validPassphrase = "passphrase";
@@ -192,28 +315,46 @@ describe("[Wallet Class Test Suite]", () => {
       wallet = new Wallet(validKeyPair.private);
     })
 
-    it("should return a challenge as a ciphertext", async () => {
+    it("should return a string", async () => {
+      const result = await wallet.generateChallenge(validFriendKeyPair.public);
+      expect(result).to.be.a("string");
+    });
+
+    it("should return an encoded ciphertext of the challenge", async () => {
       const ciphertext = await wallet.generateChallenge(validFriendKeyPair.public);
-      expect(ciphertext.data).to.exist;
-      expect(ciphertext.iv).to.exist;
+      
+      const decodedCiphertext = await EncoderModule.decodeCiphertext(ciphertext);
+      expect(decodedCiphertext.data).to.exist;
+      expect(decodedCiphertext.iv).to.exist;
     });
 
     it("should set ciphertext sender to the wallet public key and recipient to the provided public key", async () => {
       const ciphertext = await wallet.generateChallenge(validFriendKeyPair.public);
-      expect(ciphertext.sender).to.deep.equal(validKeyPair.public); // wallet public key
-      expect(ciphertext.recipient).to.deep.equal(validFriendKeyPair.public);
+      
+      const decodedCiphertext = await EncoderModule.decodeCiphertext(ciphertext);
+      expect(decodedCiphertext.sender).to.deep.equal(validKeyPair.public); // wallet public key
+      expect(decodedCiphertext.recipient).to.deep.equal(validFriendKeyPair.public);
     });
   })
 
   describe("solveChallenge()", () => {
     let wallet: Wallet;
-    let friendWallet: Wallet;
-    let ciphertext: Ciphertext; // generated by friend wallet
+    let challenge: Challenge; // generated by friend wallet
+    let challengeCiphertext: Ciphertext; // generated by friend wallet
+    let encodedChallengeCiphertext: string; // generated by friend wallet
 
     beforeEach(async () => {
       wallet = new Wallet(validKeyPair.private);
-      friendWallet = new Wallet(validFriendKeyPair.private);
-      ciphertext = await friendWallet.generateChallenge(validKeyPair.public);
+
+      const mockChallenge = await mockWalletGenerateChallenge(
+        validFriendKeyPair.private,
+        validFriendKeyPair.public,
+        validKeyPair.public
+      )
+
+      challenge = mockChallenge.challenge;
+      challengeCiphertext = mockChallenge.challengeCiphertext;
+      encodedChallengeCiphertext = mockChallenge.encodedChallengeCiphertext;
     })
 
     it("should throw an error if the ciphertext is not provided", async () => {
@@ -227,11 +368,16 @@ describe("[Wallet Class Test Suite]", () => {
     })
 
     it("should throw an error if the sender or recipient is not provided in ciphertext", async () => {
-      delete ciphertext.sender;
-      delete ciphertext.recipient;
+      const mockCiphertext: Ciphertext = {
+        ...challengeCiphertext,
+        sender: undefined, // <-- should be friend public key
+        recipient: undefined // <-- should be wallet public key
+      }
+
+      const invalidEncodedCiphertext = await EncoderModule.encodeCiphertext(mockCiphertext);
       
       try {
-        await wallet.solveChallenge(ciphertext);
+        await wallet.solveChallenge(invalidEncodedCiphertext);
         expect.fail(TEST_ERROR.DID_NOT_THROW);
       } catch (e) {
         const error = e as Error;
@@ -240,10 +386,15 @@ describe("[Wallet Class Test Suite]", () => {
     })
 
     it("should throw an error if the ciphertext recipient does not match the wallet public key", async () => {
-      ciphertext.recipient = validFriendKeyPair.public;
+      const mockCiphertext: Ciphertext = {
+        ...challengeCiphertext,
+        recipient: validFriendKeyPair.public // <-- should be wallet public key
+      }
+      
+      const invalidEncodedCiphertext = await EncoderModule.encodeCiphertext(mockCiphertext);
       
       try {
-        await wallet.solveChallenge(ciphertext);
+        await wallet.solveChallenge(invalidEncodedCiphertext);
         expect.fail(TEST_ERROR.DID_NOT_THROW);
       } catch (e) {
         const error = e as Error;
@@ -251,11 +402,15 @@ describe("[Wallet Class Test Suite]", () => {
       }
     })
     
-    it("should throw an error if the challenge is not provided", async () => {
-      ciphertext.data = undefined as any;
-      
+    it("should throw an error if invalid challenge is provided", async () => {
+      const mockCiphertext: Ciphertext = {
+        ...challengeCiphertext,
+        data: "invalid" // <-- should be challenge
+      }
+
       try {
-        await wallet.solveChallenge(ciphertext);
+        const invalidEncodedCiphertext = await EncoderModule.encodeCiphertext(mockCiphertext);
+        await wallet.solveChallenge(invalidEncodedCiphertext);
         expect.fail(TEST_ERROR.DID_NOT_THROW);
       } catch (e) {
         const error = e as Error;
@@ -264,37 +419,55 @@ describe("[Wallet Class Test Suite]", () => {
     })
     
     it("should return a solved challenge as a ciphertext", async () => {
-      const solvedCiphertext = await wallet.solveChallenge(ciphertext);
-      expect(solvedCiphertext.data).to.exist;
-      expect(solvedCiphertext.iv).to.exist;
+      const solvedCiphertext = await wallet.solveChallenge(encodedChallengeCiphertext);
+      const decodedCiphertext = await EncoderModule.decodeCiphertext(solvedCiphertext);
+
+      expect(decodedCiphertext.data).to.exist;
+      expect(decodedCiphertext.iv).to.exist;
     })
 
     it("should set ciphertext sender to the claimant's public key and recipient to the verifier's public key", async () => {
-      const sharedKey = await KeyModule.generateSharedKey({
-        privateKey: validKeyPair.private, publicKey: validFriendKeyPair.public 
-      });
+      // solve challenge
+      const encodedCiphertext = await wallet.solveChallenge(encodedChallengeCiphertext);
       
-      const decryptedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
-      const challenge = await EncoderModule.decodeChallenge(decryptedChallenge);
-
-      const solvedCiphertext = await wallet.solveChallenge(ciphertext);
-      expect(solvedCiphertext.sender).to.deep.equal(challenge.claimant);
-      expect(solvedCiphertext.recipient).to.deep.equal(challenge.verifier);
+      // decode ciphertext
+      const decodedCiphertext = await EncoderModule.decodeCiphertext(encodedCiphertext);
+      expect(decodedCiphertext.sender).to.deep.equal(challenge.claimant);
+      expect(decodedCiphertext.recipient).to.deep.equal(challenge.verifier);
     })
   })
 
   describe("verifyChallenge()", () => {
-    let wallet: Wallet;
-    let friendWallet: Wallet;
-    let ciphertext: Ciphertext;
-    let solvedCiphertext: Ciphertext;
+    let wallet: Wallet; // <- verifier
+    let friendWallet: Wallet; // <- claimant
     
+    let challengeCiphertext: Ciphertext; // generated by verifier
+    let encodedChallengeCiphertext: string; // ...
+
+    let solutionCiphertext: Ciphertext; // generated by claimant
+    let encodedSolutionCiphertext: string; // ...
+
     beforeEach(async () => {
       wallet = new Wallet(validKeyPair.private);
-      friendWallet = new Wallet(validFriendKeyPair.private);
+      friendWallet = new Wallet(validFriendKeyPair.private); //
       
-      ciphertext = await wallet.generateChallenge(validFriendKeyPair.public); // generate challenge for friend
-      solvedCiphertext = await friendWallet.solveChallenge(ciphertext); // friend solves challenge
+      const mockChallenge = await mockWalletGenerateChallenge(
+        validKeyPair.private,
+        validKeyPair.public,
+        validFriendKeyPair.public
+      )
+      
+      challengeCiphertext = mockChallenge.challengeCiphertext;
+      encodedChallengeCiphertext = mockChallenge.encodedChallengeCiphertext;
+
+      const mockSolution = await mockWalletSolveSolution(
+        validFriendKeyPair.private,
+        validFriendKeyPair.public,
+        encodedChallengeCiphertext
+      )
+
+      solutionCiphertext = mockSolution.solutionCiphertext;
+      encodedSolutionCiphertext = mockSolution.encodedSolutionCiphertext;
     })
 
     it("should throw an error if the ciphertext is not provided", async () => {
@@ -308,11 +481,16 @@ describe("[Wallet Class Test Suite]", () => {
     })
 
     it("should throw an error if the sender or recipient is not provided in ciphertext", async () => {
-      delete solvedCiphertext.sender;
-      delete solvedCiphertext.recipient;
+      const mockSolutionCiphertext: Ciphertext = {
+        ...solutionCiphertext,
+        sender: undefined, // <-- should be wallet public key
+        recipient: undefined // <-- should be friend public key
+      }
+
+      const invalidEncodedSolutionCiphertext = await EncoderModule.encodeCiphertext(mockSolutionCiphertext);
 
       try {
-        await wallet.verifyChallenge(solvedCiphertext);
+        await wallet.verifyChallenge(invalidEncodedSolutionCiphertext);
         expect.fail(TEST_ERROR.DID_NOT_THROW);
       } catch (e) {
         const error = e as Error;
@@ -345,16 +523,18 @@ describe("[Wallet Class Test Suite]", () => {
     })
 
     it("should return claimant's public key if the challenge has been solved", async () => {
-      const claimantPublicKey = await wallet.verifyChallenge(solvedCiphertext);
+      const claimantPublicKey = await wallet.verifyChallenge(encodedSolutionCiphertext);
       expect(claimantPublicKey).to.deep.equal(validFriendKeyPair.public);
     })
 
     it("should return null if the challenge has not been solved", async () => {
-      const ciphertext = await wallet.generateChallenge(validFriendKeyPair.public);
-      ciphertext.sender = validFriendKeyPair.public;
-      ciphertext.recipient = validKeyPair.public;
-      
-      const claimantPublicKey = await wallet.verifyChallenge(ciphertext);
+      const mockSolutionCiphertext: Ciphertext = {
+        ...solutionCiphertext,
+        data: challengeCiphertext.data // <-- should be solution
+      }
+
+      const invalidEncodedSolutionCiphertext = await EncoderModule.encodeCiphertext(mockSolutionCiphertext);
+      const claimantPublicKey = await wallet.verifyChallenge(invalidEncodedSolutionCiphertext);
       expect(claimantPublicKey).to.be.null;
     })
   })

@@ -1,14 +1,24 @@
 import { KeyType } from "./interfaces";
 import {
-  EncoderModule, ChallengeModule, CryptoModule, KeyModule, KeyChecker 
+  EncoderModule,
+  ChallengeModule,
+  ChallengeChecker,
+  CryptoModule,
+  CryptoChecker,
+  CRYPTO_ERROR_MESSAGE,
+  KeyModule,
+  KeyChecker
 } from "./modules";
 import type {
-  Ciphertext, PrivateKey, PublicKey 
+  Ciphertext,
+  PrivateKey,
+  PublicKey 
 } from "./interfaces";
 
 export const WALLET_ERROR_MESSAGE = {
   INVALID_KEY: "The key provided is invalid or not supported by this method",
   INVALID_CONSTRUCTOR_PARAMS: "Key is missing from constructor parameters",
+  INVALID_CIPHERTEXT: "The ciphertext is invalid",
   INVALID_CIPHERTEXT_ORIGIN: "The ciphertext sender or recipient does not match the wallet's public key",
   INVALID_CHALLENGE_ORIGIN: "The challenge verifier or claimant does not match the wallet's public key",
   MISSING_KEY: "Key is missing",
@@ -122,7 +132,7 @@ export class Wallet {
 	 *
 	 * @param claimant - The public key of the claimant
 	 */
-  async generateChallenge(claimant: PublicKey): Promise<Ciphertext> {
+  async generateChallenge(claimant: PublicKey): Promise<string> {
     if(!claimant) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_KEY);
     }
@@ -141,43 +151,68 @@ export class Wallet {
     const sharedKey = await KeyModule.generateSharedKey({
       privateKey: this.privateKey, publicKey: claimant 
     });
+    
     // encrypt the challenge with the shared key and return it
-    return await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant);
+    const ciphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant);
+
+    return await EncoderModule.encodeCiphertext(ciphertext);
   }
 
   /**
 	 * Returns an encrypted challenge that has been solved
 	 *
-	 * @param ciphertext - The encrypted challenge
+	 * @param encodedChallengeCiphertext - a encoded ciphertext of a challenge
 	 */
-  async solveChallenge(ciphertext: Ciphertext): Promise<Ciphertext> {
-    if (!ciphertext) {
+  async solveChallenge(encodedChallengeCiphertext: string): Promise<string> {
+    if (!encodedChallengeCiphertext) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
     }
 
-    if (!ciphertext.data) {
-      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
+    // decode the ciphertext
+    const challengeCiphertext = await EncoderModule.decodeCiphertext(encodedChallengeCiphertext);
+
+    if(!CryptoChecker.isCiphertext(challengeCiphertext)){
+      throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT);
     }
 
-    if(!ciphertext.sender || !ciphertext.recipient) {
+    if(!challengeCiphertext.sender || !challengeCiphertext.recipient) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
     }
     
     const publicKey = await this.getPublicKey();
 
     // throw error if the ciphertext is not meant for this wallet
-    const recipientMatchesWallet = await KeyChecker.isSameKey(ciphertext.recipient, publicKey);
+    const recipientMatchesWallet = await KeyChecker.isSameKey(challengeCiphertext.recipient, publicKey);
     if (!recipientMatchesWallet) {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
     }
     
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.privateKey, publicKey: ciphertext.sender 
+      privateKey: this.privateKey, publicKey: challengeCiphertext.sender 
     });
+
     // decrypt the challenge
-    const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
+    let encodedChallenge: string;
+    
+    try {
+      encodedChallenge = await CryptoModule.decrypt(sharedKey, challengeCiphertext);
+    } catch (error) {
+
+      if((error as Error).message === CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT){
+        throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
+      }
+
+      throw error;
+    }
+    
+    // decode the challenge
     const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
+
+    // throw error if the challenge is invalid
+    if(!ChallengeChecker.isChallenge(challenge)) {
+      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
+    }
 
     // throw error if the challenge is not meant for this wallet
     if(!await KeyChecker.isSameKey(challenge.claimant, publicKey)) {
@@ -185,59 +220,84 @@ export class Wallet {
     }
 
     // solve the challenge
-    const solvedChallenge = await ChallengeModule.solveChallenge(this.privateKey, challenge);
+    const solution = await ChallengeModule.solveChallenge(this.privateKey, challenge);
+    
     // encode the solved challenge
-    const encodedSolvedChallenge = await EncoderModule.encodeChallenge(solvedChallenge);
+    const encodedSolution = await EncoderModule.encodeChallenge(solution);
+    
     // encrypt the solved challenge with the shared key and return it
-    return await CryptoModule.encrypt(sharedKey, encodedSolvedChallenge, publicKey, ciphertext.sender);
+    const solutionCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender);
+
+    return await EncoderModule.encodeCiphertext(solutionCiphertext);
   }
 
   /**
 	 * Returns claimant's public key if the challenge is solved
 	 *
-	 * @param ciphertext - The encrypted challenge
+	 * @param encodedSolutionCiphertext - a encoded ciphertext of a challenge
 	 */
-  async verifyChallenge(ciphertext: Ciphertext): Promise<PublicKey | null> {
-    if (!ciphertext) {
+  async verifyChallenge(encodedSolutionCiphertext: string): Promise<PublicKey | null> {
+    if (!encodedSolutionCiphertext) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
     }
 
-    if (!ciphertext.data) {
+    // decode the ciphertext
+    const decodedSolutionCiphertext = await EncoderModule.decodeCiphertext(encodedSolutionCiphertext);
+
+    if (!decodedSolutionCiphertext.data) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
     }
 
-    if (!ciphertext.sender || !ciphertext.recipient) {
+    if (!decodedSolutionCiphertext.sender || !decodedSolutionCiphertext.recipient) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
     }
 
     const publicKey = await this.getPublicKey();
 
     // throw error if ciphertext is not meant for this wallet
-    const recipientMatchesWallet = await KeyChecker.isSameKey(ciphertext.recipient, publicKey);
+    const recipientMatchesWallet = await KeyChecker.isSameKey(decodedSolutionCiphertext.recipient, publicKey);
     if (!recipientMatchesWallet) {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
     }
 
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.privateKey, publicKey: ciphertext.sender 
+      privateKey: this.privateKey, publicKey: decodedSolutionCiphertext.sender 
     });
 
-    // decrypt the challenge
-    const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
-    const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
+    // decrypt the solution
+    let encodedSolution: string;
+
+    try {
+      encodedSolution = await CryptoModule.decrypt(sharedKey, decodedSolutionCiphertext);
+    } catch (error) {
+
+      if((error as Error).message === CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT){
+        throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
+      }
+
+      else if ((error as Error).message === CRYPTO_ERROR_MESSAGE.WRONG_KEY) {
+        return null;
+      }
+
+      else {
+        throw error;
+      }
+    }
+    
+    const solution = await EncoderModule.decodeChallenge(encodedSolution);
     
     // throw error if the challenge is not meant for this wallet
-    const verifierMatchesWallet = await KeyChecker.isSameKey(challenge.verifier, publicKey);
+    const verifierMatchesWallet = await KeyChecker.isSameKey(solution.verifier, publicKey);
     if (!verifierMatchesWallet) {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_CHALLENGE_ORIGIN);
     }
 
     // verify the challenge
-    const verified = await ChallengeModule.verifyChallenge(this.privateKey, challenge);
+    const verified = await ChallengeModule.verifyChallenge(this.privateKey, solution);
 
     return verified
-      ? challenge.claimant
+      ? solution.claimant
       : null;
   }
 }

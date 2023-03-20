@@ -1,10 +1,19 @@
 import { WebCryptoLib, BufferUtil } from "../utils";
 import { CRYPTO_CONFIG, IV_LENGTH } from "../config";
 import type {
-  Ciphertext, SecretKey, PassKey, PublicKey, SharedKey 
+  Ciphertext,
+  SecretKey,
+  PassKey,
+  PublicKey,
+  SharedKey 
 } from "../interfaces";
 import { KeyType } from "../interfaces";
 import { KeyChecker, KeyModule } from "./key-mod";
+
+enum CryptoErrorCode {
+  OPERATION_ERROR = "OperationError", // the operation cannot be performed
+  INVALID_ACCESS_ERROR = "InvalidAccessError", // the key used is not allowed to perform the operation (e.g. wrong key type)
+}
 
 /**
  * Error messages for the crypto operations
@@ -23,7 +32,7 @@ export const CRYPTO_ERROR_MESSAGE = {
  */
 export const CryptoModule = {
   /**
-   * Returns a cipher text which is the result of encrypting the plaintext with the key.
+   * Returns a ciphertext which is the result of encrypting the plaintext with the key.
    * This operation is for **symmetric** key cryptography.
    * 
    * @param key - crypto key
@@ -133,12 +142,20 @@ export const CryptoModule = {
 
       // convert buffer to buffer view
       plaintextBuffer = new Uint8Array(buffer);
-    } catch (error) {
-      if ( (error as Error).name === "InvalidAccessError" || (error as Error).message === "Cipher job failed") {
+    } catch (e) {
+      const error = e as Error;
+
+      if(error.name === CryptoErrorCode.INVALID_ACCESS_ERROR || error.message === "Cipher job failed"){
         throw new Error(CRYPTO_ERROR_MESSAGE.WRONG_KEY);
       }
 
-      throw `Error decrypting data: ${error}`
+      else if (error.name === CryptoErrorCode.OPERATION_ERROR) {
+        throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT)
+      }
+
+      else {
+        throw error; 
+      }
     }
 
     // convert buffer to string (buffer > base64 > utf8 > string)
