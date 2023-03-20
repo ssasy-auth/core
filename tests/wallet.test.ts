@@ -6,131 +6,15 @@ import {
   KeyModule,
   CryptoModule,
   EncoderModule, 
-  ChallengeModule,
-  KeyChecker
+  ChallengeModule
 } from "../src/modules";
 import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
 import type {
   Ciphertext,
   Challenge,
   KeyPair,
-  PrivateKey,
-  PublicKey
+  PrivateKey
 } from "../src/interfaces";
-
-
-/**
- * [START] ========================= HaCkeY Mocks of some wallet functions =========================
- * 
- * Before I begin, I would like to apologize for the following test suite. I am not proud of it.
- * 
- * Below is a hackey way to mimick the `wallet.generateChallenge()` method so that the 
- * ciphertext can manipulate for the purpose of testing the `wallet.solveChallenge()` 
- * and `wallet.verifyChallenge()` methods.
- * 
- * TODO: Need to find a better way to test this
- */
-
-interface TestChallenge {
-  challenge: Challenge;
-  encodedChallenge: string;
-  challengeCiphertext: Ciphertext;
-  encodedChallengeCiphertext: string;
-}
-async function mockWalletGenerateChallenge(
-  verifierPrivateKey: PrivateKey, 
-  verifierPublicKey: PublicKey, 
-  claimantPublicKey: PublicKey
-): Promise<TestChallenge> {
-  // generate a challenge
-  const challenge = await ChallengeModule.generateChallenge(verifierPrivateKey, claimantPublicKey);
-  // encode the challenge
-  const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
-  // get the wallet's public key
-  const publicKey = verifierPublicKey;
-  // generate a shared key
-  const sharedKey = await KeyModule.generateSharedKey({
-    privateKey: verifierPrivateKey, publicKey: claimantPublicKey
-  });
-    
-  // encrypt the challenge with the shared key and return it
-  const challengeCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimantPublicKey);
-
-  const encodedChallengeCiphertext = await EncoderModule.encodeCiphertext(challengeCiphertext);
-
-  return {
-    challenge,
-    encodedChallenge,
-    challengeCiphertext,
-    encodedChallengeCiphertext
-  }
-}
-
-interface TestSolution {
-  solution: Challenge;
-  encodedSolution: string;
-  solutionCiphertext: Ciphertext;
-  encodedSolutionCiphertext: string;
-}
-async function mockWalletSolveSolution(
-  claimantPrivateKey: PrivateKey,
-  claimantPublicKey: PublicKey,
-  encodedCiphertextForChallenge: string
-): Promise<TestSolution>{
-  if (!encodedCiphertextForChallenge) {
-    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
-  }
-
-  // decode the ciphertext
-  const ciphertext = await EncoderModule.decodeCiphertext(encodedCiphertextForChallenge);
-
-  if (!ciphertext.data) {
-    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
-  }
-
-  if(!ciphertext.sender || !ciphertext.recipient) {
-    throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
-  }
-    
-  const publicKey = claimantPublicKey;
-
-  // throw error if the ciphertext is not meant for claimant
-  const recipientMatchesWallet = await KeyChecker.isSameKey(ciphertext.recipient, publicKey);
-  if (!recipientMatchesWallet) {
-    throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
-  }
-    
-  // generate a shared key
-  const sharedKey = await KeyModule.generateSharedKey({
-    privateKey: claimantPrivateKey, publicKey: ciphertext.sender 
-  });
-    // decrypt the challenge
-  const encodedChallenge = await CryptoModule.decrypt(sharedKey, ciphertext);
-  const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
-
-  // throw error if the challenge is not meant for claimant
-  if(!await KeyChecker.isSameKey(challenge.claimant, publicKey)) {
-    throw new Error(WALLET_ERROR_MESSAGE.INVALID_CHALLENGE_ORIGIN);
-  }
-
-  // solve the challenge
-  const solution = await ChallengeModule.solveChallenge(claimantPrivateKey, challenge);
-  // encode the solved challenge
-  const encodedSolution = await EncoderModule.encodeChallenge(solution);
-  // encrypt the solved challenge with the shared key and return it
-  const solutionCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, ciphertext.sender);
-
-  const encodedSolutionCiphertext = await EncoderModule.encodeCiphertext(solutionCiphertext);
-
-  return {
-    solution,
-    encodedSolution,
-    solutionCiphertext,
-    encodedSolutionCiphertext
-  }
-}
-
-/** [END] ========================= HaCkeY Mocks of some wallet functions ========================= */
 
 describe("[Wallet Class Test Suite]", () => {
   const validPassphrase = "passphrase";
@@ -342,15 +226,20 @@ describe("[Wallet Class Test Suite]", () => {
 
     beforeEach(async () => {
       wallet = new Wallet(validKeyPair.private);
+      
 
-      const mockChallenge = await mockWalletGenerateChallenge(
-        validFriendKeyPair.private,
-        validFriendKeyPair.public,
-        validKeyPair.public
-      )
+      // set challenge
+      challenge = await ChallengeModule.generateChallenge(validFriendKeyPair.private, validKeyPair.public);
 
-      challenge = mockChallenge.challenge;
-      challengeCiphertext = mockChallenge.challengeCiphertext;
+      // encode challenge
+      const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
+
+      // encrypt challenge
+      const sharedKey = await KeyModule.generateSharedKey({
+        privateKey: validFriendKeyPair.private, publicKey: validKeyPair.public
+      });
+
+      challengeCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, validFriendKeyPair.public, validKeyPair.public);
     })
 
     it("should throw an error if the ciphertext is not provided", async () => {
