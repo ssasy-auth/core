@@ -3,18 +3,9 @@
   "license": "MIT",
   "version": "1.6.5",
   "description": "a self-sovereign authentication scheme",
-  "homepage": "https://github.com/this-oliver/ssasy#readme",
-  "author": {
-    "name": "this-oliver",
-    "email": "hello@oliverrr.net"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/this-oliver/ssasy.git"
-  },
-  "bugs": {
-    "url": "https://github.com/this-oliver/ssasy/issues"
-  },
+  "author": "hello@oliverrr.net",
+  "repository": "this/oliver/ssasy",
+  "packageManager": "pnpm@7.29.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
