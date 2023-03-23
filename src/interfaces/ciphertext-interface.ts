@@ -26,5 +26,3 @@ export interface Ciphertext {
    */
   recipient?: PublicKey;
 }
-
-export type isCipherText = (ciphertext: unknown) => ciphertext is Ciphertext;

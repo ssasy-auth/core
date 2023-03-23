@@ -89,7 +89,7 @@ export const KeyModule = {
       CRYPTO_CONFIG.SYMMETRIC.algorithm,
       CRYPTO_CONFIG.SYMMETRIC.exportable,
       CRYPTO_CONFIG.SYMMETRIC.usages
-    );
+    ) as CryptoKey;
 
     return {
       type: KeyType.SecretKey,
@@ -172,7 +172,7 @@ export const KeyModule = {
       CRYPTO_CONFIG.ASYMMETRIC.algorithm,
       CRYPTO_CONFIG.ASYMMETRIC.exportable,
       CRYPTO_CONFIG.ASYMMETRIC.usages
-    );
+    ) as CryptoKeyPair;
 
     return {
       type: KeyType.PrivateKey,

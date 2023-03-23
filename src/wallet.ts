@@ -25,7 +25,8 @@ export const WALLET_ERROR_MESSAGE = {
   MISSING_PAYLOAD: "Payload is missing",
   MISSING_CIPHERTEXT: "Ciphertext is missing",
   MISSING_CIPHERTEXT_CHALLENGE: "Ciphertext is missing challenge",
-  MISSING_CIPHERTEXT_PARTIES: "Ciphertext is missing sender or recipient"
+  MISSING_CIPHERTEXT_PARTIES: "Ciphertext is missing sender or recipient",
+  MISSING_SIGNATURE_MESSAGE: "Signature message is missing"
 }
 
 export interface ChallengeCiphertext extends Ciphertext {
@@ -153,6 +154,27 @@ export class Wallet {
     } else {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_KEY);
     }
+  }
+
+  async sign(message: string): Promise<Ciphertext> {
+
+    if(!message) {
+      throw new Error(WALLET_ERROR_MESSAGE.MISSING_SIGNATURE_MESSAGE);
+    }
+
+    return await CryptoModule.sign(this.privateKey, message);
+  }
+
+  async verify(ciphertext: Ciphertext): Promise<boolean> {
+    if(!ciphertext) {
+      throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
+    }
+
+    if(!CryptoChecker.isCiphertext(ciphertext)) {
+      throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT);
+    }
+
+    return await CryptoModule.verify(this.privateKey, ciphertext);
   }
 
   /**

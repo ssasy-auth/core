@@ -8,6 +8,7 @@ import type {
   Ciphertext,
   SecretKey,
   PassKey,
+  PrivateKey,
   PublicKey,
   SharedKey 
 } from "../interfaces";
@@ -27,6 +28,7 @@ export const CRYPTO_ERROR_MESSAGE = {
   INVALID_PLAINTEXT: "Plaintext is not a string",
   INVALID_CIPHERTEXT: "Ciphertext is not valid Ciphertext object",
   INVALID_HASH_STRING: "Input is not a valid string",
+  INVALID_SIGNATURE_KEY: "Key is not a private key (ECDH)",
   WRONG_KEY: "The key provided does not match the key used to obfuscate the data",
   MISSING_PASSPHRASE_SALT: "Passphrase salt is missing from ciphertext"
 }
@@ -168,6 +170,61 @@ export const CryptoModule = {
   },
 
   /**
+   * Takes a message and a private key and returns a signature. Since the webcrypto API 
+   * does not support signing with an ECDH key, we use the following workaround:
+   * - generate a shared key from the private key and the public key
+   * - encrypt the message with the shared key
+   * - the signature is the encrypted message
+   * 
+   * @param privateKey - private key
+   * @param message - message to sign
+   * @returns ciphertext (signature)
+   */
+  async sign(privateKey: PrivateKey, message: string): Promise<Ciphertext> {
+
+    if(!KeyChecker.isAsymmetricKey(privateKey) || privateKey.type !== KeyType.PrivateKey) {
+      throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SIGNATURE_KEY);
+    }
+
+    // extract shared key from private key
+    const publicKey = await KeyModule.generatePublicKey({
+      privateKey: privateKey 
+    });
+    const sharedKey = await KeyModule.generateSharedKey({
+      privateKey: privateKey,
+      publicKey: publicKey
+    });
+    
+    // return encrypted message
+    return await this.encrypt(sharedKey, message);
+  },
+
+  /**
+   * Takes a signature and a private key and returns true if the signature is valid.
+   * 
+   * @param privateKey - private key used to sign the message
+   * @param ciphertext - signature to verify
+   * @returns boolean
+   */
+  async verify(privateKey: PrivateKey, ciphertext: Ciphertext): Promise<boolean> {
+    // extract secret key from private key
+    const publicKey = await KeyModule.generatePublicKey({
+      privateKey: privateKey
+    });
+    const sharedKey = await KeyModule.generateSharedKey({
+      privateKey: privateKey,
+      publicKey: publicKey
+    });
+
+    try {
+      await this.decrypt(sharedKey, ciphertext);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  /**
    * Returns a hash of the data.
    * 
    * @param data - data to hash
@@ -210,49 +267,50 @@ export const CryptoChecker = {
    * @param input - input to check
    * @returns boolean
    * */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  isCiphertext(input: any): boolean {
+  isCiphertext(input: object): boolean {
     if(!input) return false;
 
     // input must be an object
     if( typeof input !== "object") return false;
 
+    const ciphertext = input as Ciphertext;
+
     // data must be present and must be a string
-    if( !input.data || typeof input.data !== "string") return false;
+    if( !ciphertext.data || typeof ciphertext.data !== "string") return false;
 
     // iv must be present and must be a string
-    if( !input.iv || typeof input.iv !== "string") return false;
+    if( !ciphertext.iv || typeof ciphertext.iv !== "string") return false;
 
     try {
       // data must be buffer-like
-      if(!BufferUtil.isBufferString(input.data)) return false;
+      if(!BufferUtil.isBufferString(ciphertext.data)) return false;
       
       // iv must be buffer-like
-      if(!BufferUtil.isBufferString(input.iv)) return false;
+      if(!BufferUtil.isBufferString(ciphertext.iv)) return false;
   
-      if(input.salt !== undefined) {
+      if(ciphertext.salt !== undefined) {
 
         // salt must be a string
-        if(typeof input.salt !== "string") return false;
+        if(typeof ciphertext.salt !== "string") return false;
 
         // salt must be buffer-like
-        if(!BufferUtil.isBufferString(input.salt)) return false;
+        if(!BufferUtil.isBufferString(ciphertext.salt)) return false;
       }
 
-      if(input.sender !== undefined) {
+      if(ciphertext.sender !== undefined) {
         // sender must be an asymmetric key
-        if(!KeyChecker.isAsymmetricKey(input.sender)) return false;
+        if(!KeyChecker.isAsymmetricKey(ciphertext.sender)) return false;
 
         // sender must be a public key
-        if((input.sender as unknown as PublicKey).type !== KeyType.PublicKey) return false;
+        if((ciphertext.sender as unknown as PublicKey).type !== KeyType.PublicKey) return false;
       }
 
-      if(input.recipient !== undefined) {
+      if(ciphertext.recipient !== undefined) {
         // recipient must be an asymmetric key
-        if(!KeyChecker.isAsymmetricKey(input.recipient)) return false;
+        if(!KeyChecker.isAsymmetricKey(ciphertext.recipient)) return false;
 
         // recipient must be a public key
-        if((input.recipient as unknown as PublicKey).type !== KeyType.PublicKey) return false;
+        if((ciphertext.recipient as unknown as PublicKey).type !== KeyType.PublicKey) return false;
       }
     } catch (error) {
       return false;

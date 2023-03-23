@@ -10,6 +10,17 @@ Building blocks refers to the operations that are used within the user authentic
 
 ### encryption and decryption
 
+### friendship bracelets - a hackey way to sign messages
+
+Digital signatures are a way for a user to verify that **they** sent a message. In an ideal world, you would use a private key to sign a message and then use the corresponding public key to verify the signature. More importantly, anyone can veryify the signature using the corresponding public key.
+
+However, in this project, signatures are only used by the creator of the signature to verify that they did indeed create the signature.
+
+Unforunately, the WebCrypto API does not support signing and verifying messages with ECDH keys, which are the keys that are used in this project.
+Instead, you need generate another set of keys using the ECDSA (elliptic curve digital signature algorithm) algorithm. This means that you need to generate two sets of keys for each user (one for encryption and one for signing). This is not ideal because it means that you need to manage two keys for each user.
+
+To overcome this, the project uses 'friendship bracelets' to sign messages. These are essentially meesages that are encrypted with the user's key pair. The content of the message is irrelevant, but it is important that the message is encrypted with the user's key pair. This means that the message can only be decrypted with the user's private key. This is a hackey way to sign messages, but it works.
+
 ### challenge-response
 
 The challenge response ritual is a three-step process that is used to verify that a claimant is who they claim to be.

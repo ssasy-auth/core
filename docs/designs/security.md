@@ -42,6 +42,8 @@ Another option would be break the key into multiple pieces and store each piece 
 
 ## new types of phishing attacks
 
+> note: this security risk is address with the help of the [friendship bracelet](./key-operations.md#friendship-bracelets---a-hackey-way-to-sign-messages)
+
 Let's assume that:
 
 - `verifier` - **example.com** is a web shop service that allows registered users to purchase items from the shops list of products.
@@ -51,7 +53,7 @@ During the login process in a legitimate service, **Alice** performs the challen
 
 This means that **Alice** can engage with an illegitimate service (one that she hasn't registered to) without ever knowing. This can lead to a number of security.
 
-### quick summary of the constraints
+### brief summary of the constraints
 
 The goal of ssasy is to provide a usable and secure user authentication experience. This comes with some constraints:
 
@@ -116,7 +118,7 @@ This solution is more user friendly and it is more secure than the previous solu
 
 #### signature
 
-A friendship bracelet needs to meet the following requirements:
+The digital signature needs to meet the following requirements:
 
 - unique to the claimant and the service
 - protected from tampering

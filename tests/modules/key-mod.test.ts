@@ -345,10 +345,6 @@ describe("[KeyModule Test Suite]", () => {
         expect(rawPublicKey.domain).to.equal(publicKey.domain);
       });
 
-      it("should return a raw key in json format if format is not specified");
-      
-      it("should return a raw key in json format if format is not specified");
-
       it("should throw an error if key is not valid", async () => {
         const key = "invalid-key" as any;
 

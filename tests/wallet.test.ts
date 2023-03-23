@@ -6,7 +6,8 @@ import {
   KeyModule,
   CryptoModule,
   EncoderModule, 
-  ChallengeModule
+  ChallengeModule,
+  CryptoChecker
 } from "../src/modules";
 import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
 import type {
@@ -18,13 +19,13 @@ import type {
 
 describe("[Wallet Class Test Suite]", () => {
   const validPassphrase = "passphrase";
-  const validKeyPair: KeyPair = {
+  const validKeyPair = {
  
   } as KeyPair;
-  const validFriendKeyPair: KeyPair = {
+  const validFriendKeyPair = {
  
   } as KeyPair;
-  const validThirdPartyKeyPair: KeyPair = {
+  const validThirdPartyKeyPair = {
  
   } as KeyPair;
 
@@ -191,6 +192,51 @@ describe("[Wallet Class Test Suite]", () => {
       expect(decrypted).to.equal(payload);
     })
   })
+
+  describe("sign()", () => {
+    let wallet: Wallet;
+
+    beforeEach(async () => {
+      wallet = new Wallet(validKeyPair.private);
+    })
+
+    it("should return a ciphertext", async () => {
+      const payload = "data";
+      const ciphertext = await wallet.sign(payload);
+      
+      expect(ciphertext).to.be.an("object");
+
+      const isCiphertext = CryptoChecker.isCiphertext(ciphertext);
+      expect(isCiphertext).to.be.true;
+    });
+
+    it("should create signature based on wallet private key", async () => {
+      const payload = "data";
+      const ciphertext = await wallet.sign(payload);
+      const isValid = await CryptoModule.verify(validKeyPair.private, ciphertext);
+      expect(isValid).to.be.true;
+    });
+  });
+
+  describe("verify()", () => {
+    it("should return true if signature is valid", async () => {
+      const wallet = new Wallet(validKeyPair.private);
+      const payload = "data";
+      const ciphertext = await wallet.sign(payload);
+      const isValid = await wallet.verify(ciphertext);
+      expect(isValid).to.be.true;
+    });
+
+    it("should return false if signature is invalid", async () => {
+      const friendWallet = new Wallet(validFriendKeyPair.private);
+      const payload = "data";
+      const ciphertext = await friendWallet.sign(payload);
+      
+      const wallet = new Wallet(validKeyPair.private);
+      const isValid = await wallet.verify(ciphertext);
+      expect(isValid).to.be.false;
+    });
+  });
 
   describe("generateChallenge()", () => {
     let wallet: Wallet;
@@ -394,4 +440,4 @@ describe("[Wallet Class Test Suite]", () => {
       expect(claimantPublicKey).to.be.null;
     })
   })
-})
+});

@@ -3,10 +3,16 @@
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import {
-  KeyModule, CryptoModule, CryptoChecker, CRYPTO_ERROR_MESSAGE
+  KeyModule,
+  CryptoModule,
+  CryptoChecker,
+  CRYPTO_ERROR_MESSAGE
 } from "../../src/modules";
 import type {
-  Ciphertext, PassKey, SecretKey 
+  Ciphertext,
+  PassKey,
+  PrivateKey,
+  SecretKey 
 } from "../../src/interfaces";
 import { BufferUtil } from "../../src/utils";
 import { IV_LENGTH, SALT_LENGTH } from "../../src/config"
@@ -283,6 +289,79 @@ describe("[CryptoModule Test Suite]", () => {
         }
       });
     });
+
+    describe("sign()", () => {
+      let privateKey: PrivateKey;
+
+      before(async () => {
+        privateKey = await KeyModule.generatePrivateKey();
+      });
+
+      it("should return a signature object", async () => {
+        const signature = await CryptoModule.sign(privateKey, validPlaintext);
+        
+        expect(signature).to.be.an("object");
+      });
+
+      it("should throw an error if key is not a private key", async () => {
+
+        const publicKey = await KeyModule.generatePublicKey({
+          privateKey 
+        });
+        
+        try {
+          await CryptoModule.sign(publicKey as any, validPlaintext);
+          expect.fail(TEST_ERROR.DID_NOT_THROW);
+        } catch (e) {
+          const error: Error = e as Error;
+          expect(error.message).to.equal(CRYPTO_ERROR_MESSAGE.INVALID_SIGNATURE_KEY);
+        }
+
+        try {
+          await CryptoModule.sign(validKey as any, validPlaintext);
+          expect.fail(TEST_ERROR.DID_NOT_THROW);
+        } catch (e) {
+          const error: Error = e as Error;
+          expect(error.message).to.equal(CRYPTO_ERROR_MESSAGE.INVALID_SIGNATURE_KEY);
+        }
+
+        try {
+          await CryptoModule.sign(validPassKey as any, validPlaintext);
+          expect.fail(TEST_ERROR.DID_NOT_THROW);
+        } catch (e) {
+          const error: Error = e as Error;
+          expect(error.message).to.equal(CRYPTO_ERROR_MESSAGE.INVALID_SIGNATURE_KEY);
+        }
+      });
+    });
+
+    describe("verify()", () => {
+      let privateKey: PrivateKey;
+      let ciphertextSignature: Ciphertext;
+
+      before(async () => {
+        privateKey = await KeyModule.generatePrivateKey();
+
+        ciphertextSignature = await CryptoModule.sign(privateKey, validPlaintext);
+      });
+
+      it("should return a boolean", async () => {
+        const result = await CryptoModule.verify(privateKey, ciphertextSignature);
+        expect(result).to.be.a("boolean");
+      });
+
+      it("should return true if signature is valid", async () => {
+        const result = await CryptoModule.verify(privateKey, ciphertextSignature);
+        expect(result).to.be.true;
+      });
+
+      it("should return false if private key does not match key that created the signature", async () => {
+        const otherPrivateKey = await KeyModule.generatePrivateKey();
+        const result = await CryptoModule.verify(otherPrivateKey, ciphertextSignature);
+
+        expect(result).to.be.false;
+      });
+    });
   
     describe("hash()", () => {
       it("should hash a string", async () => {
@@ -421,6 +500,6 @@ describe("[CryptoModule Test Suite]", () => {
         result = CryptoChecker.isCiphertext(validCiphertext);
         expect(result).to.be.true;
       });
-    })
+    });
   });
 });
