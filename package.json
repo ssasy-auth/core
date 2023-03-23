@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "description": "a self-sovereign authentication scheme",
   "homepage": "https://github.com/this-oliver/ssasy#readme",
   "author": {
@@ -39,7 +39,7 @@
     "chai": "^4.3.7",
     "eslint": "^8.34.0",
     "eslint-plugin-mocha": "^10.1.0",
-    "fist-bump": "^1.1.0",
+    "fist-bump": "^1.2.3",
     "lint-staged": "^13.1.2",
     "mocha": "^10.2.0",
     "simple-git-hooks": "^2.8.1",
