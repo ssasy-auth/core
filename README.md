@@ -1,10 +1,6 @@
-# **_SSASy_**
+# SSASy
 
-> To be sovereign is to have supreme power and to be free from external control or influence ([Merriam-Webster](https://www.merriam-webster.com/dictionary/sovereign)).
-
-SSASy is a **self-sovereign authentication scheme** that enables users to authenticate themselves in usable, secure and decentralized manner without without relying on a third party (e.g. Google, Microsoft, Facebook, Twitter). The scheme is based on two main concepts: (1) [Public Key Encryption](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/diffie-hellman.pdf) by Diffie and Hellman and (2) the [Self-Sovereign Identity](http://www.lifewithalacrity.com/2016/04/the-path-to-self-soverereign-identity.html) by Chirstopher Allen.
-
----
+SSASy is a **self-sovereign authentication scheme** that enables users to authenticate themselves in usable, secure and decentralized manner without without relying on a third party (e.g. Google, Microsoft, Facebook, Twitter).
 
 ## Features
 
@@ -12,6 +8,21 @@ SSASy is a **self-sovereign authentication scheme** that enables users to authen
 - [x] Export and Import keys
 - [x] Encrypt and decrypt data
 - [x] Prove ownership of private key
+
+## Why use SSASy?
+
+> To be sovereign is to have supreme power and to be free from external control or influence.
+
+`Self-sovereign authentication schemes` reduce the number of security risks that are associated with user authentication for two stakeholders:
+
+- `user` - the person that needs to register and login into one or more services
+- `service` - (a.k.a the `verifier`) the website or platform that needs to verify the identity of the user before granting access to a resource
+
+With the help of `cryptography`, services no longer need to store user credentials in a database. This also means less risk of data breaches and less risk of user credentials being stolen. On the other hand, users no longer need to remember complex and hard-to-guess passwords for each service they use. Instead, they can rely on public key cryptography to prove their identity which is much more secure and convenient.
+
+To find out more about SSASy, navigate to the [docs](docs/concepts/introduction.md) for a more detailed explanation.
+
+## Usage
 
 ### Generate cryptographic keys
 
@@ -171,9 +182,9 @@ console.log(isValid);
 //}
 ```
 
-## Documentation
+## Contributing
 
-To find out more about SSASy, start by checking out the [docs](./docs/introduction.md).
+Feel like contributing? Great! Please read the [contribution doc](/docs/contributing.md) for more information.
 
 ## License
 

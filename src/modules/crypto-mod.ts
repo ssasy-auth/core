@@ -57,7 +57,7 @@ export const CryptoModule = {
 
     // generate passkey if key is a passphrase
     if(typeof key === "string") {
-      key =await KeyModule.generatePassKey({
+      key = await KeyModule.generatePassKey({
         passphrase: key 
       });
     }
