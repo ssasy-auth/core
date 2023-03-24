@@ -82,9 +82,6 @@ describe("[Wallet Class Test Suite]", () => {
       const wallet = new Wallet(validKeyPair.private);
       expect(wallet).to.be.instanceOf(Wallet);
     })
-
-    // Don't know how to test this
-    it("should not expose private key")
   })
 
   describe("encrypt()", () => {
@@ -399,8 +396,10 @@ describe("[Wallet Class Test Suite]", () => {
 
       // mimick login
       const thirdPartyWallet = new Wallet(validThirdPartyKeyPair.private);
-      const thirdPartyChallengeCiphertext = await thirdPartyWallet.generateChallenge(validKeyPair.public);
-      thirdPartyChallengeCiphertext.signature = solutionCiphertext.signature;
+      const thirdPartyChallengeCiphertext = {
+        ...await thirdPartyWallet.generateChallenge(validKeyPair.public),
+        signature: solutionCiphertext.signature
+      };
 
       try {
         await wallet.solveChallenge(thirdPartyChallengeCiphertext, {

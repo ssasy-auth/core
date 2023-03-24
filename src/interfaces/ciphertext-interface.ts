@@ -7,17 +7,17 @@ export interface StandardCiphertext {
   /**
    * Encrypted data
    */
-  data: string;
+  readonly data: string;
   
   /**
    * Initialization vector buffer used to encrypt the data. (note: base64 encoded)
    */
-  iv: string;
+  readonly iv: string;
 
   /**
    * Salt buffer used to build passkey. (note: base64 encoded)
    */
-  salt?: string;
+  readonly salt?: string;
 }
 
 /**
@@ -39,7 +39,7 @@ export interface AdvancedCiphertext extends StandardCiphertext {
   /**
    * The signature of the ciphertext
    */
-  signature?: StandardCiphertext;
+  readonly signature?: StandardCiphertext;
 }
 
 /**

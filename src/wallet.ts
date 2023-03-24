@@ -69,13 +69,13 @@ function processChallengeCiphertext(ciphertext: unknown): AdvancedChallengeCiphe
  * @param {PrivateKey} privateKey - The private key of the wallet
  */
 export class Wallet {
-  private privateKey: PrivateKey;
-
   /**
    * Creates a new wallet
    * @param privateKey - The private key of the wallet
    */
   constructor(privateKey: PrivateKey) {
+    const key: PrivateKey = privateKey;
+
     if(!privateKey) {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_CONSTRUCTOR_PARAMS);
     }
@@ -84,8 +84,13 @@ export class Wallet {
       throw new Error(WALLET_ERROR_MESSAGE.INVALID_KEY);
     }
 
-    this.privateKey = privateKey;
+    this.getPrivateKey = () => key;
   }
+
+  /**
+   * Returns the private key of the wallet.
+   */
+  private getPrivateKey: () => PrivateKey;
 
   /**
    * Returns the public key of the wallet.
@@ -94,7 +99,7 @@ export class Wallet {
    */
   async getPublicKey(): Promise<PublicKey> {
     return KeyModule.generatePublicKey({
-      privateKey: this.privateKey 
+      privateKey: this.getPrivateKey()
     });
   }
 
@@ -124,7 +129,7 @@ export class Wallet {
 
       const publicKey = await this.getPublicKey();
       const sharedKey = await KeyModule.generateSharedKey({
-        privateKey: this.privateKey, publicKey: key 
+        privateKey: this.getPrivateKey(), publicKey: key 
       });
       return await CryptoModule.encrypt(sharedKey, payload, publicKey, key);
     } 
@@ -157,7 +162,7 @@ export class Wallet {
     } else if (KeyChecker.isAsymmetricKey(key) && key.type === KeyType.PublicKey) {
       
       const sharedKey = await KeyModule.generateSharedKey({
-        privateKey: this.privateKey, publicKey: key 
+        privateKey: this.getPrivateKey(), publicKey: key 
       });
       return await CryptoModule.decrypt(sharedKey, ciphertext);
 
@@ -173,7 +178,7 @@ export class Wallet {
    * @returns ciphertext signature
    */
   async sign(message: string): Promise<StandardCiphertext> {
-    return await CryptoModule.sign(this.privateKey, message);
+    return await CryptoModule.sign(this.getPrivateKey(), message);
   }
 
   /**
@@ -192,7 +197,7 @@ export class Wallet {
     }
 
     try {
-      return await CryptoModule.verify(this.privateKey, ciphertext);
+      return await CryptoModule.verify(this.getPrivateKey(), ciphertext);
     } catch (error) {
       return null;
     }
@@ -213,14 +218,14 @@ export class Wallet {
     }
 
     // generate a challenge
-    const challenge = await ChallengeModule.generateChallenge(this.privateKey, claimant);
+    const challenge = await ChallengeModule.generateChallenge(this.getPrivateKey(), claimant);
     // encode the challenge
     const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
     // get the wallet's public key
     const publicKey = await this.getPublicKey();
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.privateKey, publicKey: claimant 
+      privateKey: this.getPrivateKey(), publicKey: claimant 
     });
     
     // encrypt the challenge with the shared key and return it
@@ -247,7 +252,7 @@ export class Wallet {
     
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.privateKey, publicKey: challengeCiphertext.sender 
+      privateKey: this.getPrivateKey(), publicKey: challengeCiphertext.sender 
     });
 
     // decrypt the challenge
@@ -296,7 +301,7 @@ export class Wallet {
       }
 
       // throw error if the solution is not meant for this wallet
-      const matchesWallet = await KeyChecker.isSameKey(solution.claimant, this.privateKey);
+      const matchesWallet = await KeyChecker.isSameKey(solution.claimant, this.getPrivateKey());
       const matechesVerifier = await KeyChecker.isSameKey(solution.verifier, challengeCiphertext.sender);
 
       if (!matchesWallet || !matechesVerifier) {
@@ -315,18 +320,19 @@ export class Wallet {
     }
 
     // solve the challenge
-    const solution = await ChallengeModule.solveChallenge(this.privateKey, challenge);
+    const solution = await ChallengeModule.solveChallenge(this.getPrivateKey(), challenge);
     
     // encode the solved challenge
     const encodedSolution = await EncoderModule.encodeChallenge(solution);
 
     // encrypt the solved challenge with the shared key and return it
     const solutionCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender) as AdvancedCiphertext;
-    
-    // create a signature of the solved challenge
-    solutionCiphertext.signature = await this.sign(encodedSolution);
 
-    return solutionCiphertext;
+    return {
+      ...solutionCiphertext,
+      // create a signature of the solved challenge
+      signature: await this.sign(encodedSolution)
+    };
   }
 
   /**
@@ -347,7 +353,7 @@ export class Wallet {
 
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.privateKey, publicKey: solutionCiphertext.sender 
+      privateKey: this.getPrivateKey(), publicKey: solutionCiphertext.sender 
     });
 
     // decrypt the solution
@@ -379,7 +385,7 @@ export class Wallet {
     }
 
     // verify the challenge
-    const verified = await ChallengeModule.verifyChallenge(this.privateKey, solution);
+    const verified = await ChallengeModule.verifyChallenge(this.getPrivateKey(), solution);
 
     return verified
       ? solution.claimant

@@ -92,7 +92,7 @@ export interface BaseKey {
     /**
    * Key type
    */
-  type: KeyType;
+  readonly type: KeyType;
 
   /**
    * Key domain
@@ -122,19 +122,19 @@ export interface RawKey extends BaseKey {
    * Hash of the password used to derive the key
    * (only for PassKey)
    */
-  hash?: string;
+  readonly hash?: string;
 
   /** 
    * Salt buffer used to derive the key from a password (note: base64 encoded)
    * (only for PassKey)
    */
-  salt?: string;
+  readonly salt?: string;
 
   /**
    * Number of iterations used to derive the key from a password
    * (only for PassKey)
    */
-  iterations?: number;
+  readonly iterations?: number;
 }
 
 /**

@@ -8,29 +8,28 @@ export interface Challenge {
   /**
    * A random nonce. (note: base64 encoded)
    */
-  nonce: string;
+  readonly nonce: string;
 
   /**
    * A digest of the nonce
    * 
-   * TODO: improve this challenge digest
    */
   solution?: string;
 
   /**
    * The timestamp of the challenge
    */
-  timestamp: number;
+  readonly timestamp: number;
 
   /**
    * The public key of the user that created the challenge
    */
-  verifier: PublicKey;
+  readonly verifier: PublicKey;
 
   /**
    * The public key of the user that will solve the challenge
    * */
-  claimant: PublicKey;
+  readonly claimant: PublicKey;
 }
 
 /**

@@ -238,10 +238,10 @@ describe("[EncoderModule Test Suite]", () => {
 
         try {
           challengeCopy = {
-            ...challenge 
+            ...challenge,
+            // empty nonce not allowed
+            nonce: BufferUtil.BufferToString(new Uint8Array(0))
           };
-          // empty nonce not allowed
-          challengeCopy.nonce = BufferUtil.BufferToString(new Uint8Array(0))
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
@@ -251,9 +251,9 @@ describe("[EncoderModule Test Suite]", () => {
 
         try {
           challengeCopy = {
-            ...challenge 
+            ...challenge,
+            timestamp: "invalid timestamp" as any
           };
-          challengeCopy.timestamp = "invalid timestamp" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
@@ -263,9 +263,9 @@ describe("[EncoderModule Test Suite]", () => {
 
         try {
           challengeCopy = {
-            ...challenge 
+            ...challenge,
+            timestamp: "invalid timestamp" as any
           };
-          challengeCopy.timestamp = "invalid timestamp" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {
@@ -275,9 +275,9 @@ describe("[EncoderModule Test Suite]", () => {
 
         try {
           challengeCopy = {
-            ...challenge 
+            ...challenge,
+            claimant: "invalid claimant" as any
           };
-          challengeCopy.claimant = "invalid claimant" as any;
           await EncoderModule.encodeChallenge(challengeCopy);
           expect.fail(TEST_ERROR.DID_NOT_THROW)
         } catch (e) {

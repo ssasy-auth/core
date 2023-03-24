@@ -1,7 +1,7 @@
 {
   "name": "@this-oliver/ssasy",
   "license": "MIT",
-  "version": "1.8.0",
+  "version": "1.8.2",
   "description": "a self-sovereign authentication scheme",
   "author": "hello@oliverrr.net",
   "repository": "this/oliver/ssasy",
