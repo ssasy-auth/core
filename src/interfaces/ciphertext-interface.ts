@@ -1,6 +1,9 @@
 import type { PublicKey } from "./key-interface";
 
-export interface Ciphertext {
+/**
+ * Basic ciphertext
+ */
+export interface StandardCiphertext {
   /**
    * Encrypted data
    */
@@ -15,7 +18,14 @@ export interface Ciphertext {
    * Salt buffer used to build passkey. (note: base64 encoded)
    */
   salt?: string;
+}
 
+/**
+ * Ciphertext with additional information.
+ * 
+ * The additional information is optional because it is not 
+ */
+export interface AdvancedCiphertext extends StandardCiphertext {
   /**
    * The public key of the sender
    */
@@ -25,4 +35,15 @@ export interface Ciphertext {
    * The public key of the recipient
    */
   recipient?: PublicKey;
+
+  /**
+   * The signature of the ciphertext
+   */
+  signature?: StandardCiphertext;
 }
+
+/**
+ * @interface Ciphertext
+ * @description Represents the encrypted data
+ * */
+export type Ciphertext = AdvancedCiphertext | StandardCiphertext;

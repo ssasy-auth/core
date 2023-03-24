@@ -15,7 +15,9 @@ import type {
   SharedKey,
   Challenge, 
   KeyPair,
-  Ciphertext
+  Ciphertext,
+  AdvancedCiphertext,
+  StandardCiphertext
 } from "../../src/interfaces";
 
 describe("[EncoderModule Test Suite]", () => {
@@ -359,7 +361,9 @@ describe("[EncoderModule Test Suite]", () => {
     let verifierKeyPair: KeyPair;
     let claimantKeyPair: KeyPair;
     let sharedKey: SharedKey;
-    let ciphertext: Ciphertext;
+    let ciphertexts: Ciphertext[];
+    let standardCiphertext: StandardCiphertext;
+    let advancedCiphertext: AdvancedCiphertext;
 
     before(async () => {
       // set verifier's key pair
@@ -384,19 +388,38 @@ describe("[EncoderModule Test Suite]", () => {
         publicKey: claimantKeyPair.public
       });
 
-      // set ciphertext
-      ciphertext = await CryptoModule.encrypt(
+      // set standard ciphertext
+      standardCiphertext = await CryptoModule.encrypt(
+        sharedKey,
+        plaintext
+      );
+
+      // set advanced ciphertext
+      advancedCiphertext = await CryptoModule.encrypt(
         sharedKey, 
         plaintext, 
         verifierKeyPair.public, 
         claimantKeyPair.public
       );
+
+      // set ciphertexts
+      ciphertexts = [
+        standardCiphertext,
+        advancedCiphertext
+      ];
     })
 
 
     describe("encodeCiphertext()", () => {
       it("should return a string", async () => {
-        const encodedCiphertext = await EncoderModule.encodeCiphertext(ciphertext);
+        ciphertexts.forEach(async (ciphertext) => {
+          const encodedCiphertext = await EncoderModule.encodeCiphertext(ciphertext);
+          expect(encodedCiphertext).to.be.a("string");
+        })
+      })
+
+      it("should return a string if advanced ciphertext is provided", async () => {
+        const encodedCiphertext = await EncoderModule.encodeCiphertext(advancedCiphertext);
         expect(encodedCiphertext).to.be.a("string");
       })
 
@@ -404,10 +427,18 @@ describe("[EncoderModule Test Suite]", () => {
         const invalidCiphertexts = [
           "invalid",
           {
-            ...ciphertext, data: 123
+            ...standardCiphertext, data: 123
           },
           {
-            ...ciphertext, sender: "invalid-public-key"
+            ...standardCiphertext, sender: "invalid-public-key"
+          },
+          {
+            ...advancedCiphertext, 
+            data: 123 // invalid data
+          },
+          {
+            ...advancedCiphertext, 
+            sender: "invalid-public-key" // invalid sender
           }
         ]
 
@@ -425,22 +456,39 @@ describe("[EncoderModule Test Suite]", () => {
 
     describe("decodeCiphertext()", () => {
       it("should return a ciphertext object", async () => {
-        const encodedCiphertext = await EncoderModule.encodeCiphertext(ciphertext);
-        const decodedCiphertext = await EncoderModule.decodeCiphertext(encodedCiphertext);
+        const encodedStandardCiphertext = await EncoderModule.encodeCiphertext(standardCiphertext);
+        const decodedStandardCiphertext = await EncoderModule.decodeCiphertext(encodedStandardCiphertext);
 
-        const isCiphertext = CryptoChecker.isCiphertext(decodedCiphertext);
-        expect(isCiphertext).to.be.true;
+        const isStandardCiphertext = CryptoChecker.isCiphertext(decodedStandardCiphertext);
+        expect(isStandardCiphertext).to.be.true;
+        expect(decodedStandardCiphertext.data).to.equal(standardCiphertext.data);
 
-        expect(decodedCiphertext.data).to.equal(ciphertext.data);
-        expect(decodedCiphertext.sender).to.deep.equal(ciphertext.sender);
-        expect(decodedCiphertext.recipient).to.deep.equal(ciphertext.recipient);
+        const encodedAdvancedCiphertext = await EncoderModule.encodeCiphertext(advancedCiphertext);
+        const decodedAdvancedCiphertext = await EncoderModule.decodeCiphertext(encodedAdvancedCiphertext) as AdvancedCiphertext;
+
+        const isAdvancedCiphertext = CryptoChecker.isCiphertext(decodedAdvancedCiphertext);
+        expect(isAdvancedCiphertext).to.be.true;
+
+        expect(decodedAdvancedCiphertext.sender).to.deep.equal(advancedCiphertext.sender);
+        expect(decodedAdvancedCiphertext.recipient).to.deep.equal(advancedCiphertext.recipient);
       })
+
+      it("should return a ciphertext with a isgnature if advanced ciphertext was encoded", async () => {
+        const encodedAdvancedCiphertext = await EncoderModule.encodeCiphertext(advancedCiphertext);
+        const decodedAdvancedCiphertext = await EncoderModule.decodeCiphertext(encodedAdvancedCiphertext) as AdvancedCiphertext;
+
+        expect(decodedAdvancedCiphertext.signature).to.deep.equal(advancedCiphertext.signature);
+      });
 
       it("should throw an error if invalid ciphertext string is passed", async () => {
         const invalidCiphertextStrings = [
           "invalid",
-          `${ciphertext.data}::${ciphertext.sender}::${ciphertext.recipient}`,
-          `${ciphertext.data}::${ciphertext.sender}::${ciphertext.recipient}::invalid`
+          JSON.stringify({
+            ...advancedCiphertext, data: 123
+          }),
+          JSON.stringify({
+            ...advancedCiphertext, sender: "invalid-public-key"
+          })
         ]
 
         for (const invalidCiphertextString of invalidCiphertextStrings) {

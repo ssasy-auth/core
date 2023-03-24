@@ -7,7 +7,9 @@ import type {
   RawKey,
   GenericKey,
   Challenge,
-  Ciphertext
+  Ciphertext,
+  StandardCiphertext,
+  AdvancedCiphertext
 } from "../interfaces";
 
 export const ENCODER_ERROR_MESSAGE = {
@@ -21,11 +23,13 @@ export const ENCODER_ERROR_MESSAGE = {
 
 /**
  * a ciphertext that has been encoded for transport. This means that the
- * sender and recipient public keys have been encoded to strings.
+ * sender and recipient public keys have been encoded to strings as well as
+ * the signature.
  */
-interface ShallowCiphertext extends Omit<Ciphertext, "sender" | "recipient"> {
+interface ShallowCiphertext extends Omit<Ciphertext, "sender" | "recipient" | "signature"> {
   sender?: string;
   recipient?: string;
+  signature?: string;
 }
 
 /**
@@ -187,9 +191,27 @@ export const EncoderModule = {
     }
 
     const shallowCiphertext: ShallowCiphertext = {
-      ...ciphertext,
-      sender: ciphertext.sender ? await EncoderModule.encodeKey(ciphertext.sender) : undefined,
-      recipient: ciphertext.recipient ? await EncoderModule.encodeKey(ciphertext.recipient) : undefined
+      ...(ciphertext as StandardCiphertext) 
+    };
+
+    if(
+      (ciphertext as AdvancedCiphertext).sender ||
+      (ciphertext as AdvancedCiphertext).recipient ||
+      (ciphertext as AdvancedCiphertext).signature
+    ) {
+      const advancedCiphertext = ciphertext as AdvancedCiphertext;
+
+      if(advancedCiphertext.sender) {
+        shallowCiphertext.sender = await EncoderModule.encodeKey(advancedCiphertext.sender);
+      }
+
+      if(advancedCiphertext.recipient) {
+        shallowCiphertext.recipient = await EncoderModule.encodeKey(advancedCiphertext.recipient);
+      }
+
+      if(advancedCiphertext.signature) {
+        shallowCiphertext.signature = await EncoderModule.encodeCiphertext(advancedCiphertext.signature);
+      }
     }
 
     return JSON.stringify(shallowCiphertext);
@@ -212,10 +234,28 @@ export const EncoderModule = {
       throw `Error parsing ciphertext: ${error}`
     }
 
-    return {
-      ...shallowCiphertext,
-      sender: shallowCiphertext.sender ? await EncoderModule.decodeKey(shallowCiphertext.sender) : undefined,
-      recipient: shallowCiphertext.recipient ? await EncoderModule.decodeKey(shallowCiphertext.recipient) : undefined
+    const standardCiphertext = {
+      ...shallowCiphertext
     } as Ciphertext;
+
+    if(
+      shallowCiphertext.sender ||
+      shallowCiphertext.recipient ||
+      shallowCiphertext.signature
+    ) {
+
+      try {
+        return {
+          ...shallowCiphertext,
+          sender: shallowCiphertext.sender ? await EncoderModule.decodeKey(shallowCiphertext.sender) : undefined,
+          recipient: shallowCiphertext.recipient ? await EncoderModule.decodeKey(shallowCiphertext.recipient) : undefined,
+          signature: shallowCiphertext.signature ? await EncoderModule.decodeCiphertext(shallowCiphertext.signature) : undefined
+        } as AdvancedCiphertext;
+      } catch (error) {
+        throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
+      }
+    }
+
+    return standardCiphertext;
   }
 };

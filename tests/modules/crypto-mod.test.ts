@@ -9,6 +9,8 @@ import {
   CRYPTO_ERROR_MESSAGE
 } from "../../src/modules";
 import type {
+  StandardCiphertext,
+  AdvancedCiphertext,
   Ciphertext,
   PassKey,
   PrivateKey,
@@ -150,7 +152,7 @@ describe("[CryptoModule Test Suite]", () => {
           privateKey: senderPrivateKey, publicKey: receiverPublicKey 
         });
   
-        const ciphertext = await CryptoModule.encrypt(sharedKey, validPlaintext, senderPublicKey, receiverPublicKey);
+        const ciphertext = await CryptoModule.encrypt(sharedKey, validPlaintext, senderPublicKey, receiverPublicKey) as AdvancedCiphertext;
   
         expect(ciphertext.sender).to.deep.equal(senderPublicKey);
         expect(ciphertext.recipient).to.deep.equal(receiverPublicKey);
@@ -337,7 +339,7 @@ describe("[CryptoModule Test Suite]", () => {
 
     describe("verify()", () => {
       let privateKey: PrivateKey;
-      let ciphertextSignature: Ciphertext;
+      let ciphertextSignature: AdvancedCiphertext;
 
       before(async () => {
         privateKey = await KeyModule.generatePrivateKey();
@@ -345,21 +347,16 @@ describe("[CryptoModule Test Suite]", () => {
         ciphertextSignature = await CryptoModule.sign(privateKey, validPlaintext);
       });
 
-      it("should return a boolean", async () => {
+      it("should return string if signature is valid", async () => {
         const result = await CryptoModule.verify(privateKey, ciphertextSignature);
-        expect(result).to.be.a("boolean");
-      });
-
-      it("should return true if signature is valid", async () => {
-        const result = await CryptoModule.verify(privateKey, ciphertextSignature);
-        expect(result).to.be.true;
+        expect(result).to.be.a.string;
       });
 
       it("should return false if private key does not match key that created the signature", async () => {
         const otherPrivateKey = await KeyModule.generatePrivateKey();
         const result = await CryptoModule.verify(otherPrivateKey, ciphertextSignature);
 
-        expect(result).to.be.false;
+        expect(result).to.be.null;
       });
     });
   
@@ -422,10 +419,21 @@ describe("[CryptoModule Test Suite]", () => {
 
   describe("CryptoChecker", () => {
     describe("isCiphertext()", () => {
-      let validCiphertext: Ciphertext;
+      let validCiphertext: StandardCiphertext;
+      let validPrivateKey: PrivateKey;
+      let validSignature: StandardCiphertext;
+      let validCiphertextWithSignature: AdvancedCiphertext;
 
       before(async () => {
         validCiphertext = await CryptoModule.encrypt(validKey, validPlaintext);
+
+        validPrivateKey = await KeyModule.generatePrivateKey();
+        validSignature = await CryptoModule.sign(validPrivateKey, validPlaintext);
+        
+        validCiphertextWithSignature = {
+          ...validCiphertext,
+          signature: validSignature
+        }
       });
       
       it("should return false if ciphertext does not have valid iv", () => {
@@ -487,6 +495,34 @@ describe("[CryptoModule Test Suite]", () => {
         result = CryptoChecker.isCiphertext(invalidCiphertext);
         expect(result).to.be.true;
       });
+
+      it("should return false if the ciphertext has an invalid signature", () => {
+        const ciphertextsWithInvalidSignature: Ciphertext[] = [
+          {
+            ...validCiphertextWithSignature, signature: "invalid" as any
+          },
+          {
+            ...validCiphertextWithSignature, signature: BufferUtil.createBuffer(15)
+          },
+          {
+            ...validCiphertextWithSignature, 
+            signature: {
+              data: "valid string", iv: 123 // invalid iv
+            }
+          },
+          {
+            ...validCiphertextWithSignature, 
+            signature: {
+              data: "valid string", iv: BufferUtil.createBuffer(15).toString(), salt: 123 // invalid salt
+            }
+          }
+        ];
+
+        ciphertextsWithInvalidSignature.forEach((ciphertext) => {
+          const result = CryptoChecker.isCiphertext(ciphertext);
+          expect(result).to.be.false;
+        });
+      })
       
       it("should return true if ciphertext is valid", () => {
         const ciphertextWithoutSalt = {
@@ -500,6 +536,17 @@ describe("[CryptoModule Test Suite]", () => {
         result = CryptoChecker.isCiphertext(validCiphertext);
         expect(result).to.be.true;
       });
+
+      it("should return true if the ciphertext has a valid signature", () => {
+        const result = CryptoChecker.isCiphertext(validCiphertextWithSignature);
+        expect(result).to.be.true;
+      })
+
+      it("should return true if valid signature is passed instead of ciphertext", () => {
+        const signature = validCiphertextWithSignature.signature as any;
+        const result = CryptoChecker.isCiphertext(signature);
+        expect(result).to.be.true;
+      })
     });
   });
 });
