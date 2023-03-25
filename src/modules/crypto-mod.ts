@@ -26,11 +26,10 @@ enum CryptoErrorCode {
 export const CRYPTO_ERROR_MESSAGE = {
   INVALID_SYMMETRIC_KEY: "Key is not a valid symmetric key (AES)",
   INVALID_PLAINTEXT: "Plaintext is not a string",
-  INVALID_CIPHERTEXT: "Ciphertext is not valid Ciphertext object",
+  INVALID_CIPHERTEXT: "Ciphertext is not valid",
   INVALID_HASH_STRING: "Input is not a valid string",
   INVALID_SIGNATURE_KEY: "Key is not a private key (ECDH)",
-  WRONG_KEY:
-		"The key provided does not match the key used to obfuscate the data",
+  WRONG_KEY: "The key provided does not match the key used to encrypt payload",
   MISSING_PASSPHRASE_SALT: "Passphrase salt is missing from ciphertext"
 };
 
@@ -186,11 +185,10 @@ export const CryptoModule = {
 
       if (
         error.name === CryptoErrorCode.INVALID_ACCESS_ERROR ||
+        error.name === CryptoErrorCode.OPERATION_ERROR ||
 				error.message === "Cipher job failed"
       ) {
         throw new Error(CRYPTO_ERROR_MESSAGE.WRONG_KEY);
-      } else if (error.name === CryptoErrorCode.OPERATION_ERROR) {
-        throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT);
       } else {
         throw error;
       }

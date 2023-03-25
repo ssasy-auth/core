@@ -262,7 +262,7 @@ export class Wallet {
       encodedChallenge = await CryptoModule.decrypt(sharedKey, challengeCiphertext);
     } catch (error) {
 
-      if((error as Error).message === CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT){
+      if((error as Error).message === CRYPTO_ERROR_MESSAGE.WRONG_KEY){
         throw new Error(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
       }
 
