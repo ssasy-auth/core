@@ -204,16 +204,16 @@ export const KeyModule = {
       "jwk",
       privateKey.crypto
     );
-    // delete private key properties
+
+    // delete private key property to convert to public key
     delete privateJsonWebKey.d;
 
-    // import public key from JsonWebKey (without private key properties)
     const publicKey = await WebCryptoLib.subtle.importKey(
       "jwk",
       privateJsonWebKey,
       CRYPTO_CONFIG.ASYMMETRIC.algorithm,
       CRYPTO_CONFIG.ASYMMETRIC.exportable,
-      CRYPTO_CONFIG.ASYMMETRIC.usages
+      [] // no usages for public key
     );
 
     return {
@@ -320,12 +320,16 @@ export const KeyModule = {
       rawKey.type === KeyType.PrivateKey ||
 			rawKey.type === KeyType.PublicKey
     ) {
+
+      // see -> https://github.com/this-oliver/ssasy/issues/10
+      const keyUsages: KeyUsage[] = rawKey.type === KeyType.PrivateKey ? CRYPTO_CONFIG.ASYMMETRIC.usages : [];
+
       const asymmetricKey = await WebCryptoLib.subtle.importKey(
         "jwk",
         rawKey.crypto,
         CRYPTO_CONFIG.ASYMMETRIC.algorithm,
         CRYPTO_CONFIG.ASYMMETRIC.exportable,
-        CRYPTO_CONFIG.ASYMMETRIC.usages
+        keyUsages
       );
 
       const key = {
