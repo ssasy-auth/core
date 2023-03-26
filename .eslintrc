@@ -24,10 +24,6 @@
     "object-curly-newline": [
       "error",
       {
-        "ObjectExpression": "always",
-        "ObjectPattern": {
-          "multiline": true
-        },
         "ImportDeclaration": {
           "multiline": true,
           "minProperties": 3
@@ -58,10 +54,8 @@
     "func-style": ["error", "declaration", { "allowArrowFunctions": true }],
     // new line for ternary operator
     "multiline-ternary": [ "error", "always-multiline" ],
-    // new line for operators
-    "operator-linebreak": ["error", "none", { "overrides": { "?": "before", ":": "before", "||": "after", "&&": "after" } }],
-    // new line for function arguments
-    "function-call-argument-newline": ["error", "consistent"]
+    // new line for operators (e.g. &&, ||)
+    "operator-linebreak": ["error", "none", { "overrides": { "?": "before", ":": "before", "||": "after", "&&": "after" } }]
   },
   // rules for typescript files only
   "overrides": [

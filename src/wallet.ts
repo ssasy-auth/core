@@ -208,7 +208,7 @@ export class Wallet {
 	 *
 	 * @param claimant - The public key of the claimant
 	 */
-  async generateChallenge(claimant: PublicKey): Promise<AdvancedCiphertext> {
+  async generateChallenge(claimant: PublicKey, signature?: StandardCiphertext): Promise<AdvancedCiphertext> {
     if(!claimant) {
       throw new Error(WALLET_ERROR_MESSAGE.MISSING_KEY);
     }
@@ -229,7 +229,12 @@ export class Wallet {
     });
     
     // encrypt the challenge with the shared key and return it
-    return await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant) as AdvancedCiphertext;
+    const ciphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant) as AdvancedCiphertext;
+
+    return {
+      ...ciphertext,
+      signature
+    }
   }
 
   /**

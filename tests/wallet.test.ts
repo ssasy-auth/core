@@ -254,6 +254,20 @@ describe("[Wallet Class Test Suite]", () => {
       expect(ciphertext.iv).to.exist;
     });
 
+    it("should return ciphertext with signature if signature is provided", async () => {
+      // create a challenge so that friend can solve it
+      const encryptedChallenge: AdvancedCiphertext = await wallet.generateChallenge(validFriendKeyPair.public);
+
+      // friend solves the challenge and adds their signature
+      const friendWallet: Wallet = new Wallet(validFriendKeyPair.private);
+      const solutionWithSignature: AdvancedCiphertext = await friendWallet.solveChallenge(encryptedChallenge);
+
+      // function under test
+      const newEncryptedChallenge: AdvancedCiphertext = await wallet.generateChallenge(validFriendKeyPair.public, solutionWithSignature.signature);
+
+      expect(newEncryptedChallenge.signature).to.deep.equal(solutionWithSignature.signature);
+    })
+
     it("should set ciphertext sender to the wallet public key and recipient to the provided public key", async () => {
       const ciphertext = await wallet.generateChallenge(validFriendKeyPair.public);
       
