@@ -120,6 +120,25 @@ describe("[ChallengeModule Module Test Suite]", () => {
       expect(solvedChallenge.solution).to.equal(hash);
     });
 
+    it("should **only** change challenge solution", async () => {
+      // create challenge
+      const challenge = {
+        nonce: validNonceString,
+        timestamp: Date.now(),
+        verifier: verifier.public,
+        claimant: claimant.public
+      } as Challenge;
+
+      // solve challenge
+      const solution = await ChallengeModule.solveChallenge(claimant.private, challenge);
+
+      // compare solution propeerites
+      expect(solution.nonce).to.equal(challenge.nonce);
+      expect(solution.timestamp).to.equal(challenge.timestamp);
+      expect(solution.verifier).to.deep.equal(challenge.verifier);
+      expect(solution.claimant).to.deep.equal(challenge.claimant);
+    });
+
     it("should throw error if claimant parameter is not a valid ECDH private key", async () => {
       const challenge = {
         nonce: validNonceString,

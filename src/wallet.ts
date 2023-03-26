@@ -284,6 +284,7 @@ export class Wallet {
         throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_SIGNATURE);
       }
 
+      // throw error if the signature is not valid
       if(!CryptoChecker.isCiphertext(challengeCiphertext.signature)) {
         throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_SIGNATURE);
       }
@@ -306,10 +307,11 @@ export class Wallet {
       }
 
       // throw error if the solution is not meant for this wallet
-      const matchesWallet = await KeyChecker.isSameKey(solution.claimant, this.getPrivateKey());
-      const matechesVerifier = await KeyChecker.isSameKey(solution.verifier, challengeCiphertext.sender);
+      const publicKey = await this.getPublicKey();
+      const matchesWallet: boolean = await KeyChecker.isSameKey(solution.claimant, publicKey);
+      const matchesVerifier: boolean = await KeyChecker.isSameKey(solution.verifier, challengeCiphertext.sender);
 
-      if (!matchesWallet || !matechesVerifier) {
+      if (matchesWallet === false || matchesVerifier === false) {
         throw new Error(WALLET_ERROR_MESSAGE.INVALID_SIGNATURE_ORIGIN);
       }
     }
@@ -325,13 +327,13 @@ export class Wallet {
     }
 
     // solve the challenge
-    const solution = await ChallengeModule.solveChallenge(this.getPrivateKey(), challenge);
+    const solution: Challenge = await ChallengeModule.solveChallenge(this.getPrivateKey(), challenge);
     
     // encode the solved challenge
-    const encodedSolution = await EncoderModule.encodeChallenge(solution);
+    const encodedSolution: string = await EncoderModule.encodeChallenge(solution);
 
     // encrypt the solved challenge with the shared key and return it
-    const solutionCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender) as AdvancedCiphertext;
+    const solutionCiphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender);
 
     return {
       ...solutionCiphertext,
