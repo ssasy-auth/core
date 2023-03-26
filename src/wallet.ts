@@ -336,11 +336,13 @@ export class Wallet {
   }
 
   /**
-	 * Returns claimant's public key if the challenge is solved
+	 * Returns an object with the claimant's public key and the signature of the solution
+   * if the challenge was solved correctly
 	 *
    * @param ciphertext - ciphertext with a challenge payload
+   * @returns `{ publicKey, signature? }`
   */
-  async verifyChallenge(ciphertext: AdvancedCiphertext): Promise<PublicKey | null> {
+  async verifyChallenge(ciphertext: AdvancedCiphertext): Promise<{ publicKey: PublicKey, signature?: StandardCiphertext } | null> {
     const solutionCiphertext = processChallengeCiphertext(ciphertext);
     
     const publicKey = await this.getPublicKey();
@@ -387,8 +389,13 @@ export class Wallet {
     // verify the challenge
     const verified = await ChallengeModule.verifyChallenge(this.getPrivateKey(), solution);
 
+    const result = {
+      publicKey: solution.claimant,
+      signature: solutionCiphertext.signature
+    }
+
     return verified
-      ? solution.claimant
+      ? result
       : null;
   }
 }

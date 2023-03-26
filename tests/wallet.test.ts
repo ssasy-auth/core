@@ -341,7 +341,7 @@ describe("[Wallet Class Test Suite]", () => {
       }
     })
 
-    it("should throw an error if the signature flag is set and the challenge ciphertext does not contain a signature", async () => {
+    it("should throw an error if signature is required and the challenge ciphertext does not contain a signature", async () => {
       try {
         await wallet.solveChallenge(challengeCiphertext, {
           requireSignature: true
@@ -353,7 +353,7 @@ describe("[Wallet Class Test Suite]", () => {
       }
     })
     
-    it("should throw an error if the challenge signature is invalid", async () => {
+    it("should throw an error if signature is required and the challenge signature is invalid", async () => {
       const ciphertextsWithInvalidSignature = [
         {
           ...challengeCiphertext, signature: "invalid"
@@ -380,7 +380,7 @@ describe("[Wallet Class Test Suite]", () => {
       }
     })
 
-    it("should throw an error if the challenge signature does not match parties", async () => {
+    it("should throw an error if signature is required and the challenge signature does not match parties", async () => {
       /**
        * scenario:
        * 
@@ -510,9 +510,30 @@ describe("[Wallet Class Test Suite]", () => {
       }
     })
 
-    it("should return claimant's public key if the challenge has been solved", async () => {
-      const claimantPublicKey = await wallet.verifyChallenge(solutionCiphertext);
-      expect(claimantPublicKey).to.deep.equal(validFriendKeyPair.public);
+    it("should return object with claimant's public key if the challenge has been solved", async () => {
+      const result = await wallet.verifyChallenge(solutionCiphertext);
+      expect(result).to.be.an("object");
+      expect(result).to.have.property("publicKey");
+      expect(result?.publicKey).to.deep.equal(validFriendKeyPair.public);
+    })
+
+    it("should return object with signature if ciphertext had a signature and the challenge has been solved", async () => {
+      expect(solutionCiphertext.signature).to.exist;
+      
+      const result = await wallet.verifyChallenge(solutionCiphertext);
+      expect(result).to.be.an("object");
+      expect(result).to.have.property("signature");
+
+      const isCiphertext = CryptoChecker.isCiphertext(result?.signature as StandardCiphertext);
+      expect(isCiphertext).to.be.true;
+    })
+
+    it("should return object with signature that is verifiable by claimant if ciphertext had a signature and the challenge has been solved", async () => {
+      expect(solutionCiphertext.signature).to.exist;
+      
+      const result = await wallet.verifyChallenge(solutionCiphertext);
+      const isValidSignature = await friendWallet.verify(result?.signature as StandardCiphertext);
+      expect(isValidSignature).to.not.be.null;
     })
 
     it("should return null if the challenge has not been solved", async () => {
