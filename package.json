@@ -1,10 +1,10 @@
 {
-  "name": "@this-oliver/ssasy",
+  "name": "@ssasy-auth/core",
   "license": "MIT",
   "version": "1.8.8",
   "description": "a self-sovereign authentication scheme",
   "author": "hello@oliverrr.net",
-  "repository": "this/oliver/ssasy",
+  "repository": "ssasy-auth/core",
   "packageManager": "pnpm@7.29.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
