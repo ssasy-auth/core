@@ -39,6 +39,11 @@ export interface JsonWebKey {
   alg?: string;
 
   /**
+   * Boolean indicating whether the key is extractable
+   */
+  ext?: boolean;
+
+  /**
    * Key identifier used to distinguish between keys
    * This property is OPTIONAL.
    */
