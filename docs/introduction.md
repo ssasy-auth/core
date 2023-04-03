@@ -1,6 +1,6 @@
 # why use self-sovereign authentication schemes?
 
-`Self-sovereign authentication schemes`, use [public key cryptography](./encryption.md) to address security risks that are associated with user authentication for two stakeholders:
+`Self-sovereign authentication schemes`, use [public key cryptography](./concepts/encryption.md) to address security risks that are associated with user authentication for two stakeholders:
 
 - `user` - (*a.k.a the `claimant`*) the person that needs to register and login into one or more services
 - `service` - (*a.k.a the `verifier`*) the website or platform that needs to verify the identity of the user before granting access to a resource
@@ -27,7 +27,7 @@ One of the most common security risks for a user is that they create simple pass
 
 Another common security risk is that users reuse the same password for multiple services. This means that if one of their services is compromised, the attacker can use the same password to login into other services.
 
-With self-sovereign authentication schemes, users are introduced to [public key encryption](./encryption.md) which allows them to use their public keys to identify themselves to services and their private keys to sign into services. This means that:
+With self-sovereign authentication schemes, users are introduced to [public key encryption](./concepts/encryption.md) which allows them to use their public keys to identify themselves to services and their private keys to sign into services. This means that:
 
 - users only have to invest effort in creating a single password that is hard-to-guess. This is beacuse the password is only used to encrypt their private key which is then used to sign into their services.
 - password reuse is no longer a problem because the user's private key is never shared with the service. This means that even if the user's service is compromised, the attacker cannot use the private key to impersonate the user.
