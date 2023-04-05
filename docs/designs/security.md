@@ -42,7 +42,7 @@ Another option would be break the key into multiple pieces and store each piece 
 
 ## new types of phishing attacks
 
-> note: this security risk is address with the help of the [friendship bracelet](./key-operations.md#friendship-bracelets---a-hackey-way-to-sign-messages)
+> note: this security risk is address with the help of the [friendship bracelet](./crypto-operations.md#friendship-bracelets---a-hackey-way-to-sign-messages)
 
 Let's assume that:
 

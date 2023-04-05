@@ -1,22 +1,20 @@
 # `ssasy` key generation
 
-## Cryptographic keys 101
-
 Cryptographic keys can be used for a number of reasons. This includes deriving other keys, encrypting and decrypting payloads, signing and verifying signatures, etc.
 
 The type of action that a key can perform is usually dependent on whether the key is `symmetric` or `asymmetric`.
 
-### Symmetric keys
+## Symmetric keys
 
 A `symmetric` key is a single key that is used for all cyrptographic operations (encryption, decryption etc.). It is also noteworthy to mention that the `symmetric` came before the `asymmetric` key.
 
-### Asymmetric key pair
+## Asymmetric key pair
 
 An `asymmetric` key pair consists of two mathemtatically related keys that perform different steps in a cryptographic operation. The two keys are usually referred to as the `public` and `private` keys because one key is made public and the other key is kept private.
 
 The way that `asymmetric` keys work is that if one key is used to encrypt a payload, the other key is used to decrypt the payload. This is also true for signing and verifying signatures.
 
-### Symmetric vs Asymmetric keys
+## Symmetric vs Asymmetric keys
 
 At a high level, `symmetric` and `asymmetric` keys tackle two different problems. The main difference is that `symmetric` keys are used to encrypt and decrypt payloads and `asymmetric` keys are used to prove 'identities' and securly exchange `symmetric` keys.
 
@@ -58,17 +56,17 @@ Some other things to note:
 | `PrivateKey` | `ecdh`    | `asymmetric` | used to derive `SharedKey`                               |
 | `PublicKey`  | `ecdh`    | `asymmetric` | used to derive `SharedKey`                               |
 
-### `SecretKey`
+### Secret Key
 
 The `SecretKey` is a `symmetric` key that is used to encrypt/decrypt messages. The key uses the [AES-256-GCM algorithm](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt#aes-gcm).
 
-### `PassKey`
+### Pass Key
 
 The `PassKey` is a `symmetric` key that is used to encrypt/decrypt messages **with a passphrase**. The key uses the [PBKDF2 algorithm](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey#pbkdf2) which derives a `SecretKey` from a passphrase. In other words: passphrase -> `PassKey` -> `SecretKey`.
 
 The `PassKey` is more user-friendly than the `SecretKey` because it allows the user to use a passphrase that is easier to remember than a 32-byte key.
 
-### `PrivateKey` and `PublicKey`
+### Private Key and Public Key
 
 The `PrivateKey` and `PublicKey` are `asymmetric` keys that are used to derive a `SharedKey` (see below). The key pair uses the [ECDH algorithm](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey#ecdh) which is a key agreement protocol that allows two parties to derive a shared secret from their `PrivateKey` and `PublicKey` respectively. It is also worth noting that the ECDH algorithm uses the `P-256` curve.
 
@@ -76,6 +74,6 @@ The ECDH algorithm was chosen over [RSA](https://developer.mozilla.org/en-US/doc
 
 Another reason for choosing the ECDH algorithm is that it is the preferred algorithm for 
 
-### `SharedKey`
+### Shared Key
 
 The `SharedKey` is a `symmetric` key that uses the [AES-256-GCM algorithm](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt#aes-gcm) to encrypt/decrypt messages. More importantly, the `SharedKey` is derived from a `PrivateKey` and `PublicKey` pair however, the keys do not need to belong to the same key pair.
