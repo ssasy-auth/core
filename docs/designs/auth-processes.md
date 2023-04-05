@@ -1,24 +1,21 @@
 # `ssasy` process view
 
-The purpose of this project is to create a usable and secure self-soveriegn user authentication system. This is acheived using two logical modules:
+The purpose of this project is to create a usable and secure self-soveriegn user authentication process that enables a verifier to verify that a user is who they claim to be. There are two main ingredients to this process:
+
+- `claimant` - the user that is claiming to have control of a public key
+- `verifier` - the user or service that is verifying that the claimant has control of a public key
+
+That being said, the process is acheived using three logical components:
 
 1. `challenge-mod.ts` - contains the logic for generating and solving challenges
 2. `crypto-mod.ts` - contains the logic for encrypting and decrypting messages and creating and verifying signatures
+3. `wallet.ts` - performs the user authentication process by abstracting the challenge and crypto modules
 
-These logical modules allow users and services to perform the following user authentication processes:
-
-1. User Registration - allows services to confirm that a user has control of a key pair and to associate a key pair with a unique identifier
-2. User Login - allows services to confirm that a user has control of a key pair associated with a unique identifier
-
-to register and login to a system without the need for a central authority. The processes also enable services to verify that a user is who they claim to be without the need for a central or federated authority.
-
-## Logical Modules
-
-The logical modules are responsible for creating and solving challenges, encrypting and decrypting messages and creating and verifying signatures.
+## Logical components
 
 ### Challenge module
 
-A challenge consists of the following properties:
+The challenge module is responsible for generating and solving challenges as part of a challenge-response protocol. In this project, a challenge consists of the following properties:
 
 - `nonce` - A cryptographically secure random number that is used to generate the challenge's solution. The nonce is only used once and is discarded after the challenge is solved to prevent replay attacks.
 - `timestamp` - The time at which the challenge was created. Challenges are only valid for a short period of time (5 minutes) to prevent replay attacks.
@@ -26,9 +23,7 @@ A challenge consists of the following properties:
 - `claimant` - The public key of the user that will solve the challenge.
 - `solution` - The hash of the challenge's nonce. The solution is used to verify that the challenge was solved correctly.
 
-It is worth noting that the challenge is not encrypted. It is just a protocol that is used during the user authentication process.
-
-At a high-level, the challenge module exposes three functions that allow users to create, solve and verify challenges.
+It is worth noting that the challenge is not encrypted. It is just a protocol that is used during the user authentication process. At a high-level, the challenge module exposes three functions that allow users to create, solve and verify challenges.
 
 The `createChallenge` function is used to create a challenge. This includes generating a cryptographically secure random number as well as a timestamp. The function also takes the public keys of the user that created the challenge and the user that will solve the challenge. The function returns a challenge object.
 
@@ -64,7 +59,47 @@ The `sign` function takes a plaintext and a private key and returns a ciphertext
 
 The `verify` function takes a ciphertext and a private key and returns the plaintext. This operation uses the shared key between the private and public key pair to decrypt the data.
 
-## User authentication processes
+### Wallet class
+
+The wallet class is responsible for exposing functions that allow users to engage in a challenge-response protocol. The wallet achieves this by combinging the challenge and crypto modules into an abstracted set of functions: `createChallenge`, `solveChallenge` and `verifyChallenge`.
+
+In order to follow along with the following paragraphs, it is best to apply the functions to an examples. That being said, let's assume that Alice, a claimant, wants to authenticate to a social media platform called Thoughts (verifier).
+
+#### Creating a challenge with `createChallenge` as the verifier
+
+The `createChallenge` function is used by the verifier to create an encrypted challenge for the claimant. The function takes the verifier's private key and the claimant's public key as arguments and then performs the following steps:
+
+1. derives the verifier's public key from the private key
+2. creates a challenge object using the verifier's public key, the claimant's public key and a nonce (cryptographically secure random number)
+3. derives a shared key from the verifier's private key and the claimant's public key
+4. encrypts the challenge object using the shared key to produce a ciphertext
+5. sets the sender property to the verifier's public key and the recipient property to the claimant's public key
+
+#### Solving a challenge with `solveChallenge` as the claimant
+
+The `solveChallenge` function is used by the claimant to decrypt the ciphertext produced in the `createChallenge` function and to solve a challenge. The function takes the claimant's private key and the challenge object as arguments and then performs the following steps:
+
+1. derives the claimant's public key from their private key
+2. checks that the ciphertext's recipient property matches the claimant's public key
+3. derives a shared key from the claimant's private key and the verifier's public key which is defined in the ciphertext's sender property
+4. decrypts the ciphertext using the shared key to produce a challenge object
+5. checks that the challenge object's claimant property matches the claimant's public key and that the challenge object's verifier property matches the ciphertext's sender property. This is to ensure the integrity of the challenge object and that the challenge object and the ciphertext are associated with the same parties
+6. checks that the challenge object has not expired
+7. solves the challenge by hashing the challenge object's nonce property and setting the solution property of the challenge object to the hash
+8. encrypts the challenge object using the shared key to produce a ciphertext
+9. sets the sender property to the claimant's public key and the recipient property to the verifier's public key
+10. produces a digital signature of the solved challenge object using the claimant's private key and sets the ciphertext's signature property
+
+#### Verifying a challenge with `verifyChallenge` as the verifier
+
+The `verifyChallenge` function is used by the verifier to verify that the claimant has solved the challenge. The function takes the verifier's private key and the ciphertext produced in the `solveChallenge` function as arguments and then performs the following steps:
+
+1. derives the verifier's public key from their private key
+2. checks that the ciphertext's recipient property matches the verifier's public key
+3. derives the shared key from the verifier's private key and the claimant's public key which is defined in the ciphertext's sender property
+4. checks that the solution's verifier property matches the verifier's public key and that the solution's claimant property matches the ciphertext's sender property. This is to ensure the integrity of the challenge object and that the challenge object and the ciphertext are associated with the same parties
+5. checks that the solution has not expired
+6. checks that the solution's solution property matches the hash of the challenge's nonce property
 
 The user authentication process ensures that a user is who they claim to be. In the context of this project, authentication is achieved by verifying that a claimant has control of a key pair that is associated with a unique identifier using a challenge-response protocol.
 
