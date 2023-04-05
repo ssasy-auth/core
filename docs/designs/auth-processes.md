@@ -101,5 +101,43 @@ The `verifyChallenge` function is used by the verifier to verify that the claima
 5. checks that the solution has not expired
 6. checks that the solution's solution property matches the hash of the challenge's nonce property
 
-The user authentication process ensures that a user is who they claim to be. In the context of this project, authentication is achieved by verifying that a claimant has control of a key pair that is associated with a unique identifier using a challenge-response protocol.
+## User authentication process
 
+There are two possible scenarios that trigger a user authentication process:
+
+1. Regsitration - The user (claimant) is registering for the first time to a service (verifier). This is important for a number of reasons, such as rationing resources, preventing fraud and other things.
+2. Login - The user (claimant) is logging in to a service (verifier) that they have already registered.
+
+### Constraints
+
+The wallet handles both scenarios, registration and login, with a challenge response protocol mentioned in the previous section however there are some slight differences. In order to understand the differences, it is worth mentioning some constraints that this project must adhere to.
+
+#### Claimants cannot store data
+
+First of all, claimants have no means of storing data apart from their private key. This means that, unlike decentralized ledger applications, claimants cannot store data on the blockchain. Similarily, claimants cannot store data on a server or cloud storage since such methodologies include additional trust assumptions and security risks.
+
+Another reason why claimants cannot store data is because this project is designed to be usable by people who may not have a lot of knowledge, experience or interest in authentication. This means that the user authentication, including key management, must be as simple as possible which would not be the case if claimants had additional responsibilities such as storing, remembering and managing data. Verifiers, on the other hand, have the means to store data which means that they can store their private key and the public keys of their users, among other things.
+
+#### Claimants are vulnerable to a new type of 'phishing attack'
+
+Not being able to store data, as a claimant, is a security vulnerability because it means that the claimant cannot keep track of all the services that they have registered with. As a consequence, this means that users can be tricked into logging in to a service that they have not registered with.
+
+Although this does not seem harmless, at first, it means that a malicious service can impersonate a legitimate service and the user would never know. This also means that users may interact with a service that they have not registered with and, as a result, they may be charged for a service that they will not receive which is a form of fraud.
+
+### Regsitration vs Login
+
+As mentioned earlier, the regsitration and login processes are similar because they both use the challenge response protocol. However, there are some differences between the two processes.
+
+A signature is just a solved challenge that is encrypted with the claimant's private key. Also, the claimant always signs the challenge object after they have solved it.
+
+Consequently, the claimant's signature allows the verifier to prove that they have registered with a claimant which is important because it means that the claimant wallet can verify that the claimant has registered with the verifier which means that they are not being 'phished' by a malicious service as described in the [previous section](#claimants-are-vulnerable-to-a-new-type-of-phishing-attack).
+
+What does this mean for the registration and login process?
+
+From a regsitration point of view, it means that the verifier should store the claimant's public key AND the claimant's signature. This is because the claimant's public key is used for authentication and the claimant's signature is used to prove to the claimant that they have registered with the verifier.
+
+From a login point of view, it means that the verifier must provide the claimant's signature along with the challenge object during the `createChallenge` function. This is because the `solveChallenge` function also accepts a `requireSignature` argument which controls three things:
+
+1. the ciphertext's signature property must be set
+2. the signature was produced by the claimant's private key
+3. the signature, which is a solved challenge, should have a verifier property that matches the verifier's public key
