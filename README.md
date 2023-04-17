@@ -20,7 +20,7 @@ SSASy is a **self-sovereign authentication scheme** that enables users to authen
 
 With the help of `cryptography`, services no longer need to store user credentials in a database. This also means less risk of data breaches and less risk of user credentials being stolen. On the other hand, users no longer need to remember complex and hard-to-guess passwords for each service they use. Instead, they can rely on public key cryptography to prove their identity which is much more secure and convenient.
 
-To find out more about SSASy, navigate to the [docs](docs/concepts/introduction.md) for a more detailed explanation.
+To find out more about SSASy, navigate to the [docs](docs/introduction.md) for a more detailed explanation.
 
 ## Usage
 

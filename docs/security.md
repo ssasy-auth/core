@@ -1,10 +1,10 @@
 # `ssasy` security risks
 
-| **vulnerability**                            | **risk**                              | **solution** |
-| -------------------------------------------- | ------------------------------------- | ------------ |
-| private key single point of failure          | key loss leads to account loss        | n/a          |
-| private key single point of failure          | key theft leads to account compromise | n/a          |
-| claimant has no recollection of interactions | phishing attacks on claimant          | n/a          |
+| **vulnerability**                            | **risk**                              | **solution**       |
+| -------------------------------------------- | ------------------------------------- | ------------------ |
+| private key single point of failure          | key loss leads to account loss        | n/a                |
+| private key single point of failure          | key theft leads to account compromise | n/a                |
+| claimant has no recollection of interactions | phishing attacks on claimant          | [digital signatures](#option-b---digital-signature) |
 
 ## single point of failure - private key
 
@@ -42,7 +42,7 @@ Another option would be break the key into multiple pieces and store each piece 
 
 ## new types of phishing attacks
 
-> note: this security risk is address with the help of the [friendship bracelet](./key-operations.md#friendship-bracelets---a-hackey-way-to-sign-messages)
+> note: this security risk is address with the help of the [friendship bracelet](./crypto-operations.md#friendship-bracelets---a-hackey-way-to-sign-messages)
 
 Let's assume that:
 
@@ -107,6 +107,8 @@ The user sets up a file with a list of public keys belonging to all the services
 - Also, if the claimant has `ssasy` installed on multiple devices, they have to keep track of all the services that they have registered with on all of their devices (preferably without cloud storage which has its own set of security risks).
 
 ### option b - 'digital signature'
+
+> This was decided to be the best solution to this problem. Find out more about the conrete implementation [here](./architecture/auth-processes.md#user-authentication-process)
 
 The user creates a 'friendship bracelet' that is unique to the claimant and the service. The bracelet is verifiable by the claimant and it is stored with the user's public key during the registration phase.
 
