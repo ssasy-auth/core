@@ -217,7 +217,7 @@ describe("[Wallet Class Test Suite]", () => {
   });
 
   describe("verify()", () => {
-    it("should return encoded challenge if signature is valid", async () => {
+    it("should return challenge string, if signature is valid", async () => {
       const wallet = new Wallet(validKeyPair.private);
       const payload = "data";
       const ciphertext: StandardCiphertext = await wallet.sign(payload);
@@ -246,13 +246,8 @@ describe("[Wallet Class Test Suite]", () => {
     it("should return an object", async () => {
       const result = await wallet.generateChallenge(validFriendKeyPair.public);
       expect(result).to.be.an("object");
-    });
-
-    it("should return an encoded ciphertext of the challenge", async () => {
-      const ciphertext = await wallet.generateChallenge(validFriendKeyPair.public);
-      
-      expect(ciphertext.data).to.exist;
-      expect(ciphertext.iv).to.exist;
+      expect(result.data).to.exist;
+      expect(result.iv).to.exist;
     });
 
     it("should return ciphertext with signature if signature is provided", async () => {
@@ -290,14 +285,14 @@ describe("[Wallet Class Test Suite]", () => {
       challenge = await ChallengeModule.generateChallenge(validFriendKeyPair.private, validKeyPair.public);
 
       // encode challenge
-      const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
+      const challengeString = await EncoderModule.encodeChallenge(challenge);
 
       // encrypt challenge
       const sharedKey = await KeyModule.generateSharedKey({
         privateKey: validFriendKeyPair.private, publicKey: validKeyPair.public
       });
 
-      challengeCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, validFriendKeyPair.public, validKeyPair.public);
+      challengeCiphertext = await CryptoModule.encrypt(sharedKey, challengeString, validFriendKeyPair.public, validKeyPair.public);
     })
 
     it("should throw an error if the ciphertext is not provided", async () => {
@@ -380,11 +375,12 @@ describe("[Wallet Class Test Suite]", () => {
       });
       const decryptedSolution = await CryptoModule.decrypt(sharedKey, solutionCiphertext)
       const solution = await EncoderModule.decodeChallenge(decryptedSolution);
-      
       const signature = solutionCiphertext.signature as StandardCiphertext;
-      const encodedChallengeSolution: string = await wallet.verify(signature) as string;
-      const challengeSolution: Challenge = await EncoderModule.decodeChallenge(encodedChallengeSolution);
       
+      const encodedChallengeSolution = await wallet.verify(signature);
+      expect(encodedChallengeSolution).to.be.a.string;
+
+      const challengeSolution: Challenge = await EncoderModule.decodeChallenge(encodedChallengeSolution as string);
       expect(challengeSolution).to.deep.equal(solution);
     });
 
@@ -417,14 +413,14 @@ describe("[Wallet Class Test Suite]", () => {
       challenge = await ChallengeModule.generateChallenge(validFriendKeyPair.private, validKeyPair.public);
 
       // encode challenge
-      const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
+      const challengeString = await EncoderModule.encodeChallenge(challenge);
 
       // encrypt challenge
       const sharedKey = await KeyModule.generateSharedKey({
         privateKey: validFriendKeyPair.private, publicKey: validKeyPair.public
       });
 
-      challengeCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, validFriendKeyPair.public, validKeyPair.public);
+      challengeCiphertext = await CryptoModule.encrypt(sharedKey, challengeString, validFriendKeyPair.public, validKeyPair.public);
     })
 
     it("should throw an error if ciphertext does not contain a signature", async () => {

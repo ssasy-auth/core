@@ -117,13 +117,13 @@ export const KeyModule = {
       throw new Error(KEY_ERROR_MESSAGE.INVALID_PASSPHRASE_SALT);
     }
 
-    // encode passphrase
-    const encodedPassphrase = BufferUtil.StringToBuffer(passphrase);
+    // convert passphrase to buffer
+    const passphraseBuffer = BufferUtil.StringToBuffer(passphrase);
 
     // prepare key material for PBKDF2
     const keyMaterial = await WebCryptoLib.subtle.importKey(
       "raw",
-      encodedPassphrase,
+      passphraseBuffer,
       CRYPTO_ALGORITHMS.PBKDF2.name,
       false,
       [ "deriveBits", "deriveKey" ]

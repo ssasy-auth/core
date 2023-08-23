@@ -95,7 +95,7 @@ export const EncoderModule = {
       throw `Error parsing key: ${error}`
     }
 
-    return await KeyModule.importKey(rawKey) as PublicKey;
+    return await KeyModule.importKey(rawKey);
   },
   /**
 	 * Returns a string representation of a challenge. 
@@ -126,9 +126,12 @@ export const EncoderModule = {
     const claimantString = await EncoderModule.encodeKey(claimant);
 
     // convert solution to string
-    const solutionString = solution ? "::" + solution : "";
+    const solutionString = solution;
 
-    return `${nonceString}::${timestampString}::${verifierString}::${claimantString}${solutionString}`;
+    // only include solution if it exists
+    return solution 
+      ? `${nonceString}::${timestampString}::${verifierString}::${claimantString}::${solutionString}`
+      : `${nonceString}::${timestampString}::${verifierString}::${claimantString}`;
   },
 
   /**
@@ -138,51 +141,54 @@ export const EncoderModule = {
 	 * @returns challenge object
 	 * */
   decodeChallenge: async (challengeString: string): Promise<Challenge> => {
-    const [ nonce, timestamp, verifier, claimant, solution ] = challengeString.split("::");
+    const [ nonceString, timestampString, verifierPublicKeyString, claimantPublicKeyString, solutionString ] = challengeString.split("::");
 
-    let nonceString: string;
-    let timestampNumber: number;
-    let verifierCryptoKey: PublicKey;
-    let claimantCryptoKey: PublicKey;
-    let solutionString: string | undefined;
+    let nonce: string;
+    let timestamp: number;
+    let verifier: PublicKey;
+    let claimant: PublicKey;
+    let solution: string | undefined;
 
     try {
       // convert nonce.toString() back to Uint8Array
-      nonceString = nonce
+      nonce = nonceString;
 
       // convert timestamp back to number
-      timestampNumber = Number(timestamp);
+      timestamp = Number(timestampString);
 
       // convert verifier's public key back to CryptoKey
-      const decodedVerifierKey = await EncoderModule.decodeKey(verifier);
+      const verifierKey = await EncoderModule.decodeKey(verifierPublicKeyString);
 
-      if(!isPublicKey(decodedVerifierKey)) {
+      if(!isPublicKey(verifierKey)) {
         throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
       }
-
-      verifierCryptoKey = decodedVerifierKey as PublicKey;
-
+      
       // convert claimant's public key back to CryptoKey
-      const decodedClaimantKey = await EncoderModule.decodeKey(claimant);
+      const claimantKey = await EncoderModule.decodeKey(claimantPublicKeyString);
 
-      if(!isPublicKey(decodedClaimantKey)) {
+      if(!isPublicKey(claimantKey)) {
         throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
       }
 
-      claimantCryptoKey = decodedClaimantKey as PublicKey;
+      // set verifier
+      verifier = verifierKey as PublicKey;
+      
+      // set claimant
+      claimant = claimantKey as PublicKey;
 
       // convert solution back to string
-      solutionString = solution ? solution : undefined;
+      solution = solutionString ? solutionString : undefined;
+
     } catch (error) {
       throw new Error(ENCODER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
     }
 
     return {
-      nonce: nonceString,
-      timestamp: timestampNumber,
-      verifier: verifierCryptoKey,
-      claimant: claimantCryptoKey,
-      solution: solutionString
+      nonce,
+      timestamp,
+      verifier,
+      claimant,
+      solution
     };
   },
   /**
@@ -242,7 +248,7 @@ export const EncoderModule = {
       throw `Error parsing ciphertext: ${error}`
     }
 
-    const standardCiphertext = {
+    const ciphertext = {
       ...shallowCiphertext
     } as Ciphertext;
 
@@ -264,6 +270,6 @@ export const EncoderModule = {
       }
     }
 
-    return standardCiphertext;
+    return ciphertext as StandardCiphertext;
   }
 };

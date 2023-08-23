@@ -226,16 +226,15 @@ export class Wallet {
     // generate a challenge
     const challenge = await ChallengeModule.generateChallenge(this.getPrivateKey(), claimant);
     // encode the challenge
-    const encodedChallenge = await EncoderModule.encodeChallenge(challenge);
+    const challengeString = await EncoderModule.encodeChallenge(challenge);
     // get the wallet's public key
     const publicKey = await this.getPublicKey();
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
-      privateKey: this.getPrivateKey(), publicKey: claimant 
+      privateKey: this.getPrivateKey(), publicKey: claimant
     });
-    
     // encrypt the challenge with the shared key and return it
-    const ciphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, encodedChallenge, publicKey, claimant) as AdvancedCiphertext;
+    const ciphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, challengeString, publicKey, claimant) as AdvancedCiphertext;
 
     return {
       ...ciphertext,
@@ -267,10 +266,10 @@ export class Wallet {
     });
 
     // decrypt the challenge
-    let encodedChallenge: string;
+    let challengeString: string;
     
     try {
-      encodedChallenge = await CryptoModule.decrypt(sharedKey, challengeCiphertext);
+      challengeString = await CryptoModule.decrypt(sharedKey, challengeCiphertext);
     } catch (error) {
 
       if((error as Error).message === CRYPTO_ERROR_MESSAGE.WRONG_KEY){
@@ -281,7 +280,7 @@ export class Wallet {
     }
     
     // decode the challenge
-    const challenge = await EncoderModule.decodeChallenge(encodedChallenge);
+    const challenge = await EncoderModule.decodeChallenge(challengeString);
 
     // throw errors if challenge contents don't match signature
     if(config?.requireSignature) {
@@ -299,14 +298,14 @@ export class Wallet {
 
       // throw error if signature does not match this wallet's private key
       try {
-        const encodedSolution: string | null = await this.verify(challengeCiphertext.signature);
+        const solutionString: string | null = await this.verify(challengeCiphertext.signature);
 
-        if(encodedSolution === null) {
+        if(solutionString === null) {
           throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_SIGNATURE);
         }
 
         // decode the solution
-        solution = await EncoderModule.decodeChallenge(encodedSolution);
+        solution = await EncoderModule.decodeChallenge(solutionString);
 
       } catch (error) {
         throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_SIGNATURE);
@@ -336,15 +335,15 @@ export class Wallet {
     const solution: Challenge = await ChallengeModule.solveChallenge(this.getPrivateKey(), challenge);
     
     // encode the solved challenge
-    const encodedSolution: string = await EncoderModule.encodeChallenge(solution);
+    const solutionString: string = await EncoderModule.encodeChallenge(solution);
 
     // encrypt the solved challenge with the shared key and return it
-    const solutionCiphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, encodedSolution, publicKey, challengeCiphertext.sender);
+    const solutionCiphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, solutionString, publicKey, challengeCiphertext.sender);
 
     return {
       ...solutionCiphertext,
       // create a signature of the solved challenge
-      signature: await this.sign(encodedSolution)
+      signature: await this.sign(solutionString)
     };
   }
 
@@ -372,10 +371,10 @@ export class Wallet {
     });
 
     // decrypt the solution
-    let encodedSolution: string;
+    let solutionString: string;
 
     try {
-      encodedSolution = await CryptoModule.decrypt(sharedKey, solutionCiphertext);
+      solutionString = await CryptoModule.decrypt(sharedKey, solutionCiphertext);
     } catch (error) {
 
       if((error as Error).message === CRYPTO_ERROR_MESSAGE.INVALID_CIPHERTEXT){
@@ -391,7 +390,7 @@ export class Wallet {
       }
     }
     
-    const solution = await EncoderModule.decodeChallenge(encodedSolution);
+    const solution = await EncoderModule.decodeChallenge(solutionString);
     
     // throw error if the challenge is not meant for this wallet
     const verifierMatchesWallet = await KeyChecker.isSameKey(solution.verifier, publicKey);
