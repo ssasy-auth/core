@@ -10,7 +10,7 @@ import { CryptoModule } from "./crypto-mod";
 import { KeyModule, KeyChecker } from "./key-mod";
 
 /**
- * Error messages for the challenge operations
+ * Error messages for the challenge operations.
  * */
 export const CHALLENGE_ERROR_MESSAGE = {
   INVALID_VERIFIER_PRIVATE_KEY: "Verifier's private key is not valid",
@@ -24,17 +24,16 @@ export const CHALLENGE_ERROR_MESSAGE = {
 };
 
 /**
- * Operations for authenticating ownership of a public key with challenges
+ * Operations for authenticating ownership of a public key with challenges.
  */
 export const ChallengeModule = {
   /**
-	 * Returns a challenge object
-	 *
-	 * The challenge is a combination of a nonce, timestamp, and the verifier's public key such that the
-	 * string format looks like this: <nonce>::<timestamp>::<verifier>
+	 * Returns a challenge. A challenge consists of a nonce, timestamp, 
+   * verifier and claimant public key.
 	 *
 	 * @param verifier - the user who created the challenge
 	 * @param claimant - the user who will solve the challenge
+   * @returns challenge
 	 */
   async generateChallenge(
     verifier: PrivateKey,
@@ -76,11 +75,13 @@ export const ChallengeModule = {
   },
 
   /**
-	 * Returns a challenge with populated solution property.
-	 * The solution should be a base64 encoded string of the hash of the nonce.
+	 * Returns a challenge-response (a.k.a solution). A solution contains the 
+   * same properties as a challenge, but also includes a solution property 
+   * which is a hash of the nonce.
 	 *
 	 * @param claimant - the user who will solve the challenge
-	 * @param challengeString - the challenge to solve
+	 * @param challenge - the challenge to solve
+   * @returns challenge response
 	 */
   async solveChallenge(
     claimant: PrivateKey,
@@ -119,21 +120,22 @@ export const ChallengeModule = {
   },
 
   /**
-	 * Returns true if the challenge was solved correctly.
-	 * To be solved correctly, the solution property of the challenge must be a hash of the nonce in base64 format.
+	 * Returns true if the challenge-response has a valid solution property. For 
+   * the solution to be valid, it must be a hash of the nonce in base64 format.
 	 *
 	 * @param verifier - the user who created the challenge
 	 * @param challenge - the challenge to verify
+   * @returns boolean
 	 */
   async verifyChallenge(
     verifier: PrivateKey,
-    challenge: Challenge
+    challengeResponse: Challenge
   ): Promise<boolean> {
     if (!verifier) {
       throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_KEY);
     }
 
-    if (!challenge) {
+    if (!challengeResponse) {
       throw new Error(CHALLENGE_ERROR_MESSAGE.MISSING_CHALLENGE);
     }
 
@@ -147,28 +149,28 @@ export const ChallengeModule = {
     const verifierPublicKey = await KeyModule.generatePublicKey({
       privateKey: verifier
     });
-    if (!(await KeyChecker.isSameKey(verifierPublicKey, challenge.verifier))) {
+    if (!(await KeyChecker.isSameKey(verifierPublicKey, challengeResponse.verifier))) {
       throw new Error(CHALLENGE_ERROR_MESSAGE.VERIFIER_MISMATCH);
     }
 
-    if (ChallengeChecker.timestampExpired(challenge.timestamp)) {
+    if (ChallengeChecker.timestampExpired(challengeResponse.timestamp)) {
       throw new Error(CHALLENGE_ERROR_MESSAGE.EXPIRED_CHALLENGE);
     }
 
-    if (!challenge.solution) {
+    if (!challengeResponse.solution) {
       return false;
     }
 
     // verify that the solution is a hash of nonce
-    const hashedNonce = await CryptoModule.hash(challenge.nonce);
+    const hashedNonce = await CryptoModule.hash(challengeResponse.nonce);
 
-    return hashedNonce === challenge.solution;
+    return hashedNonce === challengeResponse.solution;
   }
 };
 
 export const ChallengeChecker = {
   /**
-   * Returns true if the challenge is valid
+   * Returns true if the challenge is valid.
    * 
    * @param obj - the challenge to check
    * @returns boolean
@@ -204,7 +206,7 @@ export const ChallengeChecker = {
   },
 
   /**
-	 * Returns true if the challenge has expired
+	 * Returns true if the challenge's timestamp has expired.
 	 *
 	 * @param timestamp - the timestamp of the challenge
 	 * @returns boolean

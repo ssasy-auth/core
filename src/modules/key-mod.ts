@@ -22,7 +22,7 @@ export const KEY_ERROR_MESSAGE = {
   INVALID_ASYMMETRIC_KEY: "Key is not a valid asymmetric key (ECDH)",
   INVALID_PRIVATE_KEY: "Key is not a private key",
   INVALID_PUBLIC_KEY: "Key is not a public key",
-  INVALID_KEY: "Key is not a valid key",
+  INVALID_KEY: "Key is not a valid key instance",
   INVALID_RAW_KEY: "Key is not a valid raw key",
   DUPLICATE_SHARED_KEY_PARAMS:
 		"Cannot generate a shared key with the same key type"
@@ -79,8 +79,9 @@ interface GenSharedKeyParams extends GenKeyParams {
  */
 export const KeyModule = {
   /**
-	 * Returns a symmetric key using the AES-GCM cryptography algorithm.
-	 * This operation is for **symmetric** key cryptography.
+	 * Returns a symmetric key (AES-GCM)
+	 * 
+   * Note: This operation is for **symmetric** key cryptography.
 	 *
 	 * @returns secret key
 	 * */
@@ -99,8 +100,9 @@ export const KeyModule = {
   },
 
   /**
-	 * Returns a symmetric key using the AES-GCM cryptography algorithm and a passphrase.
-	 * This operation is for **symmetric** key cryptography.
+	 * Returns a symmetric key (AES-GCM) that is derived from a passphrase.
+	 * 
+   * Note: This operation is for **symmetric** key cryptography.
 	 *
 	 * @returns password key
 	 * */
@@ -162,8 +164,9 @@ export const KeyModule = {
   },
 
   /**
-	 * Returns a new private and public key pair using the ECDH cryptography algorithm.
-	 * This operation is for **asymmetric** key cryptography.
+	 * Returns a private key (ECDH).
+	 * 
+   * Note: This operation is for **asymmetric** key cryptography.
 	 *
 	 * @returns private key
 	 * */
@@ -182,9 +185,9 @@ export const KeyModule = {
   },
 
   /**
-	 * Returns a public key that is derived from the private source key. At a lower level, the public key
-	 * is actually an AES key that is derived from the private key.
-	 * This operation is for **asymmetric** key cryptography.
+	 * Returns a public key (ECDH) derived from a private key (ECDH). 
+   * 
+	 * Note: This operation is for **asymmetric** key cryptography.
 	 *
 	 * @returns public key
 	 */
@@ -224,9 +227,10 @@ export const KeyModule = {
   },
 
   /**
-	 * Returns a shared key that is derived from the private key of one party
-	 * and the public key of another party.
-	 * This operation is for **asymmetric** key cryptography.
+	 * Returns a shared key (AES-GCM) derived from a private key belonging
+   * to one party and the public key of another party.
+	 * 
+   * Note: This operation is for **asymmetric** key cryptography.
 	 *
 	 * @returns shared key
 	 */
@@ -264,8 +268,17 @@ export const KeyModule = {
   },
 
   /**
-	 * Returns a json web key representation of the key.
-	 * This operation is for **symmetric** and **asymmetric** key cryptography.
+	 * Returns a raw key object (JSON Web Key) from a key instance.
+   * 
+   * Properties like key value, key length, key type, etc. cannot be accessed
+   * in the key instance for security reasons. Converting the key instance to
+   * a raw key object allows you to access these properties. This is necessary
+   * when saving a key for long-term storage or outside of runtime memory.
+   * 
+   * Warning: The raw key object exposes sensitive information and should be 
+   * handled with care.
+	 * 
+   * Note: This operation is for **symmetric** and **asymmetric** key cryptography.
 	 *
 	 * @param key - key to export
 	 * @returns json web key
@@ -303,8 +316,14 @@ export const KeyModule = {
   },
 
   /**
-	 * Returns a key from the json web key representation.
-	 * This operation is for **symmetric** and **asymmetric** key cryptography.
+	 * Returns a key instance from the raw key object (JSON Web Key).
+   * 
+   * The WebCrypto API only accepts key instances as input for cryptographic
+   * operations like encryption, decryption, signing, etc. Converting the raw
+   * key object to a key instance allows you to use the key for cryptographic
+   * operations again.
+	 * 
+   * Note: This operation is for **symmetric** and **asymmetric** key cryptography.
 	 *
 	 * @param rawKey - json web key to import
 	 * @returns key
@@ -375,7 +394,7 @@ export const KeyModule = {
  * */
 export const KeyChecker = {
   /**
-	 * Returns true if key is a valid Key
+	 * Returns true if key is a valid.
 	 *
 	 * @param key - key to check
 	 * @returns boolean
@@ -385,28 +404,33 @@ export const KeyChecker = {
       return false;
     }
 
+    // return false if key type is not present or is not a valid key type
     if (!key.type || !Object.values(KeyType).includes(key.type)) {
-      // return false if key type is not present or is not a valid key type
       return false;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function isCryptoKey(obj: any): obj is CryptoKey {
+    /**
+     * Returns true if the object is a valid WebCrypto CryptoKey.
+     * 
+     * @param obj - object to check
+     * @returns boolean
+     */
+    function _isCryptoKey(obj: unknown): boolean {
       return (
         typeof obj === "object" &&
 				obj !== null &&
-				typeof obj.type === "string" &&
-				typeof obj.algorithm === "object" &&
-				typeof obj.extractable === "boolean" &&
-				typeof obj.usages === "object" &&
-				typeof obj.algorithm.name === "string"
+				typeof (obj as CryptoKey).type === "string" &&
+				typeof (obj as CryptoKey).algorithm === "object" &&
+				typeof (obj as CryptoKey).extractable === "boolean" &&
+				typeof (obj as CryptoKey).usages === "object" &&
+				typeof (obj as CryptoKey).algorithm.name === "string"
       );
     }
 
     // return false if key crypto is not present or is not a valid crypto key
     if (
       !key.crypto || // key.crypto is not present
-			(!isCryptoKey(key.crypto) && !KeyChecker.isRawKey(key)) // key.crypto is not a valid crypto key or raw key
+			(!_isCryptoKey(key.crypto) && !KeyChecker.isRawKey(key)) // key.crypto is not a valid crypto key or raw key
     ) {
       return false;
     }
@@ -415,7 +439,7 @@ export const KeyChecker = {
   },
 
   /**
-	 * Returns true if the key is a valid raw key
+	 * Returns true if the key is raw (JSON Web Key)
 	 *
 	 * @param key key
 	 * @returns boolean
@@ -464,7 +488,7 @@ export const KeyChecker = {
   },
 
   /**
-	 * Returns true if key is a valid symmetric key (AES)
+	 * Returns true if key is a symmetric (AES)
 	 *
 	 * @param key - key to check
 	 * @returns boolean
@@ -496,7 +520,7 @@ export const KeyChecker = {
   },
 
   /**
-	 * Returns true if key is a valid asymmetric key (ECDH)
+	 * Returns true if key is a asymmetric (ECDH)
 	 *
 	 * @param key - key to check
 	 * @returns boolean
@@ -524,7 +548,7 @@ export const KeyChecker = {
   },
 
   /**
-	 * Returns true if the public keys are the same (deep comparison)
+	 * Returns true if the keys are the same (deep comparison)
 	 *
 	 * @param key1 - key to compare
 	 * @param key2 - key to compare

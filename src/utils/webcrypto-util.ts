@@ -8,7 +8,9 @@ import { webcrypto } from "crypto";
 const isBrowser = typeof window !== "undefined";
 
 /**
- * The WebCrypto API
+ * The WebCrypto API.
+ * 
+ * References different WebCrypto APIs based on the environment (browser or Node.js).
  */
 export const WebCryptoLib: Crypto = isBrowser
   ? window.crypto

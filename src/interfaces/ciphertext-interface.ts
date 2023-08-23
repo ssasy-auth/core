@@ -27,17 +27,17 @@ export interface StandardCiphertext {
  */
 export interface AdvancedCiphertext extends StandardCiphertext {
   /**
-   * The public key of the sender
+   * Sender public key
    */
   sender?: PublicKey;
 
   /**
-   * The public key of the recipient
+   * Recipient public key
    */
   recipient?: PublicKey;
 
   /**
-   * The signature of the ciphertext
+   * Ciphertext signature
    */
   readonly signature?: StandardCiphertext;
 }

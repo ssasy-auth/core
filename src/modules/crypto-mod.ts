@@ -21,7 +21,7 @@ enum CryptoErrorCode {
 }
 
 /**
- * Error messages for the crypto operations
+ * Error messages for the crypto operations.
  */
 export const CRYPTO_ERROR_MESSAGE = {
   INVALID_SYMMETRIC_KEY: "Key is not a valid symmetric key (AES)",
@@ -34,8 +34,9 @@ export const CRYPTO_ERROR_MESSAGE = {
 };
 
 /**
- * Returns a ciphertext which is the result of encrypting the plaintext with the key.
- * This operation is for **symmetric** key cryptography.
+ * Returns encrypted data (ciphertext).
+ * 
+ * Note: This operation is for **symmetric** key cryptography.
  *
  * @param key - crypto key
  * @param plaintext - plain text to encrypt
@@ -48,7 +49,7 @@ async function encrypt(
 	plaintext: string
 ): Promise<StandardCiphertext>;
 async function encrypt(
-	key: SecretKey | PassKey | SharedKey | string,
+	key: SharedKey,
 	plaintext: string,
 	sender: PublicKey,
 	recipient: PublicKey
@@ -124,8 +125,9 @@ export const CryptoModule = {
   encrypt,
 
   /**
-	 * Returns a plain text which is the result of decrypting the cipher text with the key.
-	 * This operation is for **symmetric** key cryptography.
+   * Returns decrypted data (plaintext).
+   * 
+	 * Note: This operation is for **symmetric** key cryptography.
 	 *
 	 * @param key - crypto key
 	 * @param ciphertext - cipher text to decrypt
@@ -203,15 +205,19 @@ export const CryptoModule = {
   },
 
   /**
-	 * Takes a message and a private key and returns a signature. Since the webcrypto API
-	 * does not support signing with an ECDH key, we use the following workaround:
-	 * - generate a shared key from the private key and the public key
+   * Returns encrypted data containing a digital signature. The signatures is
+   * just the message encrypted using the signers private key. Only the signer's
+   * private key can verify the signature.
+   * 
+	 * Note: since the webcrypto API does not support signing with an ECDH key, we
+   * use the following workaround:
+	 * - generate a shared key from the signer's private and public key
 	 * - encrypt the message with the shared key
-	 * - the signature is the encrypted message
+	 * - encrypted message = signature
 	 *
 	 * @param privateKey - private key
 	 * @param message - message to sign
-	 * @returns ciphertext (signature)
+	 * @returns encrypted signature
 	 */
   async sign(
     privateKey: PrivateKey,
@@ -239,11 +245,12 @@ export const CryptoModule = {
   },
 
   /**
-	 * Takes a signature and a private key and returns true if the signature is valid.
+   * Returns decrypted signature, if the signature is valid. Only the signer's
+   * private key can verify the signature.
 	 *
 	 * @param privateKey - private key used to sign the message
 	 * @param ciphertext - signature to verify
-	 * @returns message
+	 * @returns decrypted signature
 	 */
   async verify(
     privateKey: PrivateKey,
@@ -266,18 +273,18 @@ export const CryptoModule = {
   },
 
   /**
-	 * Returns a hash of the data.
+	 * Returns a hash of the input data.
 	 *
-	 * @param data - data to hash
+	 * @param input - text input
 	 * @returns hash
 	 */
-  async hash(data: string): Promise<string> {
-    if (typeof data !== "string") {
+  async hash(input: string): Promise<string> {
+    if (typeof input !== "string") {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_HASH_STRING);
     }
 
     // convert data to buffer (string > utf8 > base64 > array buffer)
-    const utf8Encoding = BufferUtil.StringToBuffer(data, "utf8");
+    const utf8Encoding = BufferUtil.StringToBuffer(input, "utf8");
     const base64Encoding = BufferUtil.StringToBuffer(
       BufferUtil.BufferToString(utf8Encoding),
       "base64"
@@ -293,7 +300,8 @@ export const CryptoModule = {
   },
 
   /**
-	 * Returns a random nonce
+	 * Returns a random nonce in Uint8Array format.
+   * 
 	 * @returns nonce
 	 */
   generateNonce(): Uint8Array {
@@ -306,18 +314,20 @@ export const CryptoModule = {
 
 export const CryptoChecker = {
   /**
-	 * Checks if the input is a valid ciphertext.
+	 * Returns true if the object is a valid ciphertext. A valid ciphertext must
+   * have a data and iv property. If the ciphertext is an advanced ciphertext,
+   * it must also have a signature, sender and recipient property.
 	 *
-	 * @param input - input to check
+	 * @param obj - input to check
 	 * @returns boolean
 	 * */
-  isCiphertext(input: unknown): boolean {
-    if (!input) return false;
+  isCiphertext(obj: unknown): boolean {
+    if (!obj) return false;
 
     // input must be an object
-    if (typeof input !== "object") return false;
+    if (typeof obj !== "object") return false;
 
-    const standardCiphertext = input as StandardCiphertext;
+    const standardCiphertext = obj as StandardCiphertext;
 
     // data must be present and must be a string
     if (!standardCiphertext.data || typeof standardCiphertext.data !== "string")
@@ -343,11 +353,11 @@ export const CryptoChecker = {
       }
 
       if (
-        (input as AdvancedCiphertext).sender ||
-				(input as AdvancedCiphertext).recipient ||
-				(input as AdvancedCiphertext).signature
+        (obj as AdvancedCiphertext).sender ||
+				(obj as AdvancedCiphertext).recipient ||
+				(obj as AdvancedCiphertext).signature
       ) {
-        const advancedCiphertext = input as AdvancedCiphertext;
+        const advancedCiphertext = obj as AdvancedCiphertext;
 
         if (advancedCiphertext.sender !== undefined) {
           // sender must be an asymmetric key

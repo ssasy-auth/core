@@ -39,7 +39,7 @@ interface AdvancedChallengeCiphertext extends Omit<AdvancedCiphertext, "sender" 
 }
 
 /**
- * Checks that the ciphertext is valid and has the correct sender and recipient
+ * Returns ciphertext if it contains the correct sender and recipient
  */
 function processChallengeCiphertext(ciphertext: unknown): AdvancedChallengeCiphertext {
   if (!ciphertext) {
@@ -70,7 +70,8 @@ function processChallengeCiphertext(ciphertext: unknown): AdvancedChallengeCiphe
  */
 export class Wallet {
   /**
-   * Creates a new wallet
+   * Initiates wallet.
+   * 
    * @param privateKey - The private key of the wallet
    */
   constructor(privateKey: PrivateKey) {
@@ -88,12 +89,12 @@ export class Wallet {
   }
 
   /**
-   * Returns the private key of the wallet.
+   * Returns the wallet's private key.
    */
   private getPrivateKey: () => PrivateKey;
 
   /**
-   * Returns the public key of the wallet.
+   * Returns the wallet's public key.
    * 
    * @returns public key
    */
@@ -104,7 +105,9 @@ export class Wallet {
   }
 
   /**
-	 * Returns encrypted data using the provided key.
+	 * Returns encrypted data. If a string is passed for the key,a passkey
+   * will be created from it and used for encrypting the data. Otherwise,
+   * the key must be a Public Key.
 	 *
 	 * @param key - public key or passphrase
 	 * @param data - The data to encrypt
@@ -140,8 +143,9 @@ export class Wallet {
   }
 
   /**
-	 * Returns decrypted data. If a string is passed for the key, a passkey will be created from it and used for
-	 * decrypting the data. Otherwise, the key must be a PassKey or SharedKey.
+	 * Returns decrypted data. If a string is passed for the key, a passkey 
+   * will be created from it and used for decrypting the data. Otherwise, the 
+   * key must be a Public Key.
 	 *
 	 * @param key - public key or passphrase
 	 * @param ciphertext - The data to decrypt
@@ -172,7 +176,8 @@ export class Wallet {
   }
 
   /**
-   * Signs a message with the wallet's private key
+   * Returns a ciphertext. The ciphertext contains a digital signature of the message
+   * that is only verifiable by private key belonging to the signer of the message.
    * 
    * @param message - The message to sign
    * @returns ciphertext signature
@@ -182,10 +187,11 @@ export class Wallet {
   }
 
   /**
-   * Verifies that the ciphertext signature was created by the wallet's private key
+   * Returns the original message if the signature is valid, otherwise returns null. The
+   * function takes a ciphertext that contains a digital signature of the message. In order
+   * to verify the signature, the wallet instance must contain the private key of the signer.
    * 
    * @param ciphertext - ciphertext signature
-   * @returns boolean
    */
   async verify(ciphertext: StandardCiphertext): Promise<string | null> {
     if(!ciphertext) {
@@ -204,7 +210,7 @@ export class Wallet {
   }
 
   /**
-	 * Returns an encrypted challenge
+	 * Returns an encrypted challenge.
 	 *
 	 * @param claimant - The public key of the claimant
 	 */
@@ -238,7 +244,7 @@ export class Wallet {
   }
 
   /**
-	 * Returns an encrypted challenge that has been solved
+	 * Returns an encrypted solution.
 	 *
 	 * @param ciphertext - ciphertext with a challenge payload
    * @param config - options object
@@ -344,7 +350,7 @@ export class Wallet {
 
   /**
 	 * Returns an object with the claimant's public key and the signature of the solution
-   * if the challenge was solved correctly
+   * if the challenge was solved correctly, otherwise returns null.
 	 *
    * @param ciphertext - ciphertext with a challenge payload
    * @returns `{ publicKey, signature? }`

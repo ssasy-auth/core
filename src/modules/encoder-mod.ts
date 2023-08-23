@@ -22,7 +22,7 @@ export const ENCODER_ERROR_MESSAGE = {
 };
 
 /**
- * a ciphertext that has been encoded for transport. This means that the
+ * A ciphertext that has been encoded for transport. This means that the
  * sender and recipient public keys have been encoded to strings as well as
  * the signature.
  */
@@ -33,7 +33,7 @@ interface ShallowCiphertext extends Omit<Ciphertext, "sender" | "recipient" | "s
 }
 
 /**
- * Returns true if key is a valid asymmetric **public** key
+ * Returns true if key is a valid asymmetric **public** key.
  * 
  * @param key - the key to check
  * @returns boolean
@@ -47,10 +47,13 @@ function isPublicKey(key: GenericKey): boolean {
  */
 export const EncoderModule = {
   /**
-	 * Returns a string representation of the key
+	 * Returns a string representation of a key.
+   * 
+   * The representation has the following format:
+   * `JSON.stringify(RawKey)`
 	 *
 	 * @param key - key
-	 * @returns string
+	 * @returns key
 	 * */
   encodeKey: async (key: GenericKey): Promise<string> => {
     let rawKey: RawKey;
@@ -70,7 +73,7 @@ export const EncoderModule = {
     return keyString
   },
   /**
-	 * Returns a key from a stringyfied JSON representation of the key
+	 * Returns a key object from a string representation (JSON stringified) of the key
 	 *
 	 * @param key - the string representation of the key
 	 * @returns key
@@ -95,11 +98,13 @@ export const EncoderModule = {
     return await KeyModule.importKey(rawKey) as PublicKey;
   },
   /**
-	 * Returns a string representation of the challenge.
-	 * String representation is in the format: `<nonce>::<timestamp>::<verifier>::<claimant>::<solution>`
+	 * Returns a string representation of a challenge. 
+   * 
+   * The representation has the following format:
+   * `<nonce>::<timestamp>::<verifier>::<claimant>::<solution>`
 	 *
 	 * @param challenge - the challenge to convert to a string
-	 * @returns encoded challenge
+	 * @returns challenge in string format
 	 * */
   encodeChallenge: async (challenge: Challenge): Promise<string> => {
     if (!ChallengeChecker.isChallenge(challenge)) {
@@ -127,10 +132,10 @@ export const EncoderModule = {
   },
 
   /**
-	 * Returns a challenge object from a string representation of a challenge
+	 * Returns a challenge object from a string representation of a challenge.
 	 *
 	 * @param challenge - the string representation of the challenge
-	 * @returns challenge
+	 * @returns challenge object
 	 * */
   decodeChallenge: async (challengeString: string): Promise<Challenge> => {
     const [ nonce, timestamp, verifier, claimant, solution ] = challengeString.split("::");
@@ -181,7 +186,10 @@ export const EncoderModule = {
     };
   },
   /**
-   * Returns a string representation of the ciphertext
+   * Returns a string representation of the ciphertext.
+   * 
+   * The representation has the following format: 
+   * `<iv>::<ciphertext>::<tag>::<sender>::<recipient>::<signature>`
    * 
    * @param ciphertext - the ciphertext to convert to a string
    */
@@ -217,7 +225,7 @@ export const EncoderModule = {
     return JSON.stringify(shallowCiphertext);
   },
   /**
-   * Returns a ciphertext object from a string representation of a ciphertext
+   * Returns a ciphertext object from a string representation of a ciphertext.
    * 
    * @param ciphertextString - the string representation of the ciphertext
    */

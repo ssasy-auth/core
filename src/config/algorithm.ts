@@ -1,9 +1,7 @@
 type SymmetricKeyName = "AES-GCM" | "PBKDF2";
 type AsymmetricKeyName = "ECDH" | "ECDSA";
 type KeyName = SymmetricKeyName | AsymmetricKeyName;
-
 type CurveName = "P-256" | "P-384" | "P-521"; //  curve >= prime256v1, as recommended by [NIST](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-186.pdf)
-
 type HashName = "SHA-256" | "SHA-384" | "SHA-512";
 
 /**
@@ -74,6 +72,35 @@ interface PbkdfAlgorithm extends BaseAlgorithm {
   iterations: number;
 }
 
+interface KeyGenParams {
+  /**
+   * Algorithm
+   */
+  algorithm: BaseAlgorithm;
+  /**
+   * Key can be exported
+   */
+  exportable: boolean;
+  /**
+   * Key usage
+   */
+  usages: KeyUsage[]; // key can be used for encryption and decryption (type assertion)
+}
+
+interface SignatureGenParams {
+  /**
+   * Algorithm
+   */
+  algorithm: EcdsAlgorithm;
+}
+
+interface HashGenParams {
+  /**
+   * Algorithm
+   */
+  algorithm: HashName;
+}
+
 /**
  * Supported cryptographic algorithms
  */
@@ -109,35 +136,6 @@ const CRYPTO_ALGORITHMS = {
     }
   } as PbkdfAlgorithm,
   HASH: "SHA-512"
-}
-
-interface KeyGenParams {
-  /**
-   * Algorithm
-   */
-  algorithm: BaseAlgorithm;
-  /**
-   * Key can be exported
-   */
-  exportable: boolean;
-  /**
-   * Key usage
-   */
-  usages: KeyUsage[]; // key can be used for encryption and decryption (type assertion)
-}
-
-interface SignatureGenParams {
-  /**
-   * Algorithm
-   */
-  algorithm: EcdsAlgorithm;
-}
-
-interface HashGenParams {
-  /**
-   * Algorithm
-   */
-  algorithm: HashName;
 }
 
 /**
@@ -178,9 +176,9 @@ const SALT_LENGTH = 16;
 const NONCE_LENGTH = 16;
 
 export {
+  CRYPTO_ALGORITHMS,
+  CRYPTO_CONFIG,
   IV_LENGTH,
   SALT_LENGTH,
-  NONCE_LENGTH,
-  CRYPTO_ALGORITHMS,
-  CRYPTO_CONFIG
+  NONCE_LENGTH
 }

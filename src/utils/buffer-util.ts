@@ -6,12 +6,12 @@
 import { Buffer } from "buffer/"
 
 /**
- * Minimum buffer length
+ * Minimum buffer length.
  */
 export const DEFAULT_MINIMUM_BUFFER_LENGTH = 12;
 
 /**
- * BufferUtil error messages
+ * BufferUtil error messages.
  */
 export const BUFFER_ERROR_MESSAGE = {
   MISSING_LENGTH: "Length is required",
@@ -27,7 +27,7 @@ export const BUFFER_ERROR_MESSAGE = {
 export type Encoding = "utf8" | "base64";
 
 /**
- * Returns a buffer of the specified length
+ * Returns a buffer of the specified length.
  * 
  * @param length - length of the buffer
  * @returns buffer
@@ -45,7 +45,8 @@ function createBuffer(length: number): Uint8Array {
 }
 
 /**
- * Returns a string representation from a buffer (uint8array or arraybuffer). 
+ * Returns a string that has been converted from a buffer (uint8array or arraybuffer).
+ * 
  * Default encoding: `base64`
  * 
  * @param buffer - buffer to convert
@@ -72,7 +73,8 @@ function BufferToString(buffer: Uint8Array | ArrayBuffer, encoding?: Encoding): 
 }
 
 /**
- * Returns a buffer (uint8array) from a base64 string representation of the buffer
+ * Returns a buffer (uint8array) from a base64 string.
+ * 
  * Default encoding: `base64`
  * 
  * @param bufferString - buffer string
@@ -95,7 +97,7 @@ function StringToBuffer(bufferString: string, encoding?: Encoding): Uint8Array {
 }
 
 /**
- * Returns true if string is a valid representation of a buffer (uint8array)
+ * Returns true if string is a valid buffer (uint8array).
  * 
  * @param bufferString - string
  * @returns boolean
@@ -129,7 +131,7 @@ export function isBufferString(bufferString: string): boolean {
 }
 
 /**
- * Returns true if the string is a valid base64 string
+ * Returns true if the string is a valid base64 string.
  * 
  * @param bufferString - test string
  * @returns boolean
@@ -144,7 +146,7 @@ export function isBase64String(testString: string): boolean {
 }
 
 /**
- * Returns true if the string is a valid utf8 string
+ * Returns true if the string is a valid utf8 string.
  * 
  * @param testString - test string
  * @returns boolean
