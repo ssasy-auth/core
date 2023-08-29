@@ -1,11 +1,16 @@
-import { WebCryptoLib, BufferUtil } from "../utils";
+import { 
+  WebCryptoLib, 
+  BufferUtil
+} from "../utils";
 import {
-  CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH 
+  CRYPTO_ALGORITHMS,
+  CRYPTO_CONFIG,
+  SALT_LENGTH 
 } from "../config";
 import type {
   GenericKey,
   JsonWebKey,
-  ProcessedKey,
+  SecureContextKey,
   RawKey,
   SecretKey,
   PassKey,
@@ -17,15 +22,13 @@ import { KeyType } from "../interfaces";
 
 export const KEY_ERROR_MESSAGE = {
   INVALID_PASSPHRASE: "Passphrase is not a valid string",
-  INVALID_PASSPHRASE_SALT:
-		"Passphrase salt is not a valid string based Uint8Array",
+  INVALID_PASSPHRASE_SALT: "Passphrase salt is not a valid string based Uint8Array",
   INVALID_ASYMMETRIC_KEY: "Key is not a valid asymmetric key (ECDH)",
   INVALID_PRIVATE_KEY: "Key is not a private key",
   INVALID_PUBLIC_KEY: "Key is not a public key",
   INVALID_KEY: "Key is not a valid key instance",
   INVALID_RAW_KEY: "Key is not a valid raw key",
-  DUPLICATE_SHARED_KEY_PARAMS:
-		"Cannot generate a shared key with the same key type"
+  DUPLICATE_SHARED_KEY_PARAMS: "Cannot generate a shared key with the same key type"
 };
 
 interface GenKeyParams {
@@ -294,8 +297,8 @@ export const KeyModule = {
 
     const jsonKey: JsonWebKey = await WebCryptoLib.subtle.exportKey(
       "jwk",
-      (key as ProcessedKey).crypto
-    );
+      (key as SecureContextKey).crypto
+    ) as JsonWebKey;
 
     if (key.type === KeyType.PassKey) {
       return {
@@ -360,7 +363,9 @@ export const KeyModule = {
       return rawKey.type === KeyType.PrivateKey
         ? (key as PrivateKey)
         : (key as PublicKey);
-    } else {
+    } 
+    
+    else {
       const cryptoKey = await WebCryptoLib.subtle.importKey(
         "jwk",
         rawKey.crypto,
@@ -374,9 +379,9 @@ export const KeyModule = {
           type: rawKey.type,
           domain: rawKey.domain,
           crypto: cryptoKey,
-          hash: (rawKey as PassKey).hash,
-          salt: (rawKey as PassKey).salt,
-          iterations: (rawKey as PassKey).iterations
+          hash: rawKey.hash,
+          salt: rawKey.salt,
+          iterations: rawKey.iterations
         } as PassKey;
       }
 
@@ -479,8 +484,8 @@ export const KeyChecker = {
      * Checks if the key is a valid symmetric or asymmetric key
      */
     const isValidKey: boolean = (
-      crypto.kty !== undefined && 
-      crypto.key_ops !== undefined && 
+      crypto.kty !== undefined &&
+      crypto.key_ops !== undefined &&
       (isValidSymmetricKey || isValidAsymmetricKey)
     );
 
@@ -511,7 +516,7 @@ export const KeyChecker = {
         return false;
       }
     } else {
-      if ((key as ProcessedKey).crypto.algorithm.name !== CRYPTO_ALGORITHMS.AES.name) {
+      if ((key as SecureContextKey).crypto.algorithm.name !== CRYPTO_ALGORITHMS.AES.name) {
         return false;
       }
     }
@@ -539,7 +544,7 @@ export const KeyChecker = {
         return false;
       }
     } else {
-      if ((key as ProcessedKey).crypto.algorithm.name !== CRYPTO_ALGORITHMS.ECDH.name) {
+      if ((key as SecureContextKey).crypto.algorithm.name !== CRYPTO_ALGORITHMS.ECDH.name) {
         return false;
       }
     }

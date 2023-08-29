@@ -5,7 +5,7 @@ import { BufferUtil } from "../src/utils";
 import {
   KeyModule,
   CryptoModule,
-  EncoderModule, 
+  SerializerModule,
   ChallengeModule,
   CryptoChecker
 } from "../src/modules";
@@ -285,7 +285,7 @@ describe("[Wallet Class Test Suite]", () => {
       challenge = await ChallengeModule.generateChallenge(validFriendKeyPair.private, validKeyPair.public);
 
       // encode challenge
-      const challengeString = await EncoderModule.encodeChallenge(challenge);
+      const challengeString = await SerializerModule.serializeChallenge(challenge);
 
       // encrypt challenge
       const sharedKey = await KeyModule.generateSharedKey({
@@ -374,13 +374,13 @@ describe("[Wallet Class Test Suite]", () => {
         privateKey: validKeyPair.private, publicKey: challengeCiphertext.sender as PublicKey 
       });
       const decryptedSolution = await CryptoModule.decrypt(sharedKey, solutionCiphertext)
-      const solution = await EncoderModule.decodeChallenge(decryptedSolution);
+      const solution = await SerializerModule.deserializeChallenge(decryptedSolution);
       const signature = solutionCiphertext.signature as StandardCiphertext;
       
       const encodedChallengeSolution = await wallet.verify(signature);
       expect(encodedChallengeSolution).to.be.a.string;
 
-      const challengeSolution: Challenge = await EncoderModule.decodeChallenge(encodedChallengeSolution as string);
+      const challengeSolution: Challenge = await SerializerModule.deserializeChallenge(encodedChallengeSolution as string);
       expect(challengeSolution).to.deep.equal(solution);
     });
 
@@ -413,7 +413,7 @@ describe("[Wallet Class Test Suite]", () => {
       challenge = await ChallengeModule.generateChallenge(validFriendKeyPair.private, validKeyPair.public);
 
       // encode challenge
-      const challengeString = await EncoderModule.encodeChallenge(challenge);
+      const challengeString = await SerializerModule.serializeChallenge(challenge);
 
       // encrypt challenge
       const sharedKey = await KeyModule.generateSharedKey({

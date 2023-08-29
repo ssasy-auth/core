@@ -1,6 +1,6 @@
 import { KeyType } from "./interfaces";
 import {
-  EncoderModule,
+  SerializerModule,
   ChallengeModule,
   ChallengeChecker,
   CryptoModule,
@@ -225,8 +225,8 @@ export class Wallet {
 
     // generate a challenge
     const challenge = await ChallengeModule.generateChallenge(this.getPrivateKey(), claimant);
-    // encode the challenge
-    const challengeString = await EncoderModule.encodeChallenge(challenge);
+    // serialize the challenge
+    const challengeString = await SerializerModule.serializeChallenge(challenge);
     // get the wallet's public key
     const publicKey = await this.getPublicKey();
     // generate a shared key
@@ -279,8 +279,8 @@ export class Wallet {
       throw error;
     }
     
-    // decode the challenge
-    const challenge = await EncoderModule.decodeChallenge(challengeString);
+    // deserialize the challenge
+    const challenge = await SerializerModule.deserializeChallenge(challengeString);
 
     // throw errors if challenge contents don't match signature
     if(config?.requireSignature) {
@@ -304,8 +304,8 @@ export class Wallet {
           throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_SIGNATURE);
         }
 
-        // decode the solution
-        solution = await EncoderModule.decodeChallenge(solutionString);
+        // deserialize the solution
+        solution = await SerializerModule.deserializeChallenge(solutionString);
 
       } catch (error) {
         throw new Error(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_SIGNATURE);
@@ -334,8 +334,8 @@ export class Wallet {
     // solve the challenge
     const solution: Challenge = await ChallengeModule.solveChallenge(this.getPrivateKey(), challenge);
     
-    // encode the solved challenge
-    const solutionString: string = await EncoderModule.encodeChallenge(solution);
+    // serialize the solved challenge
+    const solutionString: string = await SerializerModule.serializeChallenge(solution);
 
     // encrypt the solved challenge with the shared key and return it
     const solutionCiphertext: AdvancedCiphertext = await CryptoModule.encrypt(sharedKey, solutionString, publicKey, challengeCiphertext.sender);
@@ -390,7 +390,7 @@ export class Wallet {
       }
     }
     
-    const solution = await EncoderModule.decodeChallenge(solutionString);
+    const solution = await SerializerModule.deserializeChallenge(solutionString);
     
     // throw error if the challenge is not meant for this wallet
     const verifierMatchesWallet = await KeyChecker.isSameKey(solution.verifier, publicKey);

@@ -1,5 +1,7 @@
 # `ssasy` security risks
 
+> ⚠️: please send a pull request if you find any security risks that are not listed here
+
 | **vulnerability**                            | **risk**                              | **solution**       |
 | -------------------------------------------- | ------------------------------------- | ------------------ |
 | private key single point of failure          | key loss leads to account loss        | n/a                |

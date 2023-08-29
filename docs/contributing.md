@@ -22,7 +22,7 @@ At a high level, the project is structured as follows:
   - `modules/` - the modules that make up the project
     - `challenge-mod.ts` - creating and verifying challenges
     - `crypto-mod.ts` - cryptographic operations
-    - `encoder-mod.ts` - encoding and decoding data
+    - `serializer-mod.ts` - (de)serializes SSASy resources
     - `key-mod.ts` - key operations
     - `indext.ts` - entry point for the module
   - `utils/` - contains utility or plugins that are used by the project

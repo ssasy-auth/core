@@ -2,9 +2,9 @@
 
 ## utils
 
-The utils folder contains the wrappers for the [WebCrypto API](../technology/cryptography.md#webcrypto-api) and the [buffer library](../technology/cryptography.md#buffer-library). These wrappers act as a layer of abstraction between the project and the underlying dependencies which allows the project to be more flexible, in the future, if the underlying dependencies were to change.
+The utils folder contains the wrappers for the [WebCrypto API](../technology/cryptography.md#webcrypto-api) and the [buffer library](../technology/cryptography.md#buffer-library). These wrappers act as a layer of abstraction between the project and the underlying dependencies which allows the project to be more flexible, in the future, if the underlying dependencies were to change. The abstraction also allows the project to swap out the underlying dependencies depending on the environment (e.g. browser vs node) which is necessary, for the WebCrypto API.
 
-The abstraction also allows the project to swap out the underlying dependencies depending on the environment (e.g. browser vs node) which is necessary, for the WebCrypto API.
+The `buffer-util.ts` util is responsible for converting data from `Uint8Array` to `base64url` or `utf-8` (string) and vice versa. This is necessary because the WebCrypto API primarily works with `Uint8Array` buffers which are not human-readable or suitable for storage and transmission. This facilitates the storage and transmission of cryptographic resources (e.g. keys, encrypted data, etc.).
 
 ## modules
 
@@ -59,11 +59,19 @@ Assume that a verifier (Alice) wants to check that a claimant (Bob) is in posses
 
 Although this is a simple example, it plays a critical role in the registration and login processes.
 
-### encoder-mod
+### serializer-mod
 
-The `encoder-mod.ts` is responsible for encoding and decoding data. This is necessary because the WebCrypto API only works with buffers which means that the data is converted to a buffer when in-use and then converted back to a string when it is no longer in-use. This facilitates the storage and transmission of cryptographic resources (e.g. keys, encrypted data, etc.).
+The `serializer-mod.ts` is responsible for (de)serializing SSASy resources (i.e. keys, challenges, ciphertexts and signatures). The resources are serialized into a URI safe string format which is ideal for storage and transmission. The URI is structed as follows:
 
-At a lower leve, the `encoder-mod.ts` module is responsible for converting data from `Uint8Array` to `base64url` and vice versa. This is necessary because the WebCrypto API primarily works with `Uint8Array` buffers which are not human-readable or suitable for storage and transmission.
+```js
+const format = `ssasy://<resource-type>?<param-key>="<param-value>"&<param-key>="<param-value>"...`
+
+// examples
+const key = `ssasy://key?type="secret-key"&c_kty="..."`
+const challenge = `ssasy://challenge?nonce="..."&timestamp="..."`
+const ciphertext = `ssasy://ciphertext?data="..."&iv="..."`
+const signature = `ssasy://signature?data="..."&iv="..."`
+```
 
 ## wallet
 

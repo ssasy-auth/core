@@ -17,8 +17,10 @@ export interface JsonWebKey {
    * - 'EC' for elliptic curve,
    * - 'RSA' for RSA, and
    * - 'oct' for symmetric keys
+   * 
+   * REQUIRED for all keys
    */
-  kty?: string | undefined;
+  kty: string | undefined;
 
   /**
    * Operations that the key can be used for:
@@ -30,22 +32,29 @@ export interface JsonWebKey {
    * - 'unwrapKey' for key unwrapping,
    * - 'deriveKey' for key derivation,
    * - 'deriveBits' for bit string derivation
+   * 
+   * REQUIRED for all keys
    */
-  key_ops?: string[];
+  key_ops: string[];
 
   /**
    * Algorithm used to generate the key
+   * 
+   * REQUIRED for all keys
    */
-  alg?: string;
+  alg: string;
 
   /**
    * Boolean indicating whether the key is extractable
+   * 
+   * REQUIRED for all keys
    */
-  ext?: boolean;
+  ext: boolean;
 
   /**
    * Key identifier used to distinguish between keys
-   * This property is OPTIONAL.
+   * 
+   * OPTIONAL
    */
   kid?: string;
 
@@ -54,7 +63,7 @@ export interface JsonWebKey {
    * - 'sig' for signature,
    * - 'enc' for encryption and decryption
    *
-   * OPTIONAL and only used for public keys.
+   * REQUIRED for public keys
    */
   use?: string;
 
@@ -62,7 +71,8 @@ export interface JsonWebKey {
 
   /**
    * Symmetric key value.
-   * OPTIONAL except when the "kty" value is "oct".
+   * 
+   * REQUIRED for symmetric keys.
    * */
   k?: string;
 
@@ -70,31 +80,34 @@ export interface JsonWebKey {
 
   /**
    * Cryptographic curve used to generate the elliptic curve key.
-   * OPTIONAL except when the "kty" value is "EC".
+   * 
+   * REQUIRED for private/public keys.
    */
   crv?: string;
 
   /**
    * X coordinate of the elliptic curve point.
-   * OPTIONAL except when the "kty" value is "EC".
+   * 
+   * REQUIRED for private/public keys.
    */
   x?: string;
 
   /**
    * Y coordinate of the elliptic curve point.
-   * OPTIONAL except when the "kty" value is "EC".
+   * 
+   * REQUIRED for private/public keys.
    * */
   y?: string;
 
   /**
    * D parameter of the elliptic curve private key.
-   * OPTIONAL except when the "kty" value is "EC" and key is private.
+   * REQUIRED FOR private keys.
    * */
   d?: string;
 }
 
 export interface BaseKey {
-    /**
+  /**
    * Key type
    */
   readonly type: KeyType;
@@ -106,10 +119,12 @@ export interface BaseKey {
 }
 
 /**
- * @interface ProcessedKey
- * @description Cryptographic key with WebCryptoLib.CryptoKey in crypto property
+ * @interface SecureContextKey
+ * @description Key in Secure Context (i.e. WebCryptoLib.CryptoKey)
+ * 
+ * @see https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts
  */
-export interface ProcessedKey extends BaseKey {
+export interface SecureContextKey extends BaseKey {
   /**
    * Web crypto key object
    */
@@ -146,13 +161,13 @@ export interface RawKey extends BaseKey {
  * @interface GenericKey
  * @description A generic cryptographic key interface that can be used to represent any type of key whether their crypto property is a `CryptoKey` or a `JsonWebKey`
  */
-export type GenericKey = ProcessedKey | RawKey;
+export type GenericKey = SecureContextKey | RawKey;
 
 /**
  * @interface SecretKey
  * @description AES secret key
  */
-export interface SecretKey extends ProcessedKey {
+export interface SecretKey extends SecureContextKey {
   type: KeyType.SecretKey;
 }
 
@@ -184,7 +199,7 @@ export interface PassKey extends Omit<SecretKey, "type"> {
  * @interface PrivateKey
  * @description Elliptic curve private key
  */
-export interface PrivateKey extends ProcessedKey {
+export interface PrivateKey extends SecureContextKey {
   type: KeyType.PrivateKey;
 }
 
@@ -192,7 +207,7 @@ export interface PrivateKey extends ProcessedKey {
  * @interface PublicKey
  * @description Elliptic curve public key
  */
-export interface PublicKey extends ProcessedKey {
+export interface PublicKey extends SecureContextKey {
   type: KeyType.PublicKey;
 }
 
@@ -200,7 +215,7 @@ export interface PublicKey extends ProcessedKey {
  * @interface SharedKey
  * @description AES secret key shared between two parties using Elliptic Curve Diffie-Hellman
  */
-export interface SharedKey extends ProcessedKey {
+export interface SharedKey extends SecureContextKey {
   type: KeyType.SharedKey;
 }
 

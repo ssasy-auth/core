@@ -60,10 +60,13 @@ async function encrypt(
   sender?: PublicKey,
   recipient?: PublicKey
 ): Promise<Ciphertext> {
+  
+  // throw error if key is neither a string nor a symmetric key
   if (typeof key !== "string" && !KeyChecker.isSymmetricKey(key)) {
     throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
   }
 
+  // throw error if plaintext is not a string
   if (typeof plaintext !== "string") {
     throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_PLAINTEXT);
   }
@@ -98,24 +101,30 @@ async function encrypt(
 
   // convert iv to base64 string
   const ivString = BufferUtil.BufferToString(initializationVector);
+  
   // convert salt to base64 string
   const saltString = (key as PassKey).salt ? (key as PassKey).salt : undefined; // passkeys store salt as a string
+  
   // convert data to base64 string
   const dataString = BufferUtil.BufferToString(ciphertextBuffer, "base64");
 
-  const cipherText: StandardCiphertext = {
+  // create ciphertext object
+  let cipherText: StandardCiphertext = {
     data: dataString,
     iv: ivString,
     salt: saltString
   };
 
-  return sender || recipient
-    ? ({
+  // append sender and recipient to ciphertext if provided
+  if(sender || recipient) {
+    cipherText = {
       ...cipherText,
       sender: sender,
       recipient: recipient
-    } as AdvancedCiphertext)
-    : cipherText;
+    } as AdvancedCiphertext;
+  }
+
+  return cipherText;
 }
 
 /**
