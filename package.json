@@ -1,7 +1,7 @@
 {
   "name": "@ssasy-auth/core",
   "license": "MIT",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "a self-sovereign authentication scheme",
   "author": "hello@oliverrr.net",
   "repository": "ssasy-auth/core",
@@ -16,8 +16,9 @@
     "lint:fix": "eslint --fix .",
     "bump": "npx fist-bump",
     "prepack": "npm run lint:fix && npm run test && npm run build",
-    "preview": "npm pack",
-    "preview:clean": "rm -rf *.tgz",
+    "clear": "npm run clear:build && npm run clear:pack",
+    "clear:pack": "rm -rf *.tgz",
+    "clear:build": "rm -rf lib",
     "hook": "simple-git-hooks"
   },
   "dependencies": {

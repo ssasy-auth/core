@@ -1,7 +1,11 @@
 # only publish what is necessary, ignore everything else below
+
+## folders
 src
 tests
 scripts
+
+## config files
 tsconfig.json
 tslint.json
 .env.sample
@@ -9,3 +13,6 @@ tslint.json
 .eslintignore
 .mocharc.json
 .vscode
+
+# build files
+*.tgz
