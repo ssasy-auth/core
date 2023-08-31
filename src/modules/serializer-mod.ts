@@ -152,7 +152,7 @@ export const SerializerModule = {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_KEY_STRING);
     }
 
-    if(!keyString.startsWith(SerializerPrefix.URI.KEY)){
+    if(typeof keyString !== "string" || !keyString.startsWith(SerializerPrefix.URI.KEY)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_KEY_STRING)
     }
 
@@ -284,7 +284,7 @@ export const SerializerModule = {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CHALLENGE_STRING);
     }
 
-    if(!challengeString.startsWith(SerializerPrefix.URI.CHALLENGE)){
+    if(typeof challengeString !== "string" || !challengeString.startsWith(SerializerPrefix.URI.CHALLENGE)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING)
     }
     
@@ -410,7 +410,7 @@ export const SerializerModule = {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CIPHERTEXT_STRING);
     }
 
-    if(!ciphertextString.startsWith(SerializerPrefix.URI.CIPHERTEXT)){
+    if(typeof ciphertextString !== "string" || !ciphertextString.startsWith(SerializerPrefix.URI.CIPHERTEXT)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING)
     }
 
