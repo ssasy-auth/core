@@ -1,3 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/**
+ * Serializer Module
+ * 
+ * This module provides functions for serializing and deserializing SSASy 
+ * resources (i.e. keys, challenges, ciphertexts and signatures) for transport. 
+ * In other words, it provides functions for converting SSASy resources into 
+ * URI strings and vice versa.
+ */
+
 import { KeyType } from "../interfaces";
 import { KeyModule, KeyChecker } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
@@ -50,9 +61,9 @@ function _decodeUriParam(value: string): string {
 }
 
 /**
- * Prefixes for url
+ * Prefixes for uri
  */
-export const SerializerPrefix = {
+const SerializerPrefix = {
   URI: {
     KEY: "ssasy://key?",
     CHALLENGE: "ssasy://challenge?",
@@ -68,6 +79,8 @@ export const SerializerPrefix = {
  * Operations for serializing SSASy resources for transport
  */
 export const SerializerModule = {
+  PREFIX: SerializerPrefix,
+
   /**
 	 * Returns a uri string representation of a key.
    * 
@@ -90,23 +103,23 @@ export const SerializerModule = {
       ? key as RawKey
       : await KeyModule.exportKey(key);
 
-    let keyString = SerializerPrefix.URI.KEY;
+    let keyUri: string = SerializerPrefix.URI.KEY;
 
-    // add type to keyString
-    keyString += `type="${_encodeUriParamValue(rawKey.type)}"`;
+    // add type to keyUri
+    keyUri += `type="${_encodeUriParamValue(rawKey.type)}"`;
 
     // add domain to keyString
     if(rawKey.domain) {
-      keyString += `&domain="${_encodeUriParamValue(rawKey.domain)}"`;
+      keyUri += `&domain="${_encodeUriParamValue(rawKey.domain)}"`;
     }
 
     // add raw flag if key is raw
     if(isRawKey) {
-      keyString += `&raw="${_encodeUriParamValue("true")}"`;
+      keyUri += `&raw="${_encodeUriParamValue("true")}"`;
     }
 
     /**
-     * Returns a string of RawKey
+     * Returns a string of RawKey as a uri parameter
      */
     function _readProperties(obj: any): string {
       let properties = "";
@@ -136,10 +149,10 @@ export const SerializerModule = {
       return properties;
     }
 
-    keyString += _readProperties(rawKey);
+    keyUri += _readProperties(rawKey);
 
 
-    return keyString
+    return keyUri
   },
   /**
 	 * Returns a key object from a key uri (see `serializeKey`)
@@ -147,33 +160,33 @@ export const SerializerModule = {
 	 * @param key - key uri
 	 * @returns key
 	 * */
-  deserializeKey: async (keyString: string): Promise<GenericKey> => {
-    if (!keyString) {
+  deserializeKey: async (keyUri: string): Promise<GenericKey> => {
+    if (!keyUri) {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_KEY_STRING);
     }
 
-    if(typeof keyString !== "string" || !keyString.startsWith(SerializerPrefix.URI.KEY)){
+    if(typeof keyUri !== "string" || !keyUri.startsWith(SerializerPrefix.URI.KEY)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_KEY_STRING)
     }
 
     // remove key protocol prefix
-    keyString = keyString.slice(SerializerPrefix.URI.KEY.length)
+    keyUri = keyUri.slice(SerializerPrefix.URI.KEY.length)
 
     // extract all properties from key string
-    const keyProperties = keyString.split("&");
+    const keyParams: string[] = keyUri.split("&");
 
     /**
-     * Returns a RawKey from a key string
+     * Returns a RawKey from a key uri
      */
-    function _rebuildRawKey(keyProperties: string[]): RawKey {
+    function _rebuildRawKey(keyParams: string[]): RawKey {
       const rawKey: any = { 
         type: KeyType.Key,
         crypto: {}
       };
 
-      for(let i = 0; i < keyProperties.length; i++){
+      for(let i = 0; i < keyParams.length; i++){
         // split properties (<key>=<value>)
-        const property = keyProperties[i].split("=");
+        const property = keyParams[i].split("=");
         let key: string = property[0];
         let value: string | string[] = property[1];
 
@@ -208,23 +221,24 @@ export const SerializerModule = {
       return rawKey as RawKey;
     }
 
-    // convert raw key to a key instance (secure context)
-    const rawKey: RawKey = _rebuildRawKey(keyProperties);
-
-    // check if raw flag exists
-    let isRawKey = false;
+    let key: GenericKey;
     
-    if((rawKey as any).raw === "true") {
-      // remove raw flag from rawKey
-      delete (rawKey as any).raw;
+    // convert raw key to a key instance (secure context)
+    const rawKey: RawKey = _rebuildRawKey(keyParams);
+    
+    // set key as raw if raw flag is set
+    if((rawKey as RawKey & { raw?: string }).raw === "true") {
       
-      // set isRawKey to true
-      isRawKey = true;
+      // remove raw flag from rawKey
+      delete (rawKey as RawKey & { raw?: string }).raw;
+      
+      key = rawKey as RawKey;
+
+    } else {
+      key = await KeyModule.importKey(rawKey);
     }
 
-    return isRawKey 
-      ? rawKey 
-      : await KeyModule.importKey(rawKey);
+    return key;
   },
   /**
 	 * Returns a uri string representation of a challenge.
@@ -242,59 +256,54 @@ export const SerializerModule = {
 
     const { nonce, timestamp, verifier, claimant, solution } = challenge;
 
-    // set nonce
-    let challengeString = SerializerPrefix.URI.CHALLENGE;
+    let challengeUri = SerializerPrefix.URI.CHALLENGE;
 
-    // set nonce to challenge string
-    challengeString += `nonce="${_encodeUriParamValue(nonce)}"`;
+    // add nonce
+    challengeUri += `nonce="${_encodeUriParamValue(nonce)}"`;
     
     // convert timestamp to string
     const timestampString = timestamp.toString();
-    challengeString += `&timestamp="${_encodeUriParamValue(timestampString)}"`;
+    challengeUri += `&timestamp="${_encodeUriParamValue(timestampString)}"`;
     
-    // convert verifier's public key to string
+    // add verifier
     let verifierString = await SerializerModule.serializeKey(verifier);
-    // replace all double quotes with single quotes
-    verifierString = verifierString.replace(/"/g, "'");
-    // add verifier to challenge string
-    challengeString += `&verifier="${_encodeUriParamValue(verifierString)}"`;
+    verifierString = verifierString.replace(/"/g, "'"); // replace all double quotes with single quotes
+    challengeUri += `&verifier="${_encodeUriParamValue(verifierString)}"`;
     
-    // convert claimant's public key to string
+    // add claimant
     let claimantString = await SerializerModule.serializeKey(claimant);
-    // replace all double quotes with single quotes
-    claimantString = claimantString.replace(/"/g, "'");
-    // add claimant to challenge string
-    challengeString += `&claimant="${_encodeUriParamValue(claimantString)}"`;
+    claimantString = claimantString.replace(/"/g, "'"); // replace all double quotes with single quotes
+    challengeUri += `&claimant="${_encodeUriParamValue(claimantString)}"`;
 
-    // only include solution if it exists
+    // add solution (if exists)
     if(solution){
-      challengeString += `&solution="${_encodeUriParamValue(solution)}"`;
+      challengeUri += `&solution="${_encodeUriParamValue(solution)}"`;
     }
 
-    return challengeString;
+    return challengeUri;
   },
   /**
 	 * Returns a challenge object from a string representation of a challenge.
 	 *
-	 * @param challenge - the string representation of the challenge
+	 * @param challengeUri - the string representation of the challenge
 	 * @returns challenge object
 	 * */
-  deserializeChallenge: async (challengeString: string): Promise<Challenge> => {
-    if(!challengeString) {
+  deserializeChallenge: async (challengeUri: string): Promise<Challenge> => {
+    if(!challengeUri) {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CHALLENGE_STRING);
     }
 
-    if(typeof challengeString !== "string" || !challengeString.startsWith(SerializerPrefix.URI.CHALLENGE)){
+    if(typeof challengeUri !== "string" || !challengeUri.startsWith(SerializerPrefix.URI.CHALLENGE)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING)
     }
     
     const challenge = {} as any;
     
     // remove challenge protocol prefix
-    challengeString = challengeString.slice(SerializerPrefix.URI.CHALLENGE.length)
+    challengeUri = challengeUri.slice(SerializerPrefix.URI.CHALLENGE.length)
 
     // extract all properties
-    const challengeProperties: string[] = challengeString.split("&")
+    const challengeParams: string[] = challengeUri.split("&")
     
     /**
      * Returns a typed challenge value based on key string
@@ -316,15 +325,15 @@ export const SerializerModule = {
     }
     
     // rebuild challenge object
-    for(let i = 0; i < challengeProperties.length; i++){
-      const property = challengeProperties[i];
-      const key = property.split("=")[0];
-      let value = property.split("=")[1];
+    for(let i = 0; i < challengeParams.length; i++){
+      const param = challengeParams[i];
+      const key = param.split("=")[0];
+      let value = param.split("=")[1];
 
       // remove quotation marks from value (e.g. key="value")
       value = value.slice(1, value.length - 1)
 
-      // decode property value
+      // decode param value
       value = _decodeUriParam(value)
 
       // get typed value
@@ -349,17 +358,17 @@ export const SerializerModule = {
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT);
     }
 
-    let ciphertextString = `${SerializerPrefix.URI.CIPHERTEXT}`;
+    let ciphertextUri = `${SerializerPrefix.URI.CIPHERTEXT}`;
 
     // add data to ciphertext string
-    ciphertextString += `data="${_encodeUriParamValue(ciphertext.data)}"`;
+    ciphertextUri += `data="${_encodeUriParamValue(ciphertext.data)}"`;
 
     // add iv to ciphertext string
-    ciphertextString += `&iv="${_encodeUriParamValue(ciphertext.iv)}"`;
+    ciphertextUri += `&iv="${_encodeUriParamValue(ciphertext.iv)}"`;
 
     // add salt to ciphertext string (if salt exists)
     if(ciphertext.salt) {
-      ciphertextString += `&salt="${_encodeUriParamValue(ciphertext.salt)}"`;
+      ciphertextUri += `&salt="${_encodeUriParamValue(ciphertext.salt)}"`;
     }
 
     // add sender to ciphertext string (if sender exists)
@@ -371,7 +380,7 @@ export const SerializerModule = {
       senderString = senderString.replace(/"/g, "'");
 
       // add sender to ciphertext string
-      ciphertextString += `&sender="${_encodeUriParamValue(senderString)}"`;
+      ciphertextUri += `&sender="${_encodeUriParamValue(senderString)}"`;
     }
 
     // add recipient to ciphertext string (if recipient exists)
@@ -383,7 +392,7 @@ export const SerializerModule = {
       recipientString = recipientString.replace(/"/g, "'");
 
       // add recipient to ciphertext string
-      ciphertextString += `&recipient="${_encodeUriParamValue(recipientString)}"`;
+      ciphertextUri += `&recipient="${_encodeUriParamValue(recipientString)}"`;
     }
 
     // add signature to ciphertext string (if signature exists)
@@ -395,30 +404,30 @@ export const SerializerModule = {
       signatureString = signatureString.replace(/"/g, "'");
 
       // add signature to ciphertext string
-      ciphertextString += `&signature="${_encodeUriParamValue(signatureString)}"`;
+      ciphertextUri += `&signature="${_encodeUriParamValue(signatureString)}"`;
     }
 
-    return ciphertextString;
+    return ciphertextUri;
   },
   /**
    * Returns a ciphertext object from a string representation of a ciphertext.
    * 
-   * @param ciphertextString - the string representation of the ciphertext
+   * @param ciphertextUri - the string representation of the ciphertext
    */
-  deserializeCiphertext: async (ciphertextString: string): Promise<Ciphertext> => {
-    if(!ciphertextString) {
+  deserializeCiphertext: async (ciphertextUri: string): Promise<Ciphertext> => {
+    if(!ciphertextUri) {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CIPHERTEXT_STRING);
     }
 
-    if(typeof ciphertextString !== "string" || !ciphertextString.startsWith(SerializerPrefix.URI.CIPHERTEXT)){
+    if(typeof ciphertextUri !== "string" || !ciphertextUri.startsWith(SerializerPrefix.URI.CIPHERTEXT)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING)
     }
 
     // remove ciphertext protocol prefix
-    ciphertextString = ciphertextString.slice(SerializerPrefix.URI.CIPHERTEXT.length)
+    ciphertextUri = ciphertextUri.slice(SerializerPrefix.URI.CIPHERTEXT.length)
 
     // extract all properties
-    const ciphertextProperties: string[] = ciphertextString.split("&")
+    const ciphertextProperties: string[] = ciphertextUri.split("&")
 
     /**
      * Returns a typed ciphertext value based on key string
@@ -477,25 +486,164 @@ export const SerializerModule = {
    * @param signature - the signature to convert to a string
    */
   serializeSignature: async (signature: StandardCiphertext): Promise<string> => {
-    const ciphertextString = await SerializerModule.serializeCiphertext(signature);
-    return ciphertextString.replace(SerializerPrefix.URI.CIPHERTEXT, SerializerPrefix.URI.SIGNATURE);
+    const ciphertextUri = await SerializerModule.serializeCiphertext(signature);
+    return ciphertextUri.replace(SerializerPrefix.URI.CIPHERTEXT, SerializerPrefix.URI.SIGNATURE);
   },
   /**
    * Returns a signature object from a string representation of a signature.
    * 
-   * @param signatureString - the string representation of the signature
+   * @param signatureUri - the string representation of the signature
    * @returns signature object
    * */
-  deserializeSignature: async (signatureString: string): Promise<StandardCiphertext> => {
-    if(!signatureString) {
+  deserializeSignature: async (signatureUri: string): Promise<StandardCiphertext> => {
+    if(!signatureUri) {
       throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_SIGNATURE_STRING);
     }
 
-    if(!signatureString.startsWith(SerializerPrefix.URI.SIGNATURE)){
+    if(!signatureUri.startsWith(SerializerPrefix.URI.SIGNATURE)){
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_SIGNATURE_STRING)
     }
 
-    const ciphertextString = signatureString.replace(SerializerPrefix.URI.SIGNATURE, SerializerPrefix.URI.CIPHERTEXT);
-    return await SerializerModule.deserializeCiphertext(ciphertextString);
+    const ciphertextUri = signatureUri.replace(SerializerPrefix.URI.SIGNATURE, SerializerPrefix.URI.CIPHERTEXT);
+    return await SerializerModule.deserializeCiphertext(ciphertextUri);
   }
 };
+
+function _validCheckerArg(arg: any, prefix: string): boolean {
+  if(!arg) {
+    return false;
+  }
+
+  if(typeof arg !== "string") {
+    return false;
+  }
+
+  if(!arg.startsWith(prefix)) {
+    return false;
+  }
+
+  return true;
+}
+
+function _extractUriParams(uri: string, prefix: string): string[] {
+  // remove protocol prefix
+  uri = uri.slice(prefix.length)
+
+  // extract all properties from key string
+  const properties = uri.split("&");
+
+  return properties;
+}
+
+type KeyT = KeyType.Key | KeyType.SecretKey | KeyType.PassKey | KeyType.PublicKey | KeyType.PrivateKey | KeyType.SharedKey;
+
+export const SerializerChecker = {
+  isKeyUri: (keyString: string, config?: { type?: KeyT } ): boolean => {
+    const requiredParams = [ "type", "c_kty", "c_key_ops", "c_ext" ];
+    const requiredSymmetricParams = [ ...requiredParams, "c_alg", "c_k" ];
+    const requiredAsymmetricParams = [ ...requiredParams, "c_crv", "c_x", "c_y" ]; // excluding `c_d` (private key)
+    
+    if(!_validCheckerArg(keyString, SerializerPrefix.URI.KEY)) {
+      return false;
+    }
+
+    const params = _extractUriParams(keyString, SerializerPrefix.URI.KEY);
+    
+    
+    // arg must have required params
+    if(params.length < requiredParams.length) {
+      return false;
+    }
+
+    let keyType: string = params.find(param => param.startsWith("type="))?.split("=")[1] || "";
+
+    // remove quotation marks from value (e.g. key="value")
+    keyType = keyType.slice(1, keyType.length - 1)
+
+    // key type must match `type`, if it is provided
+    if(config?.type && keyType !== config?.type) {
+      return false;
+    }
+
+    // arg must have asymmetric params if type is asymmetric
+    if(
+      (keyType === KeyType.PublicKey || keyType === KeyType.PrivateKey) &&
+      params.length < requiredAsymmetricParams.length
+    ) {
+      return false;
+    }
+
+    // arg must have symmetric params if type is symmetric
+    if(
+      (keyType === KeyType.SecretKey || keyType === KeyType.PassKey || keyType === KeyType.SharedKey) &&
+      params.length < requiredSymmetricParams.length
+    ) {
+      return false;
+    }
+
+    return true;
+  },
+
+  isChallengeUri: (challengeString: string): boolean => {
+    const requiredParams = [ "nonce", "timestamp", "verifier", "claimant" ];
+    const maxParams = [ ...requiredParams, "solution" ];
+    
+    if(!_validCheckerArg(challengeString, SerializerPrefix.URI.CHALLENGE)) {
+      return false;
+    }
+
+    const params: string[] = _extractUriParams(challengeString, SerializerPrefix.URI.CHALLENGE);
+
+    // arg must have required params
+    if(params.length < requiredParams.length){
+      return false;
+    }
+
+    // arg should not exceed max params
+    if(params.length > maxParams.length){
+      return false;
+    }
+
+    return true;
+  },
+
+  isCiphertextUri: (ciphertextString: string): boolean => {
+    const requiredParams = [ "data", "iv" ];
+    const maxParamas = [ ...requiredParams, "salt", "sender", "recipient", "signature" ];
+    
+    if(!_validCheckerArg(ciphertextString, SerializerPrefix.URI.CIPHERTEXT)) {
+      return false;
+    }
+
+    const params: string[] = _extractUriParams(ciphertextString, SerializerPrefix.URI.CIPHERTEXT);
+    
+    // arg must have required params
+    if(params.length < requiredParams.length){
+      return false;
+    }
+
+    // arg should not exceed max params
+    if(params.length > maxParamas.length){
+      return false;
+    }
+
+    return true;
+  },
+
+  isSignatureUri: (signatureString: string): boolean => {
+    const requiredParams = [ "data", "iv" ];
+
+    if(!_validCheckerArg(signatureString, SerializerPrefix.URI.SIGNATURE)) {
+      return false;
+    }
+
+    const params: string[] = _extractUriParams(signatureString, SerializerPrefix.URI.SIGNATURE);
+
+    // arg must have required params
+    if(params.length < requiredParams.length){
+      return false;
+    }
+
+    return true;
+  }
+}
