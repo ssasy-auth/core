@@ -512,12 +512,13 @@ describe("[SerializerModule Test Suite]", () => {
         );
 
         // set advanced ciphertext with signature
-        const claimantWallet = new Wallet(claimantKeyPair.private);
-        const signature: StandardCiphertext = await claimantWallet.sign(plaintext);
+        const privateKeyUri: string = await SerializerModule.serializeKey(verifierKeyPair.private);
+        const claimantWallet = new Wallet(privateKeyUri);
+        const signatureUri: string = await claimantWallet.generateSignature(plaintext);
         
         advancedCiphertextWithSignature = {
           ...advancedCiphertext,
-          signature
+          signature: await SerializerModule.deserializeSignature(signatureUri)
         }
 
         // set ciphertexts
@@ -720,10 +721,12 @@ describe("[SerializerModule Test Suite]", () => {
 
       before(async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        wallet = new Wallet(privateKey);
+        const privateKeyUri = await SerializerModule.serializeKey(privateKey);
+        wallet = new Wallet(privateKeyUri);
 
         const plaintext = "test plaintext";
-        signature = await wallet.sign(plaintext);
+        const signatureUri: string = await wallet.generateSignature(plaintext);
+        signature = await SerializerModule.deserializeSignature(signatureUri);
       })
 
       describe("serializeSignature()", () => {

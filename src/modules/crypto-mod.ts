@@ -375,7 +375,7 @@ export const CryptoChecker = {
 
           // sender must be a public key
           if (
-            (advancedCiphertext.sender as unknown as PublicKey).type !==						KeyType.PublicKey
+            (advancedCiphertext.sender as unknown as PublicKey).type !== KeyType.PublicKey
           )
             return false;
         }
@@ -387,7 +387,7 @@ export const CryptoChecker = {
 
           // recipient must be a public key
           if (
-            (advancedCiphertext.recipient as unknown as PublicKey).type !==						KeyType.PublicKey
+            (advancedCiphertext.recipient as unknown as PublicKey).type !== KeyType.PublicKey
           )
             return false;
         }
