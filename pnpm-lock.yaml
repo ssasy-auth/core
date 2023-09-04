@@ -10,7 +10,7 @@ specifiers:
   chai: ^4.3.7
   eslint: ^8.34.0
   eslint-plugin-mocha: ^10.1.0
-  fist-bump: ^1.2.3
+  fist-bump: ^2.0.0
   lint-staged: ^13.1.2
   mocha: ^10.2.0
   simple-git-hooks: ^2.8.1
@@ -29,7 +29,7 @@ devDependencies:
   chai: 4.3.7
   eslint: 8.36.0
   eslint-plugin-mocha: 10.1.0_eslint@8.36.0
-  fist-bump: 1.2.3
+  fist-bump: 2.0.0
   lint-staged: 13.2.0
   mocha: 10.2.0
   simple-git-hooks: 2.8.1
@@ -864,8 +864,8 @@ packages:
       path-exists: 4.0.0
     dev: true
 
-  /fist-bump/1.2.3:
-    resolution: {integrity: sha512-I6hpO9dTwE34vGStKpTkfBs9kltQ7MDOMahATNVB0JgYMkA4vLvhYuslhhHelSAxDKQDgb34AGXYAJnR81455g==}
+  /fist-bump/2.0.0:
+    resolution: {integrity: sha512-WJ15dx1e76lNJ8MaZ2mNFytv7Mtz6yQC3ClquDgubUZILGVTimihW7cbFSVchJO6MlcRxY/jVjYU78J2w/cTxA==}
     hasBin: true
     dependencies:
       shelljs: 0.8.5

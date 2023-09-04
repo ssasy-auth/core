@@ -1,7 +1,7 @@
 {
   "name": "@ssasy-auth/core",
   "license": "MIT",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "a self-sovereign authentication scheme",
   "author": "hello@oliverrr.net",
   "repository": "ssasy-auth/core",
@@ -33,7 +33,7 @@
     "chai": "^4.3.7",
     "eslint": "^8.34.0",
     "eslint-plugin-mocha": "^10.1.0",
-    "fist-bump": "^1.2.3",
+    "fist-bump": "^2.0.0",
     "lint-staged": "^13.1.2",
     "mocha": "^10.2.0",
     "simple-git-hooks": "^2.8.1",
