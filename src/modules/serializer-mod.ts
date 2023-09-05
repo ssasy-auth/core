@@ -86,71 +86,72 @@ export const SerializerModule = {
    * 
    * The representation has the following format:
    * 
-   * `ssasy://key?type=<keyType>&c_kty=<ktyValue>&c_key_ops=<keyOpsValue>&c_alg=<algValue>&c_ext=<extValue>&c_kid=<kidValue>&c_use=<useValue>&c_k=<kValue>&c_crv=<crvValue>&c_x=<xValue>&c_y=<yValue>&c_d=<dValue>&hash=<hashValue>&salt=<saltValue>&iterations=<iterationCount>`
+   * `ssasy://key?type=<value>&domain=<value>&hash=<value>&salt=<value>&iterations=<value>&c_kty=<value>&c_key_ops=<value>&c_alg=<value>&c_ext=<value>&c_kid=<value>&c_use=<value>&c_k=<value>&c_crv=<value>&c_x=<value>&c_y=<value>&c_d=<value>`
 	 *
+   * Note: Try to keep the order of the parameters as shown above so that keys that are saved
+   * in a database can be easily compared.
+   * 
 	 * @param key - key
 	 * @returns key
 	 * */
   serializeKey: async (key: GenericKey): Promise<string> => {
-    
     if (!KeyChecker.isKey(key)) {
       throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_KEY);
     }
 
-    const isRawKey: boolean = KeyChecker.isRawKey(key);
-    
-    const rawKey: RawKey = isRawKey
+    const rawKey: RawKey = KeyChecker.isRawKey(key)
       ? key as RawKey
       : await KeyModule.exportKey(key);
-
+    
     let keyUri: string = SerializerPrefix.URI.KEY;
 
     // add type to keyUri
     keyUri += `type="${_encodeUriParamValue(rawKey.type)}"`;
+    
+    //! the order of the parameters is important for the key comparison (i.e. database queries)
+    const paramKeys: string[] = [
+      "domain",
+      "hash",
+      "salt",
+      "iterations",
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}kty`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}key_ops`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}alg`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}ext`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}kid`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}use`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}k`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}crv`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}x`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}y`,
+      `${SerializerPrefix.PARAM.KEY_CRYPTO}d`
+    ];
 
-    // add domain to keyString
-    if(rawKey.domain) {
-      keyUri += `&domain="${_encodeUriParamValue(rawKey.domain)}"`;
-    }
+    for (const paramKey of paramKeys) {
+      // check if param belongs to crypto object
+      const isCryptoValue: boolean = paramKey.startsWith(SerializerPrefix.PARAM.KEY_CRYPTO);
+      
+      // remove protocol prefix
+      const cleanParam: string = isCryptoValue ? paramKey.slice(SerializerPrefix.PARAM.KEY_CRYPTO.length) : paramKey;
 
-    // add raw flag if key is raw
-    if(isRawKey) {
-      keyUri += `&raw="${_encodeUriParamValue("true")}"`;
-    }
+      // skip param if it does not exist
+      const inRawKey = (rawKey as any)[cleanParam] !== undefined;
+      const inCrypto: boolean = isCryptoValue && (rawKey.crypto as any)[cleanParam] !== undefined;
+      if (!inRawKey && !inCrypto) {
+        continue;
+      }
+      
+      // set value depending on whether it belongs to crypto object
+      let paramValue: any = isCryptoValue ? (rawKey.crypto as any)[cleanParam] : (rawKey as any)[cleanParam];
 
-    /**
-     * Returns a string of RawKey as a uri parameter
-     */
-    function _readProperties(obj: any): string {
-      let properties = "";
-
-      for (const [ key, value ] of Object.entries(obj)) {
-
-        if(key === "type" || key === "domain") {
-          // skip type and domain
-          continue;
-        }
-        
-        if(Array.isArray(value)) {
-          // add array to properties
-          const arrayValue = `[${value.join(",")}]`
-          properties += `&${SerializerPrefix.PARAM.KEY_CRYPTO}${key}="${_encodeUriParamValue(arrayValue)}"`;
-
-        } else if (typeof value === "object") {
-          // recursive call if value is an object
-          properties += _readProperties(value);
-
-        } else {
-          // add property to properties
-          properties += `&${SerializerPrefix.PARAM.KEY_CRYPTO}${key}="${_encodeUriParamValue(value as string)}"`;
-        }
+      // convert value to a string if it is an array
+      if (Array.isArray(paramValue)) {
+        paramValue = `[${paramValue.join(",")}]`;
       }
 
-      return properties;
+      // add param to keyUri
+      keyUri += `&${paramKey}="${_encodeUriParamValue(paramValue)}"`;
     }
-
-    keyUri += _readProperties(rawKey);
-
 
     return keyUri
   },
@@ -221,24 +222,11 @@ export const SerializerModule = {
       return rawKey as RawKey;
     }
 
-    let key: GenericKey;
-    
     // convert raw key to a key instance (secure context)
     const rawKey: RawKey = _rebuildRawKey(keyParams);
-    
-    // set key as raw if raw flag is set
-    if((rawKey as RawKey & { raw?: string }).raw === "true") {
-      
-      // remove raw flag from rawKey
-      delete (rawKey as RawKey & { raw?: string }).raw;
-      
-      key = rawKey as RawKey;
 
-    } else {
-      key = await KeyModule.importKey(rawKey);
-    }
-
-    return key;
+    // convert raw key to key instance (secure context) and return
+    return await KeyModule.importKey(rawKey);
   },
   /**
 	 * Returns a uri string representation of a challenge.

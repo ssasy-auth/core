@@ -2,6 +2,11 @@
 
 > Only notable changes are documented here.
 
+## `2.2.2` - SSASy Key URI
+
+- [patch] removes `raw` param from SSASy key URI. The `raw` param was used to indicate whether the key should be deserialized to a `RawKey` object or a `SecureContextKey` object. Since some keys may have the `raw` param while others do not, it can cause issues when searching for keys in a database, for example, since the `raw` param is not part of the key's URI. To solve this minor design issue, the `raw` param has been removed.
+- [patch] manually builds key uri instead of traveling through the `RawKey` object in the `SerializerModule.serializeKey()` method. This is a minor design decision ensures that the key URI is consistent which makes it easier to query for keys in a database, for example.
+
 ## `2.2.0` - Wallet Class
 
 - [breaking] Enforces SSASy URI format for all SSASy resources that are passed to (and returned from) the `Wallet` class.
@@ -19,4 +24,4 @@
 
 ### Migrating from `1.9.6` to `2.0.0`
 
-- Refactor all code that uses the `EncoderModule` to use the `SerializerModule` instead (see [`SerializerModule`](../src/modules/serializer-mod.ts) for more details)
+- [patch] Refactor all code that uses the `EncoderModule` to use the `SerializerModule` instead (see [`SerializerModule`](../src/modules/serializer-mod.ts) for more details)
