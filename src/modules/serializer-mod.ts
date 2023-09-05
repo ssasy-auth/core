@@ -47,6 +47,8 @@ function _encodeUriParamValue(value: string): string {
     .replace(/&/g, "%26")
     .replace(/,/g, "%2C")
     .replace(/=/g, "%3D")
+    .replace(/'/g, "%27")
+    .replace(/"/g, "%22")
 }
 
 /**
@@ -58,6 +60,8 @@ function _decodeUriParam(value: string): string {
     .replace(/%26/g, "&")
     .replace(/%2C/g, ",")
     .replace(/%3D/g, "=")
+    .replace(/%27/g, "'")
+    .replace(/%22/g, "\"")
 }
 
 /**
@@ -254,14 +258,12 @@ export const SerializerModule = {
     challengeUri += `&timestamp="${_encodeUriParamValue(timestampString)}"`;
     
     // add verifier
-    let verifierString = await SerializerModule.serializeKey(verifier);
-    verifierString = verifierString.replace(/"/g, "'"); // replace all double quotes with single quotes
-    challengeUri += `&verifier="${_encodeUriParamValue(verifierString)}"`;
+    const verifierUri = await SerializerModule.serializeKey(verifier);
+    challengeUri += `&verifier="${_encodeUriParamValue(verifierUri)}"`;
     
     // add claimant
-    let claimantString = await SerializerModule.serializeKey(claimant);
-    claimantString = claimantString.replace(/"/g, "'"); // replace all double quotes with single quotes
-    challengeUri += `&claimant="${_encodeUriParamValue(claimantString)}"`;
+    const claimantUri = await SerializerModule.serializeKey(claimant);
+    challengeUri += `&claimant="${_encodeUriParamValue(claimantUri)}"`;
 
     // add solution (if exists)
     if(solution){
@@ -362,37 +364,28 @@ export const SerializerModule = {
     // add sender to ciphertext string (if sender exists)
     if((ciphertext as AdvancedCiphertext).sender) {
       const sender = (ciphertext as AdvancedCiphertext).sender as PublicKey;
-      let senderString = await SerializerModule.serializeKey(sender);
-
-      // replace all double quotes with single quotes
-      senderString = senderString.replace(/"/g, "'");
+      const senderUri = await SerializerModule.serializeKey(sender);
 
       // add sender to ciphertext string
-      ciphertextUri += `&sender="${_encodeUriParamValue(senderString)}"`;
+      ciphertextUri += `&sender="${_encodeUriParamValue(senderUri)}"`;
     }
 
     // add recipient to ciphertext string (if recipient exists)
     if((ciphertext as AdvancedCiphertext).recipient) {
       const recipient = (ciphertext as AdvancedCiphertext).recipient as PublicKey;
-      let recipientString = await SerializerModule.serializeKey(recipient);
-
-      // replace all double quotes with single quotes
-      recipientString = recipientString.replace(/"/g, "'");
+      const recipientUri = await SerializerModule.serializeKey(recipient);
 
       // add recipient to ciphertext string
-      ciphertextUri += `&recipient="${_encodeUriParamValue(recipientString)}"`;
+      ciphertextUri += `&recipient="${_encodeUriParamValue(recipientUri)}"`;
     }
 
     // add signature to ciphertext string (if signature exists)
     if((ciphertext as AdvancedCiphertext).signature) {
       const signature = (ciphertext as AdvancedCiphertext).signature as StandardCiphertext;
-      let signatureString = await SerializerModule.serializeSignature(signature);
-
-      // replace all double quotes with single quotes
-      signatureString = signatureString.replace(/"/g, "'");
+      const signatureUri = await SerializerModule.serializeSignature(signature);
 
       // add signature to ciphertext string
-      ciphertextUri += `&signature="${_encodeUriParamValue(signatureString)}"`;
+      ciphertextUri += `&signature="${_encodeUriParamValue(signatureUri)}"`;
     }
 
     return ciphertextUri;
@@ -526,16 +519,16 @@ function _extractUriParams(uri: string, prefix: string): string[] {
 type KeyT = KeyType.Key | KeyType.SecretKey | KeyType.PassKey | KeyType.PublicKey | KeyType.PrivateKey | KeyType.SharedKey;
 
 export const SerializerChecker = {
-  isKeyUri: (keyString: string, config?: { type?: KeyT } ): boolean => {
+  isKeyUri: (keyUri: string, config?: { type?: KeyT } ): boolean => {
     const requiredParams = [ "type", "c_kty", "c_key_ops", "c_ext" ];
     const requiredSymmetricParams = [ ...requiredParams, "c_alg", "c_k" ];
     const requiredAsymmetricParams = [ ...requiredParams, "c_crv", "c_x", "c_y" ]; // excluding `c_d` (private key)
     
-    if(!_validCheckerArg(keyString, SerializerPrefix.URI.KEY)) {
+    if(!_validCheckerArg(keyUri, SerializerPrefix.URI.KEY)) {
       return false;
     }
 
-    const params = _extractUriParams(keyString, SerializerPrefix.URI.KEY);
+    const params = _extractUriParams(keyUri, SerializerPrefix.URI.KEY);
     
     
     // arg must have required params
@@ -572,15 +565,15 @@ export const SerializerChecker = {
     return true;
   },
 
-  isChallengeUri: (challengeString: string): boolean => {
+  isChallengeUri: (challengeUri: string): boolean => {
     const requiredParams = [ "nonce", "timestamp", "verifier", "claimant" ];
     const maxParams = [ ...requiredParams, "solution" ];
     
-    if(!_validCheckerArg(challengeString, SerializerPrefix.URI.CHALLENGE)) {
+    if(!_validCheckerArg(challengeUri, SerializerPrefix.URI.CHALLENGE)) {
       return false;
     }
 
-    const params: string[] = _extractUriParams(challengeString, SerializerPrefix.URI.CHALLENGE);
+    const params: string[] = _extractUriParams(challengeUri, SerializerPrefix.URI.CHALLENGE);
 
     // arg must have required params
     if(params.length < requiredParams.length){
@@ -595,15 +588,15 @@ export const SerializerChecker = {
     return true;
   },
 
-  isCiphertextUri: (ciphertextString: string): boolean => {
+  isCiphertextUri: (ciphertextUri: string): boolean => {
     const requiredParams = [ "data", "iv" ];
     const maxParamas = [ ...requiredParams, "salt", "sender", "recipient", "signature" ];
     
-    if(!_validCheckerArg(ciphertextString, SerializerPrefix.URI.CIPHERTEXT)) {
+    if(!_validCheckerArg(ciphertextUri, SerializerPrefix.URI.CIPHERTEXT)) {
       return false;
     }
 
-    const params: string[] = _extractUriParams(ciphertextString, SerializerPrefix.URI.CIPHERTEXT);
+    const params: string[] = _extractUriParams(ciphertextUri, SerializerPrefix.URI.CIPHERTEXT);
     
     // arg must have required params
     if(params.length < requiredParams.length){
@@ -618,14 +611,14 @@ export const SerializerChecker = {
     return true;
   },
 
-  isSignatureUri: (signatureString: string): boolean => {
+  isSignatureUri: (signatureUri: string): boolean => {
     const requiredParams = [ "data", "iv" ];
 
-    if(!_validCheckerArg(signatureString, SerializerPrefix.URI.SIGNATURE)) {
+    if(!_validCheckerArg(signatureUri, SerializerPrefix.URI.SIGNATURE)) {
       return false;
     }
 
-    const params: string[] = _extractUriParams(signatureString, SerializerPrefix.URI.SIGNATURE);
+    const params: string[] = _extractUriParams(signatureUri, SerializerPrefix.URI.SIGNATURE);
 
     // arg must have required params
     if(params.length < requiredParams.length){

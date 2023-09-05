@@ -52,6 +52,25 @@ function _isValidURI(testUri: string): boolean {
   }
 }
 
+/**
+ * Returns true if the string is a valid utf-8 encoded string with no special characters
+ */
+function _isValidEncoding(sample: string): boolean {
+  const specialCharacters = [ "'", "=", "&", "," ];
+
+  let noSpecialCharacters = true;
+
+  for (const character of specialCharacters) {
+    if (sample.includes(character)) {
+      noSpecialCharacters = false;
+    }
+  }
+  
+  const isUtf8: boolean = BufferUtil.isUtf8String(sample);
+
+  return noSpecialCharacters && isUtf8;
+}
+
 
 describe("[SerializerModule Test Suite]", () => {
   describe("SerializerModule", ()=>{
@@ -179,7 +198,7 @@ describe("[SerializerModule Test Suite]", () => {
               const encodedValue = value.slice(1, value.length - 1);
 
               // check if value is encoded
-              expect(BufferUtil.isUtf8String(encodedValue)).to.be.true;
+              expect(_isValidEncoding(encodedValue)).to.be.true;
             }
           }
         });
@@ -333,7 +352,7 @@ describe("[SerializerModule Test Suite]", () => {
             const encodedValue = value.slice(1, value.length - 1);
 
             // check if value is encoded
-            expect(BufferUtil.isUtf8String(encodedValue)).to.be.true;
+            expect(_isValidEncoding(encodedValue)).to.be.true;
           }
         });
 
@@ -617,7 +636,7 @@ describe("[SerializerModule Test Suite]", () => {
           }
         })
 
-        it("should encode nested signature ciphertext properties if signature is present", async () => {
+        it("should encode nested signature, verifier and claimant properties if present", async () => {
           const ciphertextUri = await SerializerModule.serializeCiphertext(advancedCiphertextWithSignature);
           const ciphertextParams = _extractUriParameters(ciphertextUri, SerializerModule.PREFIX.URI.CIPHERTEXT);
 
@@ -632,7 +651,7 @@ describe("[SerializerModule Test Suite]", () => {
             const encodedValue = value.slice(1, value.length - 1);
 
             // check if value is encoded
-            expect(BufferUtil.isUtf8String(encodedValue)).to.be.true;
+            expect(_isValidEncoding(encodedValue)).to.be.true;
           }
         });
 
@@ -652,7 +671,7 @@ describe("[SerializerModule Test Suite]", () => {
               const encodedValue = value.slice(1, value.length - 1);
 
               // check if value is encoded
-              expect(BufferUtil.isUtf8String(encodedValue)).to.be.true;
+              expect(_isValidEncoding(encodedValue)).to.be.true;
             }
           }
         });
@@ -813,7 +832,7 @@ describe("[SerializerModule Test Suite]", () => {
             const encodedValue = value.slice(1, value.length - 1);
 
             // check if value is encoded
-            expect(BufferUtil.isUtf8String(encodedValue)).to.be.true;
+            expect(_isValidEncoding(encodedValue)).to.be.true;
           }
         });
 
