@@ -1,7 +1,7 @@
 {
   "name": "@ssasy-auth/core",
   "license": "MIT",
-  "version": "2.2.3",
+  "version": "3.0.0",
   "description": "a self-sovereign authentication scheme",
   "author": "hello@oliverrr.net",
   "repository": "ssasy-auth/core",

@@ -34,6 +34,10 @@
         }
       }
     ],
+    // no skipping of tests
+    "mocha/no-skipped-tests": ["error"],
+    // no exclusive tests
+    "mocha/no-exclusive-tests": ["error"],
 
     /* ================ formatting ================ */
     // use 2 spaces for indentation

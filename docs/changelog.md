@@ -2,6 +2,15 @@
 
 > Only notable changes are documented here.
 
+## `3.0.0` - Fixes SSASy URI format
+
+- `3.0.0` is essentially a culmination of `2.0.0` and `2.2.0` with some minor changes to the SSASy URI format.
+- [breaking] removes quotes from SSASy URI format to avoid issues with URI encoding caused by the quotes. This is a breaking change because it changes the format of the SSASy URI which may cause issues for users who have already stored SSASy URIs in a database, for example.
+
+### Migrating from `2.2.x` to `3.0.0`
+
+- Convert all SSASy URIs back to `RawKey`s using v`2.2.x` and then convert them to SSASy URIs using v`3.0.0`.
+
 ## `2.2.2` - SSASy Key URI
 
 - [patch] removes `raw` param from SSASy key URI. The `raw` param was used to indicate whether the key should be deserialized to a `RawKey` object or a `SecureContextKey` object. Since some keys may have the `raw` param while others do not, it can cause issues when searching for keys in a database, for example, since the `raw` param is not part of the key's URI. To solve this minor design issue, the `raw` param has been removed.

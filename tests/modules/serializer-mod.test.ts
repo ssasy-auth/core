@@ -190,15 +190,8 @@ describe("[SerializerModule Test Suite]", () => {
             for(const property of keyParams) {
               const value = property.split("=")[1]
             
-              // check if value is in quotes
-              expect(value[0]).to.equal("\"");
-              expect(value[value.length - 1]).to.equal("\"");
-
-              // remove quotes
-              const encodedValue = value.slice(1, value.length - 1);
-
               // check if value is encoded
-              expect(_isValidEncoding(encodedValue)).to.be.true;
+              expect(_isValidEncoding(value)).to.be.true;
             }
           }
         });
@@ -253,12 +246,19 @@ describe("[SerializerModule Test Suite]", () => {
         });
 
         it("should deserialize and return a key for all types", async () => {
-          for(let i = 0; i < serializedKeyChain.length; i++){
-            const key = await SerializerModule.deserializeKey(serializedKeyChain[i])
+          for(const serializedKey of serializedKeyChain) {
+            const key = await SerializerModule.deserializeKey(serializedKey);
             expect(KeyChecker.isKey(key)).to.be.true;
 
           }
         });
+
+        it("should return a raw key if config.raw is true", async() => {
+          for(const serializedKey of serializedKeyChain) {
+            const key = await SerializerModule.deserializeKey(serializedKey, { raw: true });
+            expect(KeyChecker.isRawKey(key)).to.be.true;
+          }
+        })
       })
     })
 
@@ -344,15 +344,8 @@ describe("[SerializerModule Test Suite]", () => {
           for(const property of challengeResponseParams) {
             const value = property.split("=")[1]
           
-            // check if value is in quotes
-            expect(value[0]).to.equal("\"");
-            expect(value[value.length - 1]).to.equal("\"");
-
-            // remove quotes
-            const encodedValue = value.slice(1, value.length - 1);
-
             // check if value is encoded
-            expect(_isValidEncoding(encodedValue)).to.be.true;
+            expect(_isValidEncoding(value)).to.be.true;
           }
         });
 
@@ -363,55 +356,21 @@ describe("[SerializerModule Test Suite]", () => {
        * 3. should throw an error if invalid verifier is not a public key object
        */
         it("should throw an error if invalid challenge is passed", async () => {
-          let challengeCopy: Challenge;
+          const invalidChallenges: any[] = [
+            { ...challenge, nonce: BufferUtil.BufferToString(new Uint8Array(0)) }, // empty nonce not allowed
+            { ...challenge,timestamp: "invalid timestamp" }, // timestamp needs to be a number
+            { ...challenge, verifier: "invalid verifier" },  // verifier needs to be a public key object
+            { ...challenge, claimant: "invalid claimant" }  // claimant needs to be a public key object
+          ];
 
-          try {
-            challengeCopy = {
-              ...challenge,
-              // empty nonce not allowed
-              nonce: BufferUtil.BufferToString(new Uint8Array(0))
-            };
-            await SerializerModule.serializeChallenge(challengeCopy);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE);
-          }
-
-          try {
-            challengeCopy = {
-              ...challenge,
-              timestamp: "invalid timestamp" as any
-            };
-            await SerializerModule.serializeChallenge(challengeCopy);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE);
-          }
-
-          try {
-            challengeCopy = {
-              ...challenge,
-              timestamp: "invalid timestamp" as any
-            };
-            await SerializerModule.serializeChallenge(challengeCopy);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE);
-          }
-
-          try {
-            challengeCopy = {
-              ...challenge,
-              claimant: "invalid claimant" as any
-            };
-            await SerializerModule.serializeChallenge(challengeCopy);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE);
+          for(const invalidChallenge of invalidChallenges) {
+            try {
+              await SerializerModule.serializeChallenge(invalidChallenge);
+              expect.fail(TEST_ERROR.DID_NOT_THROW)
+            } catch (e) {
+              const error = e as Error;
+              expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE);
+            }
           }
         })
       })
@@ -477,29 +436,24 @@ describe("[SerializerModule Test Suite]", () => {
        * 3. should throw an error if invalid verifier is not a public key object
        */
         it("should throw an error if invalid challenge string is passed", async () => {
-        
-          try {
-            await SerializerModule.deserializeChallenge(`invalid-nonce::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
-          }
+          const invalidChallengeStrings = [
+            "invalid",
+            "invalid-nonce::invalid-timestamp::invalid-verifier::invalid-claimant::invalid-solution",
+            "ssasy://challenge?invalid-nonce::invalid-timestamp::invalid-verifier::invalid-claimant::invalid-solution",
+            "ssasy://challenge?nonce=undefined&timestamp=undefined&verifier=undefined&claimant=undefined&solution=undefined"
+          ]
 
-          try {
-            await SerializerModule.deserializeChallenge(`${challenge.nonce}::invalid-timestamp::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
-          }
+          for(const invalidChallengeString of invalidChallengeStrings) {
+            try {
+              await SerializerModule.deserializeChallenge(invalidChallengeString);
+              expect.fail(TEST_ERROR.DID_NOT_THROW)
+            } catch (error) {
 
-          try {
-            await SerializerModule.deserializeChallenge(`${challenge.nonce}::${challenge.timestamp}::${challenge.verifier}::${challenge.claimant}::${challenge.solution}`);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
-          } catch (e) {
-            const error = e as Error;
-            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
+              expect((error as Error).message).be.oneOf([
+                SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING,
+                SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CHALLENGE_STRING
+              ]);
+            }
           }
         })
       })
@@ -536,16 +490,10 @@ describe("[SerializerModule Test Suite]", () => {
         });
 
         // set shared key
-        sharedKey = await KeyModule.generateSharedKey({
-          privateKey: verifierKeyPair.private,
-          publicKey: claimantKeyPair.public
-        });
+        sharedKey = await KeyModule.generateSharedKey({ privateKey: verifierKeyPair.private, publicKey: claimantKeyPair.public });
 
         // set standard ciphertext
-        standardCiphertext = await CryptoModule.encrypt(
-          sharedKey,
-          plaintext
-        );
+        standardCiphertext = await CryptoModule.encrypt(sharedKey, plaintext);
 
         // set standard ciphertext with salt
         standardCiphertextWithSalt = await CryptoModule.encrypt(
@@ -643,15 +591,8 @@ describe("[SerializerModule Test Suite]", () => {
           for(const property of ciphertextParams) {
             const value = property.split("=")[1]
 
-            // check if value is in quotes
-            expect(value[0]).to.equal("\"");
-            expect(value[value.length - 1]).to.equal("\"");
-
-            // remove quotes
-            const encodedValue = value.slice(1, value.length - 1);
-
             // check if value is encoded
-            expect(_isValidEncoding(encodedValue)).to.be.true;
+            expect(_isValidEncoding(value)).to.be.true;
           }
         });
 
@@ -663,15 +604,8 @@ describe("[SerializerModule Test Suite]", () => {
             for(const property of ciphertextParams) {
               const value = property.split("=")[1]
             
-              // check if value is in quotes
-              expect(value[0]).to.equal("\"");
-              expect(value[value.length - 1]).to.equal("\"");
-
-              // remove quotes
-              const encodedValue = value.slice(1, value.length - 1);
-
               // check if value is encoded
-              expect(_isValidEncoding(encodedValue)).to.be.true;
+              expect(_isValidEncoding(value)).to.be.true;
             }
           }
         });
@@ -679,20 +613,10 @@ describe("[SerializerModule Test Suite]", () => {
         it("should throw an error if invalid ciphertext is passed", async () => {
           const invalidCiphertexts = [
             "invalid",
-            {
-              ...standardCiphertext, data: 123
-            },
-            {
-              ...standardCiphertext, sender: "invalid-public-key"
-            },
-            {
-              ...advancedCiphertext, 
-              data: 123 // invalid data
-            },
-            {
-              ...advancedCiphertext, 
-              sender: "invalid-public-key" // invalid sender
-            }
+            { ...standardCiphertext, data: 123 },
+            { ...standardCiphertext, sender: "invalid-public-key" },
+            { ...advancedCiphertext, data: 123 }, // invalid data
+            { ...advancedCiphertext, sender: "invalid-public-key" } // invalid sender
           ]
 
           for (const invalidCiphertext of invalidCiphertexts) {
@@ -713,12 +637,26 @@ describe("[SerializerModule Test Suite]", () => {
         let standardCiphertextWithSaltString: string;
         let advancedCiphertextString: string;
         let advancedCiphertextWithSignatureString: string;
+        
+        let legacyCiphertextString: string;
+        let legacyAdvancedCiphertextString: string; // with signature
 
         before(async () => {
           standardCiphertextString = await SerializerModule.serializeCiphertext(standardCiphertext);
           standardCiphertextWithSaltString = await SerializerModule.serializeCiphertext(standardCiphertextWithSalt);
           advancedCiphertextString = await SerializerModule.serializeCiphertext(advancedCiphertext);
           advancedCiphertextWithSignatureString = await SerializerModule.serializeCiphertext(advancedCiphertextWithSignature);
+
+          // set legacy ciphertext
+          const standardCiphertextCopy = { ...standardCiphertext };
+          legacyCiphertextString = JSON.stringify(standardCiphertextCopy);
+          
+          // set legacy advanced ciphertext
+          const advancedCiphertextCopy: any = { ...advancedCiphertextWithSignature };
+          advancedCiphertextCopy.sender = advancedCiphertextCopy.sender ? await KeyModule.exportKey(advancedCiphertextCopy.sender) : undefined;
+          advancedCiphertextCopy.recipient = advancedCiphertextCopy.recipient ? await KeyModule.exportKey(advancedCiphertextCopy.recipient) : undefined;
+          advancedCiphertextCopy.signature = advancedCiphertextCopy.signature ? JSON.stringify(advancedCiphertextCopy.signature) : undefined;
+          legacyAdvancedCiphertextString = JSON.stringify(advancedCiphertextCopy);
 
           ciphertextStrings = [
             standardCiphertextString,
@@ -753,24 +691,40 @@ describe("[SerializerModule Test Suite]", () => {
           expect(deserializedAdvancedCipherTextWithSignature.signature?.iv).to.deep.equal(advancedCiphertextWithSignature.signature?.iv);
         });
 
-        it("should throw an error if invalid ciphertext string is passed", async () => {
+        it("should support legacy ciphertexts", async () => {
+          const legacyCiphertexts = [
+            legacyCiphertextString,
+            legacyAdvancedCiphertextString
+          ]
+
+          for (const legacyCiphertext of legacyCiphertexts) {
+            const ciphertext = await SerializerModule.deserializeCiphertext(legacyCiphertext);
+            expect(CryptoChecker.isCiphertext(ciphertext)).to.be.true;
+          }
+        })
+
+        it("should throw an error if invalid ciphertext uri is passed", async () => {
           const invalidCiphertextStrings = [
             "invalid",
-            JSON.stringify({
-              ...advancedCiphertext, data: 123
-            }),
-            JSON.stringify({
-              ...advancedCiphertext, sender: "invalid-public-key"
-            })
+            JSON.stringify({ ...advancedCiphertext, data: 123 }),
+            JSON.stringify({ ...advancedCiphertext, sender: "invalid-public-key" }),
+            "ssasy://ciphertext?data=undefined&iv=undefined&sender=undefined&recipient=undefined&signature=undefined",
+            "ssasy://key?type=public-key&c_crv=undefined&c_x=undefined&c_y=undefined&c_kty=undefined&c_key_ops=undefined&c_ext=undefined",
+            advancedCiphertextString.replace(/data=[^&]*/g, "data=undefined"), // invalid data
+            advancedCiphertextString.replace(/&sender=[^&]*/g, "&sender=undefined"), // invalid sender
+            advancedCiphertextWithSignatureString.replace(/&signature=[^&]*/g, "&signature=invalid") // invalid signature
           ]
 
           for (const invalidCiphertextString of invalidCiphertextStrings) {
             try {
               await SerializerModule.deserializeCiphertext(invalidCiphertextString);
               expect.fail(TEST_ERROR.DID_NOT_THROW)
-            } catch (e) {
-              const error = e as Error;
-              expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
+            } catch (error) {
+
+              expect((error as Error).message).be.oneOf([
+                SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING,
+                SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CIPHERTEXT_STRING
+              ]);
             }
           }
         })
@@ -824,35 +778,21 @@ describe("[SerializerModule Test Suite]", () => {
           for(const property of signatureParameters) {
             const value = property.split("=")[1]
           
-            // check if value is in quotes
-            expect(value[0]).to.equal("\"");
-            expect(value[value.length - 1]).to.equal("\"");
-
-            // remove quotes
-            const encodedValue = value.slice(1, value.length - 1);
-
             // check if value is encoded
-            expect(_isValidEncoding(encodedValue)).to.be.true;
+            expect(_isValidEncoding(value)).to.be.true;
           }
         });
 
         it("should throw an error if invalid ciphertext is passed", async () => {
           const invalidCiphertexts = [
             "invalid",
-            {
-              ...signature, data: 123
-            },
-            {
-              ...signature, sender: "invalid-public-key"
-            },
-            {
-              ...signature, 
-              data: 123 // invalid data
-            },
-            {
-              ...signature, 
-              sender: "invalid-public-key" // invalid sender
-            }
+            { ...signature, data: 123 },
+            { ...signature, sender: "invalid-public-key" },
+            { ...signature, data: 123 }, // invalid data
+            { ...signature, sender: "invalid-public-key" }, // invalid sender
+            "ssasy://signature?data=undefined&iv=undefined",
+            "ssasy://ciphertext?data=undefined&iv=undefined",
+            "ssasy://key?type=public-key&c_crv=undefined&c_x=undefined&c_y=undefined&c_kty=undefined&c_key_ops=undefined&c_ext=undefined"
           ]
 
           for (const invalidCiphertext of invalidCiphertexts) {
@@ -882,21 +822,20 @@ describe("[SerializerModule Test Suite]", () => {
         it("should throw an error if invalid ciphertext string is passed", async () => {
           const invalidCiphertextStrings = [
             "invalid",
-            JSON.stringify({
-              ...signature, data: 123
-            }),
-            JSON.stringify({
-              ...signature, sender: "invalid-public-key"
-            })
+            JSON.stringify({ ...signature, data: 123 }),
+            JSON.stringify({ ...signature, sender: "invalid-public-key" })
           ]
 
           for (const invalidCiphertextString of invalidCiphertextStrings) {
             try {
               await SerializerModule.deserializeCiphertext(invalidCiphertextString);
               expect.fail(TEST_ERROR.DID_NOT_THROW)
-            } catch (e) {
-              const error = e as Error;
-              expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
+            } catch (error) {
+              
+              expect((error as Error).message).be.oneOf([
+                SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING,
+                SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CIPHERTEXT_STRING
+              ]);
             }
           }
         })
