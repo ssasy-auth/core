@@ -827,6 +827,95 @@ describe("[SerializerModule Test Suite]", () => {
         });
       });
     });
+
+    describe("Credential", () => {
+      let privateKey: PrivateKey;
+      let publicKey: PublicKey;
+      let signature: StandardCiphertext;
+
+      before(async () => {
+        privateKey = await KeyModule.generatePrivateKey();
+        publicKey = await KeyModule.generatePublicKey({ privateKey });
+
+        const plaintext = "test plaintext";
+        signature = await CryptoModule.sign(privateKey, plaintext);
+      });
+
+      describe("serializeCredential()", () => {
+        it("should return a ceredential URI", async () => {
+          const credentialUri = await SerializerModule.serializeCredential(publicKey, signature);
+          expect(credentialUri).to.be.a("string");
+          expect(credentialUri.startsWith(SerializerModule.PREFIX.URI.CREDENTIAL)).to.be.true;
+        });
+
+        it("should throw error if public key is undefined", async () => {
+          try {
+            await SerializerModule.serializeCredential(undefined as any, signature);
+            expect.fail(TEST_ERROR.DID_NOT_THROW);
+          } catch (e) {
+            const error = e as Error;
+            expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.MISSING_CREDENTIAL_KEY);
+          }
+        });
+
+        it("should throw error if invalid public key is passed", async () => {
+          const invalidKeys: any[] = [
+            "string",
+            await KeyModule.generateKey(),
+            await KeyModule.generatePassKey({ passphrase: "test" }),
+            await KeyModule.generatePrivateKey(),
+            await KeyModule.generateSharedKey({ privateKey, publicKey })
+          ];
+
+          for(const invalidKey of invalidKeys) {
+            try {
+              await SerializerModule.serializeCredential(invalidKey, signature);
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
+            } catch (e) {
+              const error = e as Error;
+              expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CREDENTIAL);
+            }
+          }
+        });
+
+      });
+
+      describe("deserializeCredential()", () => {
+        let credentialUri: string;
+
+        before(async () => {
+          credentialUri = await SerializerModule.serializeCredential(publicKey, signature);
+        });
+
+        it("should return a public key and a signature (standard ciphertext)", async () => {
+          const credential = await SerializerModule.deserializeCredential(credentialUri);
+
+          expect(credential).to.have.property("publicKey");
+          expect(credential).to.have.property("signature");
+
+          expect(KeyChecker.isAsymmetricKey(credential.publicKey)).to.be.true;
+          expect(CryptoChecker.isCiphertext(credential.signature)).to.be.true;
+        });
+
+        it("should throw error if credential uri is undefined", async () => {
+          const invalidCredentialUri: string[] = [
+            "undefined",
+            await SerializerModule.serializeKey(publicKey),
+            await SerializerModule.serializeCiphertext(signature)
+          ];
+
+          for(const invalidUri of invalidCredentialUri) {
+            try {
+              await SerializerModule.deserializeCredential(invalidUri);
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
+            } catch (e) {
+              const error = e as Error;
+              expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CREDENTIAL_STRING);
+            }
+          }
+        });
+      });
+    });
   });
 
   describe("SerializerChecker", () => {

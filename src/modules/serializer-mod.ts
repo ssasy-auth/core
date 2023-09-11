@@ -36,16 +36,28 @@ const SERIALIZER_ERROR_MESSAGE = {
   
   INVALID_SIGNATURE: "Signature is invalid",
   INVALID_SIGNATURE_STRING: "Signature string is invalid",
+
+  INVALID_CREDENTIAL: "Credential is invalid",
+  INVALID_CREDENTIAL_STRING: "Credential string is invalid",
   
   MISSING_PARAM: "Parameter key or value is missing",
   MISSING_KEY_STRING: "Key is missing",
   MISSING_CHALLENGE_STRING: "Challenge string is missing",
   MISSING_CIPHERTEXT_STRING: "Ciphertext string is missing",
   MISSING_SIGNATURE_STRING: "Signature string is missing",
+  MISSING_CREDENTIAL_URI: "Credential uri is missing",
+  MISSING_CREDENTIAL_KEY: "Credential public key is missing",
+  MISSING_CREDENTIAL_SIGNATURE: "Credential signature is missing",
   
   LEGACY_INVALID_CIPHERTEXT_STRING: "Legacy ciphertext string is invalid",
   LEGACY_INVALID_CHALLENGE_STRING: "Legacy challenge string is invalid" 
 };
+
+/**
+ * A credential is a combination of a public key and a digital signature signed
+ * by the corresponding private key.
+ */
+type Credential = { publicKey: PublicKey, signature: StandardCiphertext };
 
 /**
  * Returns an encoded string for a uri parameter value. The following
@@ -222,7 +234,8 @@ const SerializerPrefix = {
     KEY: "ssasy://key?",
     CHALLENGE: "ssasy://challenge?",
     CIPHERTEXT: "ssasy://ciphertext?",
-    SIGNATURE: "ssasy://signature?" 
+    SIGNATURE: "ssasy://signature?",
+    CREDENTIAL: "ssasy://credential?"
   },
   PARAM: { KEY_CRYPTO: "c_" } 
 };
@@ -653,7 +666,77 @@ const SerializerModule = {
 
     const ciphertextUri = signatureUri.replace(SerializerPrefix.URI.SIGNATURE, SerializerPrefix.URI.CIPHERTEXT);
     return await SerializerModule.deserializeCiphertext(ciphertextUri);
-  } 
+  },
+  /**
+   * Returns a uri string representation of a credential which is a combination
+   * of a public key and a digital signature signed by the corresponding private key.
+   */
+  serializeCredential: async (publicKey: PublicKey, signature: StandardCiphertext): Promise<any> => {
+    if(!publicKey){
+      throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CREDENTIAL_KEY);
+    }
+
+    if(!signature){
+      throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CREDENTIAL_SIGNATURE);
+    }
+
+    if(
+      (!KeyChecker.isAsymmetricKey(publicKey) || publicKey.type !== KeyType.PublicKey) ||
+      !CryptoChecker.isCiphertext(signature)
+    ) {
+      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CREDENTIAL);
+    }
+
+    let credentialUri: string = SerializerPrefix.URI.CREDENTIAL;
+
+    const publicKeyUri: string = await SerializerModule.serializeKey(publicKey);
+    credentialUri += _constructParam("publicKey", publicKeyUri, { first: true });
+
+    const signatureUri: string = await SerializerModule.serializeSignature(signature);
+    credentialUri += _constructParam("signature", signatureUri);
+
+    return credentialUri;
+  },
+  /**
+   * Returns a credential object from a string representation of a credential.
+   */
+  deserializeCredential: async (credentialUri: string): Promise<any> => {
+    if(!credentialUri){
+      throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_CREDENTIAL_URI);
+    }
+
+    if(typeof credentialUri !== "string" || !SerializerChecker.isCredentialUri(credentialUri)){
+      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CREDENTIAL_STRING);
+    }
+
+    // remove credential protocol prefix
+    credentialUri = credentialUri.slice(SerializerPrefix.URI.CREDENTIAL.length);
+
+    // extract all properties from credential string
+    const credentialParams: string[] = credentialUri.split("&");
+
+    let publicKey: PublicKey | undefined;
+    let signature: StandardCiphertext | undefined;
+
+    for(const param of credentialParams){
+      const { key, value } = _deconstructParam(param);
+
+      if(key === "publicKey"){
+        publicKey = await SerializerModule.deserializeKey(value) as PublicKey;
+      } else if(key === "signature"){
+        signature = await SerializerModule.deserializeSignature(value);
+      }
+    }
+
+    if(!publicKey || !signature){
+      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CREDENTIAL_STRING);
+    }
+
+    return {
+      publicKey,
+      signature
+    };
+  }
 };
 
 /**
@@ -744,9 +827,6 @@ const SerializerChecker = {
 
   /**
    * Returns true if a challenge uri is valid.
-   * 
-   * @param challengeUri - encoded challenge uri
-   * @returns true if challenge uri is valid
    */
   isChallengeUri: (challengeUri: string): boolean => {
     const requiredParams = [ "nonce", "timestamp", "verifier", "claimant" ];
@@ -789,6 +869,9 @@ const SerializerChecker = {
     return true;
   },
 
+  /**
+   * Returns true if a ciphertext uri is valid.
+   */
   isCiphertextUri: (ciphertextUri: string): boolean => {
     const requiredParams = [ "data", "iv" ];
     const maxParamas = [ ...requiredParams, "salt", "sender", "recipient", "signature" ];
@@ -842,6 +925,9 @@ const SerializerChecker = {
     return true;
   },
 
+  /**
+   * Returns true if a signature uri is valid.
+   */
   isSignatureUri: (signatureUri: string): boolean => {
     const requiredParams = [ "data", "iv" ];
 
@@ -871,7 +957,51 @@ const SerializerChecker = {
     }
 
     return true;
-  } 
+  },
+
+  /**
+   * Returns true if a credential uri is valid.
+   */
+  isCredentialUri: (credentialUri: string): boolean => {
+    const requiredParams = [ "publicKey", "signature" ];
+
+    if(!_hasValidPrefix(credentialUri, SerializerPrefix.URI.CREDENTIAL)) {
+      return false;
+    }
+
+    const params: {key: string, value: string}[] = _extractUriParams(credentialUri, SerializerPrefix.URI.CREDENTIAL);
+
+    // arg must have required params
+    if(params.length !== requiredParams.length){
+      return false;
+    }
+
+    try {
+
+      const publicKey: string | undefined = params.find(param => param.key === "publicKey")?.value;
+      const signature: string | undefined = params.find(param => param.key === "signature")?.value;
+
+      if(
+        (!publicKey || publicKey === "" || publicKey === "undefined") ||
+        (!signature || signature === "" || signature === "undefined")
+      ){
+        return false;
+      }
+
+      if(!SerializerChecker.isKeyUri(publicKey)){
+        return false;
+      }
+
+      if(!SerializerChecker.isSignatureUri(signature)){
+        return false;
+      }
+
+    } catch (error) {
+      return false;
+    }
+
+    return true;
+  }
 };
 
 export {
