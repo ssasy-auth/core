@@ -5,26 +5,23 @@ import { TEST_ERROR } from "../config";
 import { CHALLENGE_MAX_AGE } from "../../src/config";
 import { BufferUtil } from "../../src/utils";
 import {
-  KeyModule,
-  CryptoModule,
+  CHALLENGE_ERROR_MESSAGE,
   ChallengeModule,
-  CHALLENGE_ERROR_MESSAGE 
+  CryptoModule,
+  KeyModule 
 } from "../../src/modules";
 import type { KeyPair } from "../../src/interfaces/key-interface";
 import type { Challenge } from "../../src/interfaces";
 
 describe("[ChallengeModule Module Test Suite]", () => {
   // verifier of the challenge
-  const verifier: KeyPair = {
-  } as unknown as KeyPair;
+  const verifier: KeyPair = {} as unknown as KeyPair;
 
   // claimant to the challenge
-  const claimant: KeyPair = {
-  } as unknown as KeyPair;
+  const claimant: KeyPair = {} as unknown as KeyPair;
 
   // attacker will try to solve the challenge
-  const attacker: KeyPair = {
-  } as unknown as KeyPair;
+  const attacker: KeyPair = {} as unknown as KeyPair;
 
   // nonce
   let validNonce: Uint8Array;
@@ -37,20 +34,14 @@ describe("[ChallengeModule Module Test Suite]", () => {
     attacker.private = await KeyModule.generatePrivateKey();
       
     // setup public keys
-    verifier.public = await KeyModule.generatePublicKey({
-      privateKey: verifier.private 
-    });
-    claimant.public = await KeyModule.generatePublicKey({
-      privateKey: claimant.private 
-    });
-    attacker.public = await KeyModule.generatePublicKey({
-      privateKey: attacker.private 
-    });
+    verifier.public = await KeyModule.generatePublicKey({ privateKey: verifier.private });
+    claimant.public = await KeyModule.generatePublicKey({ privateKey: claimant.private });
+    attacker.public = await KeyModule.generatePublicKey({ privateKey: attacker.private });
 
     // generate nonce
     validNonce = CryptoModule.generateNonce();
     validNonceString = BufferUtil.BufferToString(validNonce);
-  })
+  });
   
   describe("generateChallenge()", () => {
     it("should return challenge with valid sender and recipient public keys", async () => {
@@ -107,11 +98,11 @@ describe("[ChallengeModule Module Test Suite]", () => {
         nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       // hash nonce from challenge and compare to solved challenge solution
-      const nonce = challenge.nonce
+      const nonce = challenge.nonce;
       const hash = await CryptoModule.hash(nonce.toString());
 
       // solve challenge
@@ -126,7 +117,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       // solve challenge
@@ -144,7 +135,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       try {
@@ -169,7 +160,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         nonce: validNonceString,
         timestamp: Date.now(),
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       try {
@@ -197,7 +188,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         nonce: validNonceString,
         timestamp: Date.now() - PAST_EXPIRATION, // set timestamp to past expiration
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       try {
@@ -222,7 +213,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         timestamp: Date.now(),
         solution: hash,
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
         
       const verified = await ChallengeModule.verifyChallenge(verifier.private, solvedChallenge);
@@ -239,7 +230,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         timestamp: Date.now(),
         solution: stumpHash,
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       verified = await ChallengeModule.verifyChallenge(verifier.private, solvedChallenge);
@@ -258,7 +249,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         timestamp: Date.now() - PAST_EXPIRATION, // set timestamp to past expiration
         solution: "invalid solution",
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
         
       try {
@@ -277,7 +268,7 @@ describe("[ChallengeModule Module Test Suite]", () => {
         timestamp: Date.now(),
         solution: "invalid solution",
         verifier: verifier.public,
-        claimant: claimant.public
+        claimant: claimant.public 
       } as Challenge;
 
       try {

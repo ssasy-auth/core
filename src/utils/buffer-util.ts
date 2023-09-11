@@ -3,7 +3,7 @@
  * @description This utility file provides buffer operations on top of the native APIs based on the environment (browser or Node.js).
  */
 
-import { Buffer } from "buffer/"
+import { Buffer } from "buffer/";
 
 /**
  * Minimum buffer length.
@@ -21,8 +21,8 @@ export const BUFFER_ERROR_MESSAGE = {
   INVALID_BUFFER: "Buffer is not a array buffer or uint8array",
   INVALID_BUFFER_LENGTH: `Buffer length not a number or less than ${DEFAULT_MINIMUM_BUFFER_LENGTH}`,
   INVALID_BUFFER_STRING: "Buffer string is not a valid base64 string",
-  INVALID_ENCODING: "Encoding is not a valid encoding (utf8 or base64)"
-}
+  INVALID_ENCODING: "Encoding is not a valid encoding (utf8 or base64)" 
+};
 
 export type Encoding = "utf8" | "base64";
 
@@ -171,5 +171,5 @@ export const BufferUtil = {
   StringToBuffer,
   isBufferString,
   isBase64String,
-  isUtf8String
-}
+  isUtf8String 
+};

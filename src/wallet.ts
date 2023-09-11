@@ -15,25 +15,25 @@
 
 import { KeyType } from "./interfaces";
 import {
-  SerializerModule,
-  SerializerChecker,
-  ChallengeModule,
   ChallengeChecker,
-  CryptoModule,
+  ChallengeModule,
+  CRYPTO_ERROR_MESSAGE,
   CryptoChecker,
-  KeyModule,
+  CryptoModule,
   KeyChecker,
-  CRYPTO_ERROR_MESSAGE
+  KeyModule,
+  SerializerChecker,
+  SerializerModule 
 } from "./modules";
 import type {
-  Ciphertext,
   AdvancedCiphertext,
+  Challenge,
+  Ciphertext,
   PrivateKey,
   PublicKey,
-  StandardCiphertext,
-  Challenge,
+  RawKey,
   SharedKey,
-  RawKey
+  StandardCiphertext 
 } from "./interfaces";
 
 export const WALLET_ERROR_MESSAGE = {
@@ -51,7 +51,7 @@ export const WALLET_ERROR_MESSAGE = {
   MISSING_CIPHERTEXT: "Ciphertext is missing",
   MISSING_CIPHERTEXT_SIGNATURE: "Ciphertext is missing signature",
   MISSING_CIPHERTEXT_CHALLENGE: "Ciphertext is missing challenge",
-  MISSING_CIPHERTEXT_PARTIES: "Ciphertext is missing sender or recipient"
+  MISSING_CIPHERTEXT_PARTIES: "Ciphertext is missing sender or recipient" 
 };
 
 /**
@@ -139,16 +139,14 @@ export class Wallet {
   async getPublicKey(config: { raw?: boolean }): Promise<RawKey>;
   async getPublicKey(config: { secure?: boolean }): Promise<PublicKey>;
   async getPublicKey(config?: { raw?: boolean, secure?: boolean }): Promise<string | RawKey | PublicKey> {
-    const publicKey: PublicKey = await KeyModule.generatePublicKey({
-      privateKey: await this.getPrivateKey()
-    });
+    const publicKey: PublicKey = await KeyModule.generatePublicKey({ privateKey: await this.getPrivateKey() });
 
     if (config?.raw === true) {
       return await KeyModule.exportKey(publicKey);
     }
     
     if (config?.secure === true) {
-      return publicKey
+      return publicKey;
     }
 
     // return public key uri
@@ -251,7 +249,7 @@ export class Wallet {
 
       const sharedKey = await KeyModule.generateSharedKey({
         privateKey: await this.getPrivateKey(),
-        publicKey: senderPublicKey
+        publicKey: senderPublicKey 
       });
 
       plaintext = await CryptoModule.decrypt(sharedKey, ciphertext);
@@ -347,7 +345,7 @@ export class Wallet {
     // generate a shared key
     const sharedKey: SharedKey = await KeyModule.generateSharedKey({
       privateKey: await this.getPrivateKey(),
-      publicKey: claimantPublicKey
+      publicKey: claimantPublicKey 
     });
 
     // serialize the challenge
@@ -368,8 +366,8 @@ export class Wallet {
     if(claimantSignatureUri) {
       ciphertext = {
         ...ciphertext,
-        signature: await SerializerModule.deserializeSignature(claimantSignatureUri)
-      }
+        signature: await SerializerModule.deserializeSignature(claimantSignatureUri) 
+      };
     }
 
     // return ciphertext as a uri
@@ -412,7 +410,7 @@ export class Wallet {
     // generate a shared key
     const sharedKey: SharedKey = await KeyModule.generateSharedKey({
       privateKey: await this.getPrivateKey(),
-      publicKey: encryptedChallenge.sender
+      publicKey: encryptedChallenge.sender 
     });
 
     let decryptedChallengeUri: string;
@@ -518,7 +516,7 @@ export class Wallet {
         // decode encrypted signature and add it to the ciphertext
         signature: await SerializerModule.deserializeSignature(
           encryptedSignatureUri
-        )
+        ) 
       }
     );
 
@@ -556,11 +554,11 @@ export class Wallet {
     // generate a shared key
     const sharedKey = await KeyModule.generateSharedKey({
       privateKey: await this.getPrivateKey(),
-      publicKey: encrypedChallengeResponse.sender
+      publicKey: encrypedChallengeResponse.sender 
     });
 
     // decrypt the solution
-    let challengeResponse: Challenge
+    let challengeResponse: Challenge;
 
     try {
       const decrypedChallengeResponseString = await CryptoModule.decrypt(
@@ -606,7 +604,7 @@ export class Wallet {
       publicKey: await SerializerModule.serializeKey(challengeResponse.claimant),
       signature: encrypedChallengeResponse.signature
         ? await SerializerModule.serializeSignature(encrypedChallengeResponse.signature)
-        : undefined
-    }
+        : undefined 
+    };
   }
 }

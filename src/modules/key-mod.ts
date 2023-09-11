@@ -1,22 +1,15 @@
-import { 
-  WebCryptoLib, 
-  BufferUtil
-} from "../utils";
-import {
-  CRYPTO_ALGORITHMS,
-  CRYPTO_CONFIG,
-  SALT_LENGTH 
-} from "../config";
+import { BufferUtil, WebCryptoLib } from "../utils";
+import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG, SALT_LENGTH } from "../config";
 import type {
   GenericKey,
   JsonWebKey,
-  SecureContextKey,
-  RawKey,
-  SecretKey,
   PassKey,
   PrivateKey,
   PublicKey,
-  SharedKey
+  RawKey,
+  SecretKey,
+  SecureContextKey,
+  SharedKey 
 } from "../interfaces";
 import { KeyType } from "../interfaces";
 
@@ -28,7 +21,7 @@ export const KEY_ERROR_MESSAGE = {
   INVALID_PUBLIC_KEY: "Key is not a public key",
   INVALID_KEY: "Key is not a valid key instance",
   INVALID_RAW_KEY: "Key is not a valid raw key",
-  DUPLICATE_SHARED_KEY_PARAMS: "Cannot generate a shared key with the same key type"
+  DUPLICATE_SHARED_KEY_PARAMS: "Cannot generate a shared key with the same key type" 
 };
 
 interface GenKeyParams {
@@ -98,7 +91,7 @@ export const KeyModule = {
     return {
       type: KeyType.SecretKey,
       domain: params?.domain,
-      crypto: cryptoKey
+      crypto: cryptoKey 
     };
   },
 
@@ -145,7 +138,7 @@ export const KeyModule = {
       {
         ...CRYPTO_ALGORITHMS.PBKDF2,
         salt: saltBuffer,
-        iterations: keyIterations
+        iterations: keyIterations 
       },
       keyMaterial,
       CRYPTO_CONFIG.SYMMETRIC.algorithm,
@@ -162,7 +155,7 @@ export const KeyModule = {
       crypto: cryptoKey,
       salt: saltString,
       iterations: keyIterations,
-      hash: CRYPTO_ALGORITHMS.PBKDF2.hash
+      hash: CRYPTO_ALGORITHMS.PBKDF2.hash 
     };
   },
 
@@ -183,7 +176,7 @@ export const KeyModule = {
     return {
       type: KeyType.PrivateKey,
       domain: params?.domain,
-      crypto: privateKey
+      crypto: privateKey 
     };
   },
 
@@ -225,7 +218,7 @@ export const KeyModule = {
     return {
       type: KeyType.PublicKey,
       domain: domain,
-      crypto: publicKey
+      crypto: publicKey 
     };
   },
 
@@ -255,7 +248,7 @@ export const KeyModule = {
     const sharedKey = await WebCryptoLib.subtle.deriveKey(
       {
         name: CRYPTO_CONFIG.ASYMMETRIC.algorithm.name,
-        public: publicKey.crypto
+        public: publicKey.crypto 
       },
       privateKey.crypto,
       CRYPTO_CONFIG.SYMMETRIC.algorithm,
@@ -266,7 +259,7 @@ export const KeyModule = {
     return {
       type: KeyType.SharedKey,
       domain: domain,
-      crypto: sharedKey
+      crypto: sharedKey 
     };
   },
 
@@ -307,14 +300,14 @@ export const KeyModule = {
         crypto: jsonKey,
         hash: (key as PassKey).hash,
         salt: (key as PassKey).salt,
-        iterations: (key as PassKey).iterations
+        iterations: (key as PassKey).iterations 
       };
     }
 
     return {
       type: key.type,
       domain: key.domain,
-      crypto: jsonKey
+      crypto: jsonKey 
     };
   },
 
@@ -357,7 +350,7 @@ export const KeyModule = {
       const key = {
         type: rawKey.type,
         domain: rawKey.domain,
-        crypto: asymmetricKey
+        crypto: asymmetricKey 
       };
 
       return rawKey.type === KeyType.PrivateKey
@@ -381,17 +374,17 @@ export const KeyModule = {
           crypto: cryptoKey,
           hash: rawKey.hash,
           salt: rawKey.salt,
-          iterations: rawKey.iterations
+          iterations: rawKey.iterations 
         } as PassKey;
       }
 
       return {
         type: rawKey.type,
         domain: rawKey.domain,
-        crypto: cryptoKey
+        crypto: cryptoKey 
       } as SecretKey;
     }
-  }
+  } 
 };
 
 /**
@@ -583,5 +576,5 @@ export const KeyChecker = {
 
     // compare the json objects
     return JSON.stringify(rawKey1) === JSON.stringify(rawKey2);
-  }
+  } 
 };

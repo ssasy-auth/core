@@ -7,7 +7,7 @@ import type {
 import { BufferUtil } from "../utils";
 import { KeyType  } from "../interfaces";
 import { CryptoModule } from "./crypto-mod";
-import { KeyModule, KeyChecker } from "./key-mod";
+import { KeyChecker, KeyModule } from "./key-mod";
 
 /**
  * Error messages for the challenge operations.
@@ -20,7 +20,7 @@ export const CHALLENGE_ERROR_MESSAGE = {
   MISSING_KEY: "Key is missing",
   MISSING_CHALLENGE: "Challenge is missing",
   CLAIMANT_MISMATCH: "Claimant does not match the challenge claimant",
-  VERIFIER_MISMATCH: "Verifier does not match the challenge verifier"
+  VERIFIER_MISMATCH: "Verifier does not match the challenge verifier" 
 };
 
 /**
@@ -58,9 +58,7 @@ export const ChallengeModule = {
     }
 
     // generate verifier public key
-    const verifierPublicKey = await KeyModule.generatePublicKey({
-      privateKey: verifier
-    });
+    const verifierPublicKey = await KeyModule.generatePublicKey({ privateKey: verifier });
 
     const nonce = CryptoModule.generateNonce();
     const nonceString = BufferUtil.BufferToString(nonce);
@@ -70,7 +68,7 @@ export const ChallengeModule = {
       nonce: nonceString,
       timestamp: Date.now(),
       verifier: verifierPublicKey,
-      claimant: claimant
+      claimant: claimant 
     } as Challenge;
   },
 
@@ -102,9 +100,7 @@ export const ChallengeModule = {
       throw new Error(CHALLENGE_ERROR_MESSAGE.INVALID_CLAIMANT_PRIVATE_KEY);
     }
 
-    const claimantPublicKey = await KeyModule.generatePublicKey({
-      privateKey: claimant
-    });
+    const claimantPublicKey = await KeyModule.generatePublicKey({ privateKey: claimant });
     if (!(await KeyChecker.isSameKey(claimantPublicKey, challenge.claimant))) {
       throw new Error(CHALLENGE_ERROR_MESSAGE.CLAIMANT_MISMATCH);
     }
@@ -146,9 +142,7 @@ export const ChallengeModule = {
       throw new Error(CHALLENGE_ERROR_MESSAGE.INVALID_VERIFIER_PRIVATE_KEY);
     }
 
-    const verifierPublicKey = await KeyModule.generatePublicKey({
-      privateKey: verifier
-    });
+    const verifierPublicKey = await KeyModule.generatePublicKey({ privateKey: verifier });
     if (!(await KeyChecker.isSameKey(verifierPublicKey, challengeResponse.verifier))) {
       throw new Error(CHALLENGE_ERROR_MESSAGE.VERIFIER_MISMATCH);
     }
@@ -165,7 +159,7 @@ export const ChallengeModule = {
     const hashedNonce = await CryptoModule.hash(challengeResponse.nonce);
 
     return hashedNonce === challengeResponse.solution;
-  }
+  } 
 };
 
 export const ChallengeChecker = {
@@ -214,5 +208,5 @@ export const ChallengeChecker = {
   timestampExpired(timestamp: number): boolean {
     const now = Date.now();
     return now - timestamp > CHALLENGE_MAX_AGE;
-  }
+  } 
 };

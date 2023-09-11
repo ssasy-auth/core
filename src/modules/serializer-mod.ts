@@ -10,18 +10,18 @@
  */
 
 import { KeyType } from "../interfaces";
-import { KeyModule, KeyChecker } from "./key-mod";
+import { KeyChecker, KeyModule } from "./key-mod";
 import { ChallengeChecker } from "./challenge-mod";
 import { CryptoChecker } from "./crypto-mod";
 import type {
-  PublicKey,
-  RawKey,
-  GenericKey,
-  SecureContextKey,
+  AdvancedCiphertext,
   Challenge,
   Ciphertext,
-  StandardCiphertext,
-  AdvancedCiphertext
+  GenericKey,
+  PublicKey,
+  RawKey,
+  SecureContextKey,
+  StandardCiphertext 
 } from "../interfaces";
 
 const SERIALIZER_ERROR_MESSAGE = {
@@ -44,7 +44,7 @@ const SERIALIZER_ERROR_MESSAGE = {
   MISSING_SIGNATURE_STRING: "Signature string is missing",
   
   LEGACY_INVALID_CIPHERTEXT_STRING: "Legacy ciphertext string is invalid",
-  LEGACY_INVALID_CHALLENGE_STRING: "Legacy challenge string is invalid"
+  LEGACY_INVALID_CHALLENGE_STRING: "Legacy challenge string is invalid" 
 };
 
 /**
@@ -56,7 +56,7 @@ function _encodeUriParamValue(value: string): string {
     .replace(/&/g, "%26")
     .replace(/=/g, "%3D")
     .replace(/'/g, "%27")
-    .replace(/"/g, "%22")
+    .replace(/"/g, "%22");
 }
 
 /**
@@ -68,7 +68,7 @@ function _decodeUriParam(value: string): string {
     .replace(/%26/g, "&")
     .replace(/%3D/g, "=")
     .replace(/%27/g, "'")
-    .replace(/%22/g, "\"")
+    .replace(/%22/g, "\"");
 }
 
 /**
@@ -84,7 +84,7 @@ function _decodeUriParam(value: string): string {
 function _constructParam(key: string, value: string, config?: { first?: boolean}): string {
   
   if(!key || !value){
-    throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_PARAM)
+    throw new Error(SERIALIZER_ERROR_MESSAGE.MISSING_PARAM);
   }
   
   // encode value
@@ -148,7 +148,7 @@ const LegacySerializerModule = {
         
     const ciphertext = {
       data: shallowCiphertext.data,
-      iv: shallowCiphertext.iv
+      iv: shallowCiphertext.iv 
     } as any;
 
     if(shallowCiphertext.salt){
@@ -194,7 +194,7 @@ const LegacySerializerModule = {
     const challenge = {} as any;
 
     if(properties.length < 4){
-      throw new Error("legacy uri is missing required properties (4)")
+      throw new Error("legacy uri is missing required properties (4)");
     }
   
     challenge.nonce = properties[0];
@@ -211,8 +211,8 @@ const LegacySerializerModule = {
     challenge.claimant = await KeyModule.importKey(claimantRawPublicKey) as PublicKey;
        
     return challenge as Challenge;
-  }
-}
+  } 
+};
 
 /**
  * Prefixes for uri
@@ -222,12 +222,10 @@ const SerializerPrefix = {
     KEY: "ssasy://key?",
     CHALLENGE: "ssasy://challenge?",
     CIPHERTEXT: "ssasy://ciphertext?",
-    SIGNATURE: "ssasy://signature?"
+    SIGNATURE: "ssasy://signature?" 
   },
-  PARAM: {
-    KEY_CRYPTO: "c_"
-  }
-}
+  PARAM: { KEY_CRYPTO: "c_" } 
+};
 
 /**
  * Operations for serializing SSASy resources for transport
@@ -308,7 +306,7 @@ const SerializerModule = {
       keyUri += _constructParam(paramKey, paramValue);
     }
 
-    return keyUri
+    return keyUri;
   },
   /**
 	 * Returns a key object from a key uri (see `serializeKey`)
@@ -324,11 +322,11 @@ const SerializerModule = {
     }
 
     if(typeof keyUri !== "string" || !SerializerChecker.isKeyUri(keyUri)){
-      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_KEY_STRING)
+      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_KEY_STRING);
     }
 
     // remove key protocol prefix
-    keyUri = keyUri.slice(SerializerPrefix.URI.KEY.length)
+    keyUri = keyUri.slice(SerializerPrefix.URI.KEY.length);
 
     // extract all properties from key string
     const keyParams: string[] = keyUri.split("&");
@@ -337,9 +335,9 @@ const SerializerModule = {
      * Returns a RawKey from a key uri
      */
     function _rebuildRawKey(keyParams: string[]): RawKey {
-      const rawKey: any = { 
+      const rawKey: any = {
         type: KeyType.Key,
-        crypto: {}
+        crypto: {} 
       };
 
       for(const param of keyParams){
@@ -423,7 +421,7 @@ const SerializerModule = {
     }
 
     if(typeof challengeUri !== "string"){
-      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING)
+      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
     }
 
     if(!SerializerChecker.isChallengeUri(challengeUri)){
@@ -445,11 +443,11 @@ const SerializerModule = {
         migratedLegacyUri = true;
         
       } catch (error) {
-        throw new Error(SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CHALLENGE_STRING)
+        throw new Error(SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CHALLENGE_STRING);
       }
 
       if(!migratedLegacyUri){
-        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING)
+        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
       }
     }
     
@@ -460,11 +458,11 @@ const SerializerModule = {
       if(key === "nonce" || key === "solution"){
         return value as string;
       } else if(key === "timestamp"){
-        return Number(value) as number
+        return Number(value) as number;
       } else if(key === "verifier" || key === "claimant"){
         return await SerializerModule.deserializeKey(value) as PublicKey;
       } else {
-        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING)
+        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE_STRING);
       }
     }
 
@@ -484,10 +482,10 @@ const SerializerModule = {
     }
     
     // remove challenge protocol prefix
-    challengeUri = challengeUri.slice(SerializerPrefix.URI.CHALLENGE.length)
+    challengeUri = challengeUri.slice(SerializerPrefix.URI.CHALLENGE.length);
 
     // extract all properties
-    const challengeParams: string[] = challengeUri.split("&")
+    const challengeParams: string[] = challengeUri.split("&");
 
     return await rebuildChallenge(challengeParams);
   },
@@ -558,7 +556,7 @@ const SerializerModule = {
     }
 
     if(typeof ciphertextUri !== "string"){
-      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING)
+      throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
     }
 
     if(!SerializerChecker.isCiphertextUri(ciphertextUri)){
@@ -578,11 +576,11 @@ const SerializerModule = {
         migratedLegacyUri = true;
         
       } catch (error) {
-        throw new Error(SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CIPHERTEXT_STRING)
+        throw new Error(SERIALIZER_ERROR_MESSAGE.LEGACY_INVALID_CIPHERTEXT_STRING);
       }
 
       if(!migratedLegacyUri){
-        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING)
+        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
       }
     }
 
@@ -597,13 +595,13 @@ const SerializerModule = {
         try {
           return await SerializerModule.deserializeSignature(value) as StandardCiphertext;          
         } catch (error) {
-          throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_SIGNATURE_STRING)
+          throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_SIGNATURE_STRING);
         }
       } else if(key === "sender" || key === "recipient"){
         return await SerializerModule.deserializeKey(value) as PublicKey;
 
       } else {
-        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING)
+        throw new Error(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT_STRING);
       }
     }
 
@@ -623,7 +621,7 @@ const SerializerModule = {
     }
 
     // remove ciphertext protocol prefix
-    ciphertextUri = ciphertextUri.slice(SerializerPrefix.URI.CIPHERTEXT.length)
+    ciphertextUri = ciphertextUri.slice(SerializerPrefix.URI.CIPHERTEXT.length);
 
     // extract all parameters
     const ciphertextParams: string[] = ciphertextUri.split("&");
@@ -655,7 +653,7 @@ const SerializerModule = {
 
     const ciphertextUri = signatureUri.replace(SerializerPrefix.URI.SIGNATURE, SerializerPrefix.URI.CIPHERTEXT);
     return await SerializerModule.deserializeCiphertext(ciphertextUri);
-  }
+  } 
 };
 
 /**
@@ -682,7 +680,7 @@ function _hasValidPrefix(arg: any, prefix: string): boolean {
  */
 function _extractUriParams(uri: string, prefix: string): {key: string, value: string}[] {
   // remove protocol prefix
-  uri = uri.slice(prefix.length)
+  uri = uri.slice(prefix.length);
 
   // extract all properties from key string
   const properties: string[] = uri.split("&");
@@ -873,11 +871,11 @@ const SerializerChecker = {
     }
 
     return true;
-  }
-}
+  } 
+};
 
 export {
   SERIALIZER_ERROR_MESSAGE,
   SerializerModule,
-  SerializerChecker
-}
+  SerializerChecker 
+};

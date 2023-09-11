@@ -4,29 +4,29 @@ import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { BufferUtil } from "../../src/utils";
 import {
-  KeyModule,
-  CryptoModule,
   CryptoChecker,
-  SerializerModule,
-  SerializerChecker,
+  CryptoModule,
+  KeyChecker,
+  KeyModule,
   SERIALIZER_ERROR_MESSAGE,
-  KeyChecker
+  SerializerChecker,
+  SerializerModule 
 } from "../../src/modules";
 import { Wallet } from "../../src/wallet";
 import {
-  type SecretKey,
+  type AdvancedCiphertext,
+  type Challenge,
+  type Ciphertext,
+  type GenericKey,
+  type KeyPair,
+  KeyType,
   type PassKey,
   type PrivateKey,
   type PublicKey,
-  type SharedKey,
   type RawKey,
-  type Challenge,
-  type KeyPair,
-  type Ciphertext,
-  type AdvancedCiphertext,
-  type StandardCiphertext,
-  type GenericKey,
-  KeyType
+  type SecretKey,
+  type SharedKey,
+  type StandardCiphertext 
 } from "../../src/interfaces";
 
 /**
@@ -94,7 +94,7 @@ describe("[SerializerModule Test Suite]", () => {
         rawKey = await KeyModule.exportKey(secretKey);
 
         keychain = [ secretKey, passKey, privateKey, publicKey, sharedKey, rawKey ];
-      })
+      });
 
       describe("serializeKey()", () => {
       // a raw key should contain a type, and a crypto object with kty, key_ops and ext
@@ -114,7 +114,7 @@ describe("[SerializerModule Test Suite]", () => {
 
           try {
             await SerializerModule.serializeKey(invalidKey);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
+            expect.fail(TEST_ERROR.DID_NOT_THROW);
           } catch (e) {
             const error = e as Error;
             expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_KEY);
@@ -129,7 +129,7 @@ describe("[SerializerModule Test Suite]", () => {
             expect(keyUri).to.be.a("string");
             expect(keyUri.startsWith(prefix)).to.be.true;
           }
-        })
+        });
 
         it(`should return a uri with at least ${MIN_KEY_PARAMETERS} properties`, async () => {
           for (const key of keychain) {
@@ -137,7 +137,7 @@ describe("[SerializerModule Test Suite]", () => {
             const keyParams = _extractUriParameters(keyUri, SerializerModule.PREFIX.URI.KEY);
             expect(keyParams.length).to.be.greaterThanOrEqual(MIN_KEY_PARAMETERS);
           }
-        })
+        });
       
         it(`should return a uri with at least ${MIN_SYMMETRIC_KEY_PARAMETERS} properties, if key is symmetric`, async () => {
         
@@ -150,7 +150,7 @@ describe("[SerializerModule Test Suite]", () => {
             const keyParams = _extractUriParameters(keyUri, SerializerModule.PREFIX.URI.KEY);
             expect(keyParams.length).to.be.greaterThanOrEqual(MIN_SYMMETRIC_KEY_PARAMETERS);
           }
-        })
+        });
       
         it(`should return a uri with at least ${MIN_PUBLIC_KEY_PARAMETERS} properties, if key is asymmetric`, async () => {
         
@@ -168,7 +168,7 @@ describe("[SerializerModule Test Suite]", () => {
               expect(keyParams.length, "number of public key properties").to.be.greaterThanOrEqual(MIN_PUBLIC_KEY_PARAMETERS);
             }
           }
-        })
+        });
 
         it("should not return a uri with an undefined param value", async () => {
           for (const key of keychain) {
@@ -176,11 +176,11 @@ describe("[SerializerModule Test Suite]", () => {
             const keyParams = _extractUriParameters(keyUri, SerializerModule.PREFIX.URI.KEY);
 
             for (const param of keyParams) {
-              const value = param.split("=")[1]
+              const value = param.split("=")[1];
               expect(value).to.not.equal("undefined");
             }
           }
-        })
+        });
 
         it("should encode uri param values", async () => {
           for (const key of keychain) {
@@ -188,7 +188,7 @@ describe("[SerializerModule Test Suite]", () => {
             const keyParams = _extractUriParameters(keyUri, SerializerModule.PREFIX.URI.KEY);
 
             for(const property of keyParams) {
-              const value = property.split("=")[1]
+              const value = property.split("=")[1];
             
               // check if value is encoded
               expect(_isValidEncoding(value)).to.be.true;
@@ -206,8 +206,8 @@ describe("[SerializerModule Test Suite]", () => {
             // check if URI is valid URL
             expect(_isValidURI(keyUri)).to.be.true;
           }
-        })
-      })
+        });
+      });
 
       describe("deserializeKey()", () => {
         let serializedKeyChain: string[];
@@ -231,14 +231,14 @@ describe("[SerializerModule Test Suite]", () => {
             serializedPrivateKey,
             serializedPublicKey
           ];
-        })
+        });
 
         it("should throw an error if the string is an invalid key", async () => {
           const invalidPublicKeyString = "invalid key string";
 
           try {
             await SerializerModule.deserializeKey(invalidPublicKeyString);
-            expect.fail(TEST_ERROR.DID_NOT_THROW)
+            expect.fail(TEST_ERROR.DID_NOT_THROW);
           } catch (e) {
             const error = e as Error;
             expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_KEY_STRING);
@@ -258,9 +258,9 @@ describe("[SerializerModule Test Suite]", () => {
             const key = await SerializerModule.deserializeKey(serializedKey, { raw: true });
             expect(KeyChecker.isRawKey(key)).to.be.true;
           }
-        })
-      })
-    })
+        });
+      });
+    });
 
     describe("Challenge", () => {
       let nonce: string;
@@ -273,21 +273,17 @@ describe("[SerializerModule Test Suite]", () => {
         const nonceBufferArray = CryptoModule.generateNonce();
         nonce = BufferUtil.BufferToString(nonceBufferArray);
         // set verifier's public key
-        verifierPublicKey = await KeyModule.generatePublicKey({
-          privateKey: await KeyModule.generatePrivateKey()
-        })
+        verifierPublicKey = await KeyModule.generatePublicKey({ privateKey: await KeyModule.generatePrivateKey() });
         // set claimant's crypto key
-        claimantPublicKey = await KeyModule.generatePublicKey({
-          privateKey: await KeyModule.generatePrivateKey()
-        })
+        claimantPublicKey = await KeyModule.generatePublicKey({ privateKey: await KeyModule.generatePrivateKey() });
         // set challenge
         challenge = {
           nonce,
           timestamp: Date.now(),
           verifier: verifierPublicKey,
-          claimant: claimantPublicKey
+          claimant: claimantPublicKey 
         } as Challenge;
-      })
+      });
 
       describe("serializeChallenge()", () => {
       // a challenge has a nonce, timestamp, verifier and claimant property
@@ -301,22 +297,22 @@ describe("[SerializerModule Test Suite]", () => {
           expect(challengeUri).to.be.a.string;
 
           expect(challengeUri.startsWith(SerializerModule.PREFIX.URI.CHALLENGE)).to.be.true;
-        })
+        });
 
         it(`should return a uri with at least ${MIN_CHALLENGE_PARAMETERS} properties`, async () => {
           const challengeUri = await SerializerModule.serializeChallenge(challenge);
-          const challengeParams = _extractUriParameters(challengeUri, SerializerModule.PREFIX.URI.CHALLENGE)
+          const challengeParams = _extractUriParameters(challengeUri, SerializerModule.PREFIX.URI.CHALLENGE);
 
           expect(challengeParams.length).to.equal(MIN_CHALLENGE_PARAMETERS);
-        })
+        });
 
         it(`should return a uri with at least ${MIN_CHALLENGE_RESPONSE_PARAMETERS} properties if solution is present`, async () => {
           const challengeResponse = { ...challenge, solution: "test" } as Challenge;
           const challengeResponseUri = await SerializerModule.serializeChallenge(challengeResponse);
-          const challengeResponseParams = _extractUriParameters(challengeResponseUri, SerializerModule.PREFIX.URI.CHALLENGE)
+          const challengeResponseParams = _extractUriParameters(challengeResponseUri, SerializerModule.PREFIX.URI.CHALLENGE);
 
           expect(challengeResponseParams.length).to.equal(MIN_CHALLENGE_RESPONSE_PARAMETERS);
-        })
+        });
 
         it("should not return a uri with an undefined param value", async () => {
           const challenges: Challenge[] = [
@@ -330,19 +326,19 @@ describe("[SerializerModule Test Suite]", () => {
             const challengeParams = _extractUriParameters(challengeUri, SerializerModule.PREFIX.URI.CHALLENGE);
 
             for (const param of challengeParams) {
-              const value = param.split("=")[1]
+              const value = param.split("=")[1];
               expect(value).to.not.equal("undefined");
             }
           }
-        })
+        });
 
         it("should encode uri param values", async () => {
           const challengeResponse = { ...challenge, solution: "test" } as Challenge;
           const challengeResponseUri = await SerializerModule.serializeChallenge(challengeResponse);
-          const challengeResponseParams = _extractUriParameters(challengeResponseUri, SerializerModule.PREFIX.URI.CHALLENGE)
+          const challengeResponseParams = _extractUriParameters(challengeResponseUri, SerializerModule.PREFIX.URI.CHALLENGE);
 
           for(const property of challengeResponseParams) {
-            const value = property.split("=")[1]
+            const value = property.split("=")[1];
           
             // check if value is encoded
             expect(_isValidEncoding(value)).to.be.true;
@@ -366,14 +362,14 @@ describe("[SerializerModule Test Suite]", () => {
           for(const invalidChallenge of invalidChallenges) {
             try {
               await SerializerModule.serializeChallenge(invalidChallenge);
-              expect.fail(TEST_ERROR.DID_NOT_THROW)
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
             } catch (e) {
               const error = e as Error;
               expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CHALLENGE);
             }
           }
-        })
-      })
+        });
+      });
 
       describe("deserializeChallenge()", () => {
         let challenge: Challenge;
@@ -384,13 +380,9 @@ describe("[SerializerModule Test Suite]", () => {
           const nonceBufferArray = CryptoModule.generateNonce();
           nonce = BufferUtil.BufferToString(nonceBufferArray);
           // set verifier's public key
-          const verifierPublicKey = await KeyModule.generatePublicKey({
-            privateKey: await KeyModule.generatePrivateKey()
-          })
+          const verifierPublicKey = await KeyModule.generatePublicKey({ privateKey: await KeyModule.generatePrivateKey() });
           // set claimant's crypto key
-          const claimantPublicKey = await KeyModule.generatePublicKey({
-            privateKey: await KeyModule.generatePrivateKey()
-          })
+          const claimantPublicKey = await KeyModule.generatePublicKey({ privateKey: await KeyModule.generatePrivateKey() });
       
           // set challenge
           challenge = {
@@ -398,12 +390,12 @@ describe("[SerializerModule Test Suite]", () => {
             timestamp: Date.now(),
             verifier: verifierPublicKey,
             claimant: claimantPublicKey,
-            solution: "test"
+            solution: "test" 
           } as Challenge;
 
           // set challenge string
           challengeUri = await SerializerModule.serializeChallenge(challenge);
-        })
+        });
       
         it("should convert challenge string (uri) to challenge object", async () => {
         // convert the string back to a challenge object
@@ -414,7 +406,7 @@ describe("[SerializerModule Test Suite]", () => {
           expect(challengeObject.verifier).to.deep.equal(challenge.verifier);
           expect(challengeObject.claimant).to.deep.equal(challenge.claimant);
           expect(challengeObject.solution).to.equal(challenge.solution);
-        })
+        });
 
         it("should handle a challenge with no solution", async () => {
         // convert the challenge to a string
@@ -441,12 +433,12 @@ describe("[SerializerModule Test Suite]", () => {
             "invalid-nonce::invalid-timestamp::invalid-verifier::invalid-claimant::invalid-solution",
             "ssasy://challenge?invalid-nonce::invalid-timestamp::invalid-verifier::invalid-claimant::invalid-solution",
             "ssasy://challenge?nonce=undefined&timestamp=undefined&verifier=undefined&claimant=undefined&solution=undefined"
-          ]
+          ];
 
           for(const invalidChallengeString of invalidChallengeStrings) {
             try {
               await SerializerModule.deserializeChallenge(invalidChallengeString);
-              expect.fail(TEST_ERROR.DID_NOT_THROW)
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
             } catch (error) {
 
               expect((error as Error).message).be.oneOf([
@@ -455,8 +447,8 @@ describe("[SerializerModule Test Suite]", () => {
               ]);
             }
           }
-        })
-      })
+        });
+      });
     });
 
     describe("Ciphertext", () => {
@@ -474,20 +466,14 @@ describe("[SerializerModule Test Suite]", () => {
 
       before(async () => {
       // set verifier's key pair
-        verifierKeyPair = {
-        } as KeyPair;
+        verifierKeyPair = {} as KeyPair;
         verifierKeyPair.private = await KeyModule.generatePrivateKey();
-        verifierKeyPair.public = await KeyModule.generatePublicKey({
-          privateKey: verifierKeyPair.private 
-        });
+        verifierKeyPair.public = await KeyModule.generatePublicKey({ privateKey: verifierKeyPair.private });
 
         // set claimant's key pair
-        claimantKeyPair = {
-        } as KeyPair;
+        claimantKeyPair = {} as KeyPair;
         claimantKeyPair.private = await KeyModule.generatePrivateKey();
-        claimantKeyPair.public = await KeyModule.generatePublicKey({
-          privateKey: claimantKeyPair.private
-        });
+        claimantKeyPair.public = await KeyModule.generatePublicKey({ privateKey: claimantKeyPair.private });
 
         // set shared key
         sharedKey = await KeyModule.generateSharedKey({ privateKey: verifierKeyPair.private, publicKey: claimantKeyPair.public });
@@ -516,8 +502,8 @@ describe("[SerializerModule Test Suite]", () => {
         
         advancedCiphertextWithSignature = {
           ...advancedCiphertext,
-          signature: await SerializerModule.deserializeSignature(signatureUri)
-        }
+          signature: await SerializerModule.deserializeSignature(signatureUri) 
+        };
 
         // set ciphertexts
         ciphertexts = [
@@ -526,7 +512,7 @@ describe("[SerializerModule Test Suite]", () => {
           advancedCiphertext,
           advancedCiphertextWithSignature
         ];
-      })
+      });
 
       describe("serializeCiphertext()", () => {
       // a standard ciphertext has a data and iv property
@@ -544,7 +530,7 @@ describe("[SerializerModule Test Suite]", () => {
             expect(ciphertextUri).to.be.a("string");
             expect(ciphertextUri.startsWith(SerializerModule.PREFIX.URI.CIPHERTEXT)).to.be.true;
           }
-        })
+        });
 
         it(`should return a uri with at least ${MIN_STANDARD_CIPHERTEXT_PARAMETERS} properties`, async () => {
           for (const ciphertext of ciphertexts) {
@@ -578,18 +564,18 @@ describe("[SerializerModule Test Suite]", () => {
             const ciphertextParams = _extractUriParameters(ciphertextUri, SerializerModule.PREFIX.URI.CIPHERTEXT);
 
             for (const param of ciphertextParams) {
-              const value = param.split("=")[1]
+              const value = param.split("=")[1];
               expect(value).to.not.equal("undefined");
             }
           }
-        })
+        });
 
         it("should encode nested signature, verifier and claimant properties if present", async () => {
           const ciphertextUri = await SerializerModule.serializeCiphertext(advancedCiphertextWithSignature);
           const ciphertextParams = _extractUriParameters(ciphertextUri, SerializerModule.PREFIX.URI.CIPHERTEXT);
 
           for(const property of ciphertextParams) {
-            const value = property.split("=")[1]
+            const value = property.split("=")[1];
 
             // check if value is encoded
             expect(_isValidEncoding(value)).to.be.true;
@@ -602,7 +588,7 @@ describe("[SerializerModule Test Suite]", () => {
             const ciphertextParams = _extractUriParameters(ciphertextUri, SerializerModule.PREFIX.URI.CIPHERTEXT);
 
             for(const property of ciphertextParams) {
-              const value = property.split("=")[1]
+              const value = property.split("=")[1];
             
               // check if value is encoded
               expect(_isValidEncoding(value)).to.be.true;
@@ -617,18 +603,18 @@ describe("[SerializerModule Test Suite]", () => {
             { ...standardCiphertext, sender: "invalid-public-key" },
             { ...advancedCiphertext, data: 123 }, // invalid data
             { ...advancedCiphertext, sender: "invalid-public-key" } // invalid sender
-          ]
+          ];
 
           for (const invalidCiphertext of invalidCiphertexts) {
             try {
               await SerializerModule.serializeCiphertext(invalidCiphertext as any);
-              expect.fail(TEST_ERROR.DID_NOT_THROW)
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
             } catch (e) {
               const error = e as Error;
               expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT);
             }
           }
-        })
+        });
       });
 
       describe("deserializeCiphertext()", () => {
@@ -672,7 +658,7 @@ describe("[SerializerModule Test Suite]", () => {
             const ciphertext = await SerializerModule.deserializeCiphertext(ciphertextUri);
             expect(CryptoChecker.isCiphertext(ciphertext)).to.be.true;
           }
-        })
+        });
 
         it("should return ciphertext with salt if standard ciphertext with salt was serialized", async () => {
           const deserializedStandardCipherTextWithSalt = await SerializerModule.deserializeCiphertext(standardCiphertextWithSaltString) as StandardCiphertext;
@@ -695,13 +681,13 @@ describe("[SerializerModule Test Suite]", () => {
           const legacyCiphertexts = [
             legacyCiphertextString,
             legacyAdvancedCiphertextString
-          ]
+          ];
 
           for (const legacyCiphertext of legacyCiphertexts) {
             const ciphertext = await SerializerModule.deserializeCiphertext(legacyCiphertext);
             expect(CryptoChecker.isCiphertext(ciphertext)).to.be.true;
           }
-        })
+        });
 
         it("should throw an error if invalid ciphertext uri is passed", async () => {
           const invalidCiphertextStrings = [
@@ -713,12 +699,12 @@ describe("[SerializerModule Test Suite]", () => {
             advancedCiphertextString.replace(/data=[^&]*/g, "data=undefined"), // invalid data
             advancedCiphertextString.replace(/&sender=[^&]*/g, "&sender=undefined"), // invalid sender
             advancedCiphertextWithSignatureString.replace(/&signature=[^&]*/g, "&signature=invalid") // invalid signature
-          ]
+          ];
 
           for (const invalidCiphertextString of invalidCiphertextStrings) {
             try {
               await SerializerModule.deserializeCiphertext(invalidCiphertextString);
-              expect.fail(TEST_ERROR.DID_NOT_THROW)
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
             } catch (error) {
 
               expect((error as Error).message).be.oneOf([
@@ -727,9 +713,9 @@ describe("[SerializerModule Test Suite]", () => {
               ]);
             }
           }
-        })
+        });
       });
-    })
+    });
 
     describe("Signature", () => {
       let wallet: Wallet;
@@ -743,7 +729,7 @@ describe("[SerializerModule Test Suite]", () => {
         const plaintext = "test plaintext";
         const signatureUri: string = await wallet.generateSignature(plaintext);
         signature = await SerializerModule.deserializeSignature(signatureUri);
-      })
+      });
 
       describe("serializeSignature()", () => {
         // a standard ciphertext has a data and iv property
@@ -753,7 +739,7 @@ describe("[SerializerModule Test Suite]", () => {
           const signatureUri = await SerializerModule.serializeSignature(signature);
           expect(signatureUri).to.be.a("string");
           expect(signatureUri.startsWith(SerializerModule.PREFIX.URI.SIGNATURE)).to.be.true;
-        })
+        });
 
         it(`should return a uri with at least ${MIN_SIGNATURE_PARAMETERS} properties`, async () => {
           const signatureUri = await SerializerModule.serializeSignature(signature);
@@ -766,17 +752,17 @@ describe("[SerializerModule Test Suite]", () => {
           const signatureParameters = _extractUriParameters(signatureUri, SerializerModule.PREFIX.URI.SIGNATURE);
 
           for (const param of signatureParameters) {
-            const value = param.split("=")[1]
+            const value = param.split("=")[1];
             expect(value).to.not.equal("undefined");
           }
-        })
+        });
 
         it("should encode uri param values", async () => {
           const signatureUri = await SerializerModule.serializeSignature(signature);
           const signatureParameters = _extractUriParameters(signatureUri, SerializerModule.PREFIX.URI.SIGNATURE);
 
           for(const property of signatureParameters) {
-            const value = property.split("=")[1]
+            const value = property.split("=")[1];
           
             // check if value is encoded
             expect(_isValidEncoding(value)).to.be.true;
@@ -793,18 +779,18 @@ describe("[SerializerModule Test Suite]", () => {
             "ssasy://signature?data=undefined&iv=undefined",
             "ssasy://ciphertext?data=undefined&iv=undefined",
             "ssasy://key?type=public-key&c_crv=undefined&c_x=undefined&c_y=undefined&c_kty=undefined&c_key_ops=undefined&c_ext=undefined"
-          ]
+          ];
 
           for (const invalidCiphertext of invalidCiphertexts) {
             try {
               await SerializerModule.serializeCiphertext(invalidCiphertext as any);
-              expect.fail(TEST_ERROR.DID_NOT_THROW)
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
             } catch (e) {
               const error = e as Error;
               expect(error.message).to.equal(SERIALIZER_ERROR_MESSAGE.INVALID_CIPHERTEXT);
             }
           }
-        })
+        });
       });
 
       describe("deserializeSignature()", () => {
@@ -817,19 +803,19 @@ describe("[SerializerModule Test Suite]", () => {
         it("should return a signature object", async () => {
           const deserializedSignature = await SerializerModule.deserializeSignature(signatureUri);
           expect(CryptoChecker.isCiphertext(deserializedSignature)).to.be.true;
-        })
+        });
 
         it("should throw an error if invalid ciphertext string is passed", async () => {
           const invalidCiphertextStrings = [
             "invalid",
             JSON.stringify({ ...signature, data: 123 }),
             JSON.stringify({ ...signature, sender: "invalid-public-key" })
-          ]
+          ];
 
           for (const invalidCiphertextString of invalidCiphertextStrings) {
             try {
               await SerializerModule.deserializeCiphertext(invalidCiphertextString);
-              expect.fail(TEST_ERROR.DID_NOT_THROW)
+              expect.fail(TEST_ERROR.DID_NOT_THROW);
             } catch (error) {
               
               expect((error as Error).message).be.oneOf([
@@ -838,10 +824,10 @@ describe("[SerializerModule Test Suite]", () => {
               ]);
             }
           }
-        })
+        });
       });
-    })
-  })
+    });
+  });
 
   describe("SerializerChecker", () => {
     // test key resources
@@ -869,7 +855,7 @@ describe("[SerializerModule Test Suite]", () => {
 
       signature = await CryptoModule.sign(privateKey, "test plaintext");
       signatureUri = await SerializerModule.serializeSignature(signature);
-    })
+    });
     
     describe("isKeyUri()", () => {
       it("should return false if uri is not a key uri", () => {
@@ -890,7 +876,7 @@ describe("[SerializerModule Test Suite]", () => {
         expect(SerializerChecker.isKeyUri(publicKeyUri, { type: KeyType.SharedKey })).to.be.false;
         expect(SerializerChecker.isKeyUri(publicKeyUri, { type: KeyType.PrivateKey })).to.be.false;
         expect(SerializerChecker.isKeyUri(publicKeyUri, { type: KeyType.SecretKey })).to.be.false;
-      })
+      });
 
       it("should return true if uri is a key and it matches provided key type", () => {
         expect(SerializerChecker.isKeyUri(publicKeyUri, { type: KeyType.PublicKey })).to.be.true;
@@ -926,5 +912,5 @@ describe("[SerializerModule Test Suite]", () => {
       });
     });
 
-  })
-})
+  });
+});

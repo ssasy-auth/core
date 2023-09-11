@@ -4,12 +4,8 @@ import { expect } from "chai";
 import { TEST_ERROR } from "../config";
 import { CRYPTO_ALGORITHMS, CRYPTO_CONFIG } from "../../src/config";
 import { KeyType } from "../../src/interfaces";
-import {
-  KeyModule, KeyChecker, KEY_ERROR_MESSAGE 
-} from "../../src/modules";
-import type {
-  PassKey, SecretKey, PrivateKey 
-} from "../../src/interfaces";
+import { KEY_ERROR_MESSAGE, KeyChecker, KeyModule } from "../../src/modules";
+import type { PassKey, PrivateKey, SecretKey } from "../../src/interfaces";
 import { BufferUtil } from "../../src/utils";
 
 describe("[KeyModule Test Suite]", () => {
@@ -17,9 +13,7 @@ describe("[KeyModule Test Suite]", () => {
     describe("generateKey()", () => {
       it("should generate a symmetric key", async () => {
         const testDomain = "test-domain";
-        const secretKey: SecretKey = await KeyModule.generateKey({
-          domain: testDomain 
-        });
+        const secretKey: SecretKey = await KeyModule.generateKey({ domain: testDomain });
 
         expect(secretKey.type).to.equal(KeyType.SecretKey);
         expect(secretKey.domain).to.equal(testDomain);
@@ -31,9 +25,7 @@ describe("[KeyModule Test Suite]", () => {
       it("should generate a valid symmetric key from a passphrase", async () => {
         const passphrase = "password";
         const passKey: PassKey = await KeyModule
-          .generatePassKey({
-            passphrase: passphrase 
-          });
+          .generatePassKey({ passphrase: passphrase });
 
         expect(passKey.type).to.equal(KeyType.PassKey);
         expect(passKey.crypto.algorithm.name).to.equal(CRYPTO_CONFIG.SYMMETRIC.algorithm.name);
@@ -43,9 +35,7 @@ describe("[KeyModule Test Suite]", () => {
       it("should save salt buffer as a base64 string", async () => {
         const passphrase = "password";
         const passKey: PassKey = await KeyModule
-          .generatePassKey({
-            passphrase: passphrase
-          });
+          .generatePassKey({ passphrase: passphrase });
 
         expect(passKey.salt).to.be.a("string");
         const result = BufferUtil.isBase64String(passKey.salt);
@@ -54,12 +44,8 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should generate the same key from the same passphrase and salt", async () => {
         const passphrase = "password";
-        const passKey1: PassKey = await KeyModule.generatePassKey({
-          passphrase: passphrase 
-        });
-        const passKey2: PassKey = await KeyModule.generatePassKey({
-          passphrase: passphrase, salt: passKey1.salt 
-        });
+        const passKey1: PassKey = await KeyModule.generatePassKey({ passphrase: passphrase });
+        const passKey2: PassKey = await KeyModule.generatePassKey({ passphrase: passphrase, salt: passKey1.salt });
 
         const rawPassKey1 = await KeyModule.exportKey(passKey1);
         const rawPassKey2 = await KeyModule.exportKey(passKey2);
@@ -72,16 +58,14 @@ describe("[KeyModule Test Suite]", () => {
         const passphrase = 123;
 
         try {
-          await KeyModule.generatePassKey({
-            passphrase: passphrase as any 
-          });
+          await KeyModule.generatePassKey({ passphrase: passphrase as any });
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
           const error: Error = e as Error;
           expect(error.message).to.equal(KEY_ERROR_MESSAGE.INVALID_PASSPHRASE);
         }
       });
-    })
+    });
 
     describe("generatePrivateKey()", () => {
       it("should generate a private key", async () => {
@@ -95,9 +79,7 @@ describe("[KeyModule Test Suite]", () => {
     describe("generatePublicKey()", () => {
       it("should generate a public key from a private key", async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
 
         expect(publicKey.type).to.equal(KeyType.PublicKey);
         expect(publicKey.crypto.algorithm.name).to.equal(CRYPTO_CONFIG.ASYMMETRIC.algorithm.name);
@@ -107,9 +89,7 @@ describe("[KeyModule Test Suite]", () => {
         const privateKey = "invalid-key" as any;
 
         try {
-          await KeyModule.generatePublicKey({
-            privateKey 
-          });
+          await KeyModule.generatePublicKey({ privateKey });
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
           const error: Error = e as Error;
@@ -119,14 +99,10 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should throw an error if source key is not a private key", async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        }) as any;
+        const publicKey = await KeyModule.generatePublicKey({ privateKey }) as any;
 
         try {
-          await KeyModule.generatePublicKey({
-            privateKey: publicKey 
-          });
+          await KeyModule.generatePublicKey({ privateKey: publicKey });
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
           const error: Error = e as Error;
@@ -140,13 +116,11 @@ describe("[KeyModule Test Suite]", () => {
         const alicePrivateKey = await KeyModule.generatePrivateKey();
 
         const bobPrivateKey = await KeyModule.generatePrivateKey();
-        const bobPublicKey = await KeyModule.generatePublicKey({
-          privateKey: bobPrivateKey 
-        });
+        const bobPublicKey = await KeyModule.generatePublicKey({ privateKey: bobPrivateKey });
 
         const sharedKey = await KeyModule.generateSharedKey({
           privateKey: alicePrivateKey,
-          publicKey: bobPublicKey
+          publicKey: bobPublicKey 
         });
 
         expect(sharedKey.type).to.equal(KeyType.SharedKey);
@@ -155,23 +129,19 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should generate the same shared key when using the same pair of key pairs", async () => {
         const alicePrivateKey = await KeyModule.generatePrivateKey();
-        const alicePublicKey = await KeyModule.generatePublicKey({
-          privateKey: alicePrivateKey 
-        });
+        const alicePublicKey = await KeyModule.generatePublicKey({ privateKey: alicePrivateKey });
 
         const bobPrivateKey = await KeyModule.generatePrivateKey();
-        const bobPublicKey = await KeyModule.generatePublicKey({
-          privateKey: bobPrivateKey 
-        });
+        const bobPublicKey = await KeyModule.generatePublicKey({ privateKey: bobPrivateKey });
 
         const sharedKey1 = await KeyModule.generateSharedKey({
           privateKey: alicePrivateKey,
-          publicKey: bobPublicKey
+          publicKey: bobPublicKey 
         });
 
         const sharedKey2 = await KeyModule.generateSharedKey({
           privateKey: bobPrivateKey,
-          publicKey: alicePublicKey
+          publicKey: alicePublicKey 
         });
 
         // same key type
@@ -191,13 +161,9 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should be able to generate a shared key from a private key and a public key in the same key pair", async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
 
-        const sharedKey = await KeyModule.generateSharedKey({
-          privateKey, publicKey 
-        });
+        const sharedKey = await KeyModule.generateSharedKey({ privateKey, publicKey });
         expect(sharedKey.type).to.equal(KeyType.SharedKey);
         expect(sharedKey.crypto.algorithm.name).to.equal(CRYPTO_CONFIG.SYMMETRIC.algorithm.name);
       });
@@ -207,14 +173,12 @@ describe("[KeyModule Test Suite]", () => {
         const invalidPublicKey = await KeyModule.generateKey() as any;
 
         const validPrivateKey = await KeyModule.generatePrivateKey();
-        const validPublicKey = await KeyModule.generatePublicKey({
-          privateKey: validPrivateKey 
-        });
+        const validPublicKey = await KeyModule.generatePublicKey({ privateKey: validPrivateKey });
 
         try {
           await KeyModule.generateSharedKey({
             privateKey: invalidPrivateKey,
-            publicKey: validPublicKey
+            publicKey: validPublicKey 
           });
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
@@ -225,7 +189,7 @@ describe("[KeyModule Test Suite]", () => {
         try {
           await KeyModule.generateSharedKey({
             privateKey: validPrivateKey,
-            publicKey: invalidPublicKey
+            publicKey: invalidPublicKey 
           });
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
@@ -241,7 +205,7 @@ describe("[KeyModule Test Suite]", () => {
         try {
           await KeyModule.generateSharedKey({
             privateKey: privateKey1,
-            publicKey: privateKey2
+            publicKey: privateKey2 
           });
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
@@ -249,7 +213,7 @@ describe("[KeyModule Test Suite]", () => {
           expect(error.message).to.equal(KEY_ERROR_MESSAGE.DUPLICATE_SHARED_KEY_PARAMS);
         }
       });
-    })
+    });
 
     describe("exportKey()", () => {
       it("should export SecretKey", async () => {
@@ -273,9 +237,7 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should export PassKey", async () => {
         const passphrase = "test-passphrase";
-        const passKey = await KeyModule.generatePassKey({
-          passphrase 
-        });
+        const passKey = await KeyModule.generatePassKey({ passphrase });
         const rawPassKey = await KeyModule.exportKey(passKey);
 
         // check for key type
@@ -324,9 +286,7 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should export PublicKey", async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         const rawPublicKey = await KeyModule.exportKey(publicKey);
 
         // check for key type
@@ -369,9 +329,7 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should import PassKey", async () => {
         const passphrase = "test-passphrase";
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: passphrase 
-        });
+        const passKey = await KeyModule.generatePassKey({ passphrase: passphrase });
         const rawPassKey = await KeyModule.exportKey(passKey);
         const importedKey = await KeyModule.importKey(rawPassKey) as PassKey;
 
@@ -380,9 +338,7 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should import PrivateKey", async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         const rawPrivateKey = await KeyModule.exportKey(privateKey);
         const importedKey = await KeyModule.importKey(rawPrivateKey) as PrivateKey;
 
@@ -390,9 +346,7 @@ describe("[KeyModule Test Suite]", () => {
         expect(importedKey.type).to.equal(privateKey.type);
         expect(importedKey.domain).to.equal(privateKey.domain);
 
-        const publicKeyFromImportedKey = await KeyModule.generatePublicKey({
-          privateKey: importedKey 
-        });
+        const publicKeyFromImportedKey = await KeyModule.generatePublicKey({ privateKey: importedKey });
         expect(publicKeyFromImportedKey).to.deep.equal(publicKey);
 
 
@@ -400,9 +354,7 @@ describe("[KeyModule Test Suite]", () => {
 
       it("should import PublicKey", async () => {
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         const rawPublicKey = await KeyModule.exportKey(publicKey);
         const importedKey = await KeyModule.importKey(rawPublicKey);
 
@@ -421,133 +373,107 @@ describe("[KeyModule Test Suite]", () => {
         }
       });
     });
-  })
+  });
 
   describe("KeyChecker", () => {
-    const { isRawKey, isKey, isSymmetricKey, isAsymmetricKey } = KeyChecker
+    const { isRawKey, isKey, isSymmetricKey, isAsymmetricKey } = KeyChecker;
 
     describe("isRawKey()", () => {
       it("should return true for a valid raw key", async () => {
-        const key = await KeyModule.generateKey()
+        const key = await KeyModule.generateKey();
         const rawKey = await KeyModule.exportKey(key);
 
         expect(isRawKey(rawKey)).to.be.true;
-      })
+      });
 
       it("should return false for an invalid raw key", async () => {
-        const key = await KeyModule.generateKey()
+        const key = await KeyModule.generateKey();
         expect(isRawKey(key)).to.be.false;
 
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: "test" 
-        })
+        const passKey = await KeyModule.generatePassKey({ passphrase: "test" });
         expect(isRawKey(passKey)).to.be.false;
 
-        const privateKey = await KeyModule.generatePrivateKey()
+        const privateKey = await KeyModule.generatePrivateKey();
         expect(isRawKey(privateKey)).to.be.false;
 
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        })
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         expect(isRawKey(publicKey)).to.be.false;
 
-      })
-    })
+      });
+    });
 
     describe("isKey()", () => {
       it("should return true for a valid key", async () => {
-        const key = await KeyModule.generateKey()
+        const key = await KeyModule.generateKey();
         expect(isKey(key)).to.be.true;
 
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: "test" 
-        })
+        const passKey = await KeyModule.generatePassKey({ passphrase: "test" });
         expect(isKey(passKey)).to.be.true;
 
-        const privateKey = await KeyModule.generatePrivateKey()
+        const privateKey = await KeyModule.generatePrivateKey();
         expect(isKey(privateKey)).to.be.true;
 
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        })
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         expect(isKey(publicKey)).to.be.true;
 
-        const extraPrivateKey = await KeyModule.generatePrivateKey()
-        const sharedKey = await KeyModule.generateSharedKey({
-          privateKey: extraPrivateKey, publicKey 
-        })
+        const extraPrivateKey = await KeyModule.generatePrivateKey();
+        const sharedKey = await KeyModule.generateSharedKey({ privateKey: extraPrivateKey, publicKey });
         expect(isKey(sharedKey)).to.be.true;
-      })
+      });
 
       it("should return false for an invalid key", async () => {
         const { crypto } = await KeyModule.generateKey();
         expect(isKey(crypto as any)).to.be.false;
-      })
-    })
+      });
+    });
 
     describe("isSymmetricKey()", () => {
       it("should return true for a valid symmetric key", async () => {
-        const key = await KeyModule.generateKey()
+        const key = await KeyModule.generateKey();
         expect(isSymmetricKey(key)).to.be.true;
 
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: "test" 
-        })
+        const passKey = await KeyModule.generatePassKey({ passphrase: "test" });
         expect(isSymmetricKey(passKey)).to.be.true;
 
-        const privateKey = await KeyModule.generatePrivateKey()
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        })
-        const otherPrivateKey = await KeyModule.generatePrivateKey()
-        const sharedKey = await KeyModule.generateSharedKey({
-          privateKey: otherPrivateKey, publicKey 
-        })
+        const privateKey = await KeyModule.generatePrivateKey();
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
+        const otherPrivateKey = await KeyModule.generatePrivateKey();
+        const sharedKey = await KeyModule.generateSharedKey({ privateKey: otherPrivateKey, publicKey });
         expect(isSymmetricKey(sharedKey)).to.be.true;
-      })
+      });
 
       it("should return false for an invalid symmetric key", async () => {
-        const privateKey = await KeyModule.generatePrivateKey()
+        const privateKey = await KeyModule.generatePrivateKey();
         expect(isSymmetricKey(privateKey)).to.be.false;
 
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        })
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         expect(isSymmetricKey(publicKey)).to.be.false;
-      })
-    })
+      });
+    });
 
     describe("isAsymmetricKey()", () => {
       it("should return true for a valid asymmetric key", async () => {
-        const privateKey = await KeyModule.generatePrivateKey()
+        const privateKey = await KeyModule.generatePrivateKey();
         expect(isAsymmetricKey(privateKey)).to.be.true;
 
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        })
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         expect(isAsymmetricKey(publicKey)).to.be.true;
-      })
+      });
 
       it("should return false for an invalid asymmetric key", async () => {
-        const key = await KeyModule.generateKey()
+        const key = await KeyModule.generateKey();
         expect(isAsymmetricKey(key)).to.be.false;
 
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: "test" 
-        })
+        const passKey = await KeyModule.generatePassKey({ passphrase: "test" });
         expect(isAsymmetricKey(passKey)).to.be.false;
 
-        const privateKey = await KeyModule.generatePrivateKey()
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        })
-        const otherPrivateKey = await KeyModule.generatePrivateKey()
-        const sharedKey = await KeyModule.generateSharedKey({
-          privateKey: otherPrivateKey, publicKey 
-        })
+        const privateKey = await KeyModule.generatePrivateKey();
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
+        const otherPrivateKey = await KeyModule.generatePrivateKey();
+        const sharedKey = await KeyModule.generateSharedKey({ privateKey: otherPrivateKey, publicKey });
         expect(isAsymmetricKey(sharedKey)).to.be.false;
-      })
-    })
+      });
+    });
 
     describe("isSameKey()", () => {
       it("should return true if two keys are the same", async () => {
@@ -557,9 +483,7 @@ describe("[KeyModule Test Suite]", () => {
         isSame = await KeyChecker.isSameKey(secretKey, secretKey);
         expect(isSame).to.be.true;
 
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: "test-passphrase" 
-        });
+        const passKey = await KeyModule.generatePassKey({ passphrase: "test-passphrase" });
         isSame = await KeyChecker.isSameKey(passKey, passKey);
         expect(isSame).to.be.true;
 
@@ -567,55 +491,49 @@ describe("[KeyModule Test Suite]", () => {
         isSame = await KeyChecker.isSameKey(privateKey, privateKey);
         expect(isSame).to.be.true;
 
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
         isSame = await KeyChecker.isSameKey(publicKey, publicKey);
         expect(isSame).to.be.true;
-      })
+      });
 
       it("should return false if two keys are not the same", async () => {
         let isSame: boolean;
         const secretKey = await KeyModule.generateKey();
-        const passKey = await KeyModule.generatePassKey({
-          passphrase: "test-passphrase" 
-        });
+        const passKey = await KeyModule.generatePassKey({ passphrase: "test-passphrase" });
         const privateKey = await KeyModule.generatePrivateKey();
-        const publicKey = await KeyModule.generatePublicKey({
-          privateKey 
-        });
+        const publicKey = await KeyModule.generatePublicKey({ privateKey });
 
         isSame = await KeyChecker.isSameKey(secretKey, passKey);
         expect(isSame).to.be.false;
 
         isSame = await KeyChecker.isSameKey(privateKey, publicKey);
         expect(isSame).to.be.false;
-      })
+      });
 
       it("should throw error if raw key is passed)", async () => {
         const secretKey = await KeyModule.generateKey();
         const rawSecretKey = await KeyModule.exportKey(secretKey);
 
         try {
-          await KeyChecker.isSameKey(rawSecretKey as any, secretKey)
+          await KeyChecker.isSameKey(rawSecretKey as any, secretKey);
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
           const error: Error = e as Error;
           expect(error.message).to.equal(KEY_ERROR_MESSAGE.INVALID_KEY);
         }
-      })
+      });
 
       it("should throw error if invalid key is passed)", async () => {
         const secretKey = await KeyModule.generateKey();
         
         try {
-          await KeyChecker.isSameKey("invalid" as any, secretKey)
+          await KeyChecker.isSameKey("invalid" as any, secretKey);
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
           const error: Error = e as Error;
           expect(error.message).to.equal(KEY_ERROR_MESSAGE.INVALID_KEY);
         }
-      })
+      });
     });
-  })
+  });
 });

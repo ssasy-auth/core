@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "chai";
 import { TEST_ERROR } from "../config";
-import {
-  BufferUtil, DEFAULT_MINIMUM_BUFFER_LENGTH, BUFFER_ERROR_MESSAGE 
-} from "../../src/utils";
+import { BUFFER_ERROR_MESSAGE, BufferUtil, DEFAULT_MINIMUM_BUFFER_LENGTH } from "../../src/utils";
 
 function getTestBuffer(): Uint8Array {
   const text = "hello world";
@@ -20,7 +18,7 @@ describe("[BufferUtils Test Suite]", () => {
       } catch (error) {
         expect((error as Error).message).to.equal(BUFFER_ERROR_MESSAGE.MISSING_LENGTH);
       }
-    })
+    });
 
     it("should throw an error if length is not a number", () => {
       try {
@@ -29,7 +27,7 @@ describe("[BufferUtils Test Suite]", () => {
       } catch (error) {
         expect((error as Error).message).to.equal(BUFFER_ERROR_MESSAGE.INVALID_BUFFER_LENGTH);
       }
-    })
+    });
 
     it("should throw an error if length is less than DEFAULT_MINIMUM_BUFFER_LENGTH", () => {
       try {
@@ -47,13 +45,13 @@ describe("[BufferUtils Test Suite]", () => {
         const buffer = BufferUtil.createBuffer(length);
         expect(buffer.byteLength).to.equal(length);
       }
-    })
+    });
     
     it("should return a buffer with the uint8array type", () => {
       const buffer = getTestBuffer();
       expect(buffer instanceof Uint8Array).to.be.true;
-    })
-  })
+    });
+  });
 
   describe("BufferToString()", () => {
     it("should throw an error if buffer is not specified", () => {
@@ -63,7 +61,7 @@ describe("[BufferUtils Test Suite]", () => {
       } catch (error) {
         expect((error as Error).message).to.equal(BUFFER_ERROR_MESSAGE.MISSING_BUFFER);
       }
-    })
+    });
 
     it("should throw an error if buffer is not array buffer or uint8array", () => {
       try {
@@ -94,16 +92,16 @@ describe("[BufferUtils Test Suite]", () => {
       } catch (error) {
         expect((error as Error).message).to.equal(BUFFER_ERROR_MESSAGE.INVALID_BUFFER);
       }
-    })
+    });
 
     it("should return a base64 string if encoding is not specififed", () => {
-      const buffer = getTestBuffer()
+      const buffer = getTestBuffer();
       const bufferString = BufferUtil.BufferToString(buffer);
       expect(bufferString).to.be.a("string");
 
       const result = BufferUtil.isBase64String(bufferString);
       expect(result).to.be.true;
-    })
+    });
 
     it("should return a base64 string if encoding is specified as base64", () => {
       const buffer = getTestBuffer();
@@ -112,7 +110,7 @@ describe("[BufferUtils Test Suite]", () => {
 
       const result = BufferUtil.isBase64String(bufferString);
       expect(result).to.be.true;
-    })
+    });
 
     it("should return a utf8 string if encoding is specified as utf8", () => {
       const buffer = getTestBuffer();
@@ -121,8 +119,8 @@ describe("[BufferUtils Test Suite]", () => {
 
       const result = BufferUtil.isUtf8String(bufferString);
       expect(result).to.be.true;
-    })
-  })
+    });
+  });
 
   describe("StringToBuffer()", () => {
     it("should throw an error if buffer string is not specified", () => {
@@ -132,22 +130,22 @@ describe("[BufferUtils Test Suite]", () => {
       } catch (error) {
         expect((error as Error).message).to.equal(BUFFER_ERROR_MESSAGE.MISSING_BUFFER_STRING);
       }
-    })
+    });
 
     it("should return a buffer if encoding is not specified", () => {
       const buffer = getTestBuffer();
       const bufferString = BufferUtil.BufferToString(buffer);
       const result = BufferUtil.StringToBuffer(bufferString);
       expect(result).to.be.an.instanceof(Uint8Array);
-    })
+    });
 
     it("should return a uint8array", () => {
       const buffer = getTestBuffer();
       const bufferString = BufferUtil.BufferToString(buffer);
       const result = BufferUtil.StringToBuffer(bufferString);
       expect(result instanceof Uint8Array).to.be.true;
-    })
-  })
+    });
+  });
 
   describe("BufferToString() + StringToBuffer()", () => {
     it("should maintain buffer integrity", () => {
@@ -155,8 +153,8 @@ describe("[BufferUtils Test Suite]", () => {
       const bufferString = BufferUtil.BufferToString(buffer);
       const result = BufferUtil.StringToBuffer(bufferString);
       expect(result).to.deep.equal(buffer);
-    })
-  })
+    });
+  });
 
   describe("isBufferString()", () => {
     it("should throw an error if buffer string is not specified", () => {
@@ -166,7 +164,7 @@ describe("[BufferUtils Test Suite]", () => {
       } catch (error) {
         expect((error as Error).message).to.equal(BUFFER_ERROR_MESSAGE.MISSING_BUFFER_STRING);
       }
-    })
+    });
     
     // will always return true for now since utf8 supports all characters
     // ? it("should return false if string is not buffer like")
@@ -182,7 +180,7 @@ describe("[BufferUtils Test Suite]", () => {
         expect(result, `expected buffer-like: ${bufferString}`).to.be.true;
       }
     });
-  })
+  });
 
   describe("isBase64String()", () => {
     it("should throw an error if base64 string is not specified", () => {
@@ -211,7 +209,7 @@ describe("[BufferUtils Test Suite]", () => {
         expect(result).to.be.true;
       }
     });
-  })
+  });
 
   describe("isUtf8String()", () => {
     it("should throw an error if utf8 string is not specified", () => {
@@ -234,5 +232,5 @@ describe("[BufferUtils Test Suite]", () => {
         expect(result).to.be.true;
       }
     });
-  })
+  });
 });

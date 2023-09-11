@@ -1,23 +1,12 @@
-import { WebCryptoLib, BufferUtil } from "../utils";
-import {
-  CRYPTO_CONFIG, IV_LENGTH, NONCE_LENGTH 
-} from "../config";
-import type {
-  Ciphertext,
-  SecretKey,
-  PassKey,
-  PrivateKey,
-  PublicKey,
-  SharedKey,
-  AdvancedCiphertext,
-  StandardCiphertext
-} from "../interfaces";
+import { BufferUtil, WebCryptoLib } from "../utils";
+import { CRYPTO_CONFIG, IV_LENGTH, NONCE_LENGTH } from "../config";
+import type { AdvancedCiphertext, Ciphertext, PassKey, PrivateKey, PublicKey, SecretKey, SharedKey, StandardCiphertext } from "../interfaces";
 import { KeyType } from "../interfaces";
 import { KeyChecker, KeyModule } from "./key-mod";
 
 enum CryptoErrorCode {
-	OPERATION_ERROR = "OperationError", // the operation cannot be performed
-	INVALID_ACCESS_ERROR = "InvalidAccessError", // the key used is not allowed to perform the operation (e.g. wrong key type)
+  OPERATION_ERROR = "OperationError", // the operation cannot be performed
+  INVALID_ACCESS_ERROR = "InvalidAccessError", // the key used is not allowed to perform the operation (e.g. wrong key type)
 }
 
 /**
@@ -30,7 +19,7 @@ export const CRYPTO_ERROR_MESSAGE = {
   INVALID_HASH_STRING: "Input is not a valid string",
   INVALID_SIGNATURE_KEY: "Key is not a private key (ECDH)",
   WRONG_KEY: "The key provided does not match the key used to encrypt payload",
-  MISSING_PASSPHRASE_SALT: "Passphrase salt is missing from ciphertext"
+  MISSING_PASSPHRASE_SALT: "Passphrase salt is missing from ciphertext" 
 };
 
 /**
@@ -45,14 +34,14 @@ export const CRYPTO_ERROR_MESSAGE = {
  * @returns ciphertext
  */
 async function encrypt(
-	key: SecretKey | PassKey | SharedKey | string,
-	plaintext: string
+  key: SecretKey | PassKey | SharedKey | string,
+  plaintext: string
 ): Promise<StandardCiphertext>;
 async function encrypt(
-	key: SharedKey,
-	plaintext: string,
-	sender: PublicKey,
-	recipient: PublicKey
+  key: SharedKey,
+  plaintext: string,
+  sender: PublicKey,
+  recipient: PublicKey
 ): Promise<AdvancedCiphertext>;
 async function encrypt(
   key: SecretKey | PassKey | SharedKey | string,
@@ -60,7 +49,7 @@ async function encrypt(
   sender?: PublicKey,
   recipient?: PublicKey
 ): Promise<Ciphertext> {
-  
+
   // throw error if key is neither a string nor a symmetric key
   if (typeof key !== "string" && !KeyChecker.isSymmetricKey(key)) {
     throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SYMMETRIC_KEY);
@@ -73,9 +62,7 @@ async function encrypt(
 
   // generate passkey if key is a passphrase
   if (typeof key === "string") {
-    key = await KeyModule.generatePassKey({
-      passphrase: key
-    });
+    key = await KeyModule.generatePassKey({ passphrase: key });
   }
 
   // convert plaintext to buffer (string > utf8 > base64 > array buffer)
@@ -93,7 +80,7 @@ async function encrypt(
   const ciphertextBuffer = await WebCryptoLib.subtle.encrypt(
     {
       ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
-      iv: initializationVector
+      iv: initializationVector 
     },
     key.crypto,
     plaintextBase64Buffer
@@ -101,10 +88,10 @@ async function encrypt(
 
   // convert iv to base64 string
   const ivString = BufferUtil.BufferToString(initializationVector);
-  
+
   // convert salt to base64 string
   const saltString = (key as PassKey).salt ? (key as PassKey).salt : undefined; // passkeys store salt as a string
-  
+
   // convert data to base64 string
   const dataString = BufferUtil.BufferToString(ciphertextBuffer, "base64");
 
@@ -112,15 +99,15 @@ async function encrypt(
   let cipherText: StandardCiphertext = {
     data: dataString,
     iv: ivString,
-    salt: saltString
+    salt: saltString 
   };
 
   // append sender and recipient to ciphertext if provided
-  if(sender || recipient) {
+  if (sender || recipient) {
     cipherText = {
       ...cipherText,
       sender: sender,
-      recipient: recipient
+      recipient: recipient 
     } as AdvancedCiphertext;
   }
 
@@ -136,12 +123,12 @@ export const CryptoModule = {
   /**
    * Returns decrypted data (plaintext).
    * 
-	 * Note: This operation is for **symmetric** key cryptography.
-	 *
-	 * @param key - crypto key
-	 * @param ciphertext - cipher text to decrypt
-	 * @returns plaintext
-	 */
+   * Note: This operation is for **symmetric** key cryptography.
+   *
+   * @param key - crypto key
+   * @param ciphertext - cipher text to decrypt
+   * @returns plaintext
+   */
   async decrypt(
     key: SecretKey | PassKey | SharedKey | string,
     ciphertext: Ciphertext
@@ -165,7 +152,7 @@ export const CryptoModule = {
     if (typeof key === "string") {
       key = await KeyModule.generatePassKey({
         passphrase: key,
-        salt: ciphertext.salt
+        salt: ciphertext.salt 
       });
     }
 
@@ -183,7 +170,7 @@ export const CryptoModule = {
       const buffer = await WebCryptoLib.subtle.decrypt(
         {
           ...CRYPTO_CONFIG.SYMMETRIC.algorithm,
-          iv: ivBuffer
+          iv: ivBuffer 
         },
         key.crypto,
         ciphertextBuffer
@@ -197,7 +184,7 @@ export const CryptoModule = {
       if (
         error.name === CryptoErrorCode.INVALID_ACCESS_ERROR ||
         error.name === CryptoErrorCode.OPERATION_ERROR ||
-				error.message === "Cipher job failed"
+        error.message === "Cipher job failed"
       ) {
         throw new Error(CRYPTO_ERROR_MESSAGE.WRONG_KEY);
       } else {
@@ -218,35 +205,33 @@ export const CryptoModule = {
    * just the message encrypted using the signers private key. Only the signer's
    * private key can verify the signature.
    * 
-	 * Note: since the webcrypto API does not support signing with an ECDH key, we
+   * Note: since the webcrypto API does not support signing with an ECDH key, we
    * use the following workaround:
-	 * - generate a shared key from the signer's private and public key
-	 * - encrypt the message with the shared key
-	 * - encrypted message = signature
-	 *
-	 * @param privateKey - private key
-	 * @param message - message to sign
-	 * @returns encrypted signature
-	 */
+   * - generate a shared key from the signer's private and public key
+   * - encrypt the message with the shared key
+   * - encrypted message = signature
+   *
+   * @param privateKey - private key
+   * @param message - message to sign
+   * @returns encrypted signature
+   */
   async sign(
     privateKey: PrivateKey,
     message: string
   ): Promise<StandardCiphertext> {
     if (
       !KeyChecker.isAsymmetricKey(privateKey) ||
-			privateKey.type !== KeyType.PrivateKey
+      privateKey.type !== KeyType.PrivateKey
     ) {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_SIGNATURE_KEY);
     }
 
     // extract shared key from private key
-    const publicKey = await KeyModule.generatePublicKey({
-      privateKey: privateKey
-    });
+    const publicKey = await KeyModule.generatePublicKey({ privateKey: privateKey });
 
     const sharedKey = await KeyModule.generateSharedKey({
       privateKey: privateKey,
-      publicKey: publicKey
+      publicKey: publicKey 
     });
 
     // return encrypted message
@@ -256,22 +241,20 @@ export const CryptoModule = {
   /**
    * Returns decrypted signature, if the signature is valid. Only the signer's
    * private key can verify the signature.
-	 *
-	 * @param privateKey - private key used to sign the message
-	 * @param ciphertext - signature to verify
-	 * @returns decrypted signature
-	 */
+   *
+   * @param privateKey - private key used to sign the message
+   * @param ciphertext - signature to verify
+   * @returns decrypted signature
+   */
   async verify(
     privateKey: PrivateKey,
     ciphertext: Ciphertext
   ): Promise<string | null> {
     // extract secret key from private key
-    const publicKey = await KeyModule.generatePublicKey({
-      privateKey: privateKey
-    });
+    const publicKey = await KeyModule.generatePublicKey({ privateKey: privateKey });
     const sharedKey = await KeyModule.generateSharedKey({
       privateKey: privateKey,
-      publicKey: publicKey
+      publicKey: publicKey 
     });
 
     try {
@@ -282,11 +265,11 @@ export const CryptoModule = {
   },
 
   /**
-	 * Returns a hash of the input data.
-	 *
-	 * @param input - text input
-	 * @returns hash
-	 */
+   * Returns a hash of the input data.
+   *
+   * @param input - text input
+   * @returns hash
+   */
   async hash(input: string): Promise<string> {
     if (typeof input !== "string") {
       throw new Error(CRYPTO_ERROR_MESSAGE.INVALID_HASH_STRING);
@@ -309,27 +292,27 @@ export const CryptoModule = {
   },
 
   /**
-	 * Returns a random nonce in Uint8Array format.
+   * Returns a random nonce in Uint8Array format.
    * 
-	 * @returns nonce
-	 */
+   * @returns nonce
+   */
   generateNonce(): Uint8Array {
     // create buffer
     const buffer = BufferUtil.createBuffer(NONCE_LENGTH);
 
     return WebCryptoLib.getRandomValues(buffer);
-  }
+  } 
 };
 
 export const CryptoChecker = {
   /**
-	 * Returns true if the object is a valid ciphertext. A valid ciphertext must
+   * Returns true if the object is a valid ciphertext. A valid ciphertext must
    * have a data and iv property. If the ciphertext is an advanced ciphertext,
    * it must also have a signature, sender and recipient property.
-	 *
-	 * @param obj - input to check
-	 * @returns boolean
-	 * */
+   *
+   * @param obj - input to check
+   * @returns boolean
+   * */
   isCiphertext(obj: unknown): boolean {
     if (!obj) return false;
 
@@ -363,8 +346,8 @@ export const CryptoChecker = {
 
       if (
         (obj as AdvancedCiphertext).sender ||
-				(obj as AdvancedCiphertext).recipient ||
-				(obj as AdvancedCiphertext).signature
+        (obj as AdvancedCiphertext).recipient ||
+        (obj as AdvancedCiphertext).signature
       ) {
         const advancedCiphertext = obj as AdvancedCiphertext;
 
@@ -401,5 +384,5 @@ export const CryptoChecker = {
     }
 
     return true;
-  }
+  } 
 };

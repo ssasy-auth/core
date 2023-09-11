@@ -111,20 +111,20 @@ const CRYPTO_ALGORITHMS = {
     tagLength: 128,
     jwk: {
       kty: "oct",
-      algo: "A256GCM"
-    }
+      algo: "A256GCM" 
+    } 
   } as AesAlgorithm,
   ECDH: {
     name: "ECDH", // elliptic curve diffie hellman
     namedCurve: "P-256", 
     jwk: {
       kty: "EC",
-      algo: "ECDH-ES"
-    }
+      algo: "ECDH-ES" 
+    } 
   } as EcdhAlgorithm,
   ECDSA: {
     name: "ECDSA", // elliptic curve digital signature algorithm
-    hash: "SHA-512"
+    hash: "SHA-512" 
   } as EcdsAlgorithm,
   PBKDF2: {
     name: "PBKDF2", // password based key derivation function
@@ -133,10 +133,10 @@ const CRYPTO_ALGORITHMS = {
     jwk: {
       kty: "oct",
       algo: "A256GCM" // note: the algorithm used to prepare the key is "PBES2-HS512+A256" but the actual key is A256GCM
-    }
+    } 
   } as PbkdfAlgorithm,
-  HASH: "SHA-512"
-}
+  HASH: "SHA-512" 
+};
 
 /**
  * Default configuration properties for the web crypto api
@@ -145,20 +145,16 @@ const CRYPTO_CONFIG = {
   SYMMETRIC: {
     algorithm: CRYPTO_ALGORITHMS.AES,
     exportable: true,
-    usages: [ "encrypt", "decrypt" ]
+    usages: [ "encrypt", "decrypt" ] 
   } as KeyGenParams,
   ASYMMETRIC: {
     algorithm: CRYPTO_ALGORITHMS.ECDH,
     exportable: true,
-    usages: [ "deriveKey" ]
+    usages: [ "deriveKey" ] 
   } as KeyGenParams,
-  SIGNATURE: {
-    algorithm: CRYPTO_ALGORITHMS.ECDSA
-  } as SignatureGenParams,
-  HASH: {
-    algorithm: CRYPTO_ALGORITHMS.HASH
-  } as HashGenParams
-}
+  SIGNATURE: { algorithm: CRYPTO_ALGORITHMS.ECDSA } as SignatureGenParams,
+  HASH: { algorithm: CRYPTO_ALGORITHMS.HASH } as HashGenParams 
+};
 
 /**
  * Length of the initialization vector (IV) in bytes
@@ -180,5 +176,5 @@ export {
   CRYPTO_CONFIG,
   IV_LENGTH,
   SALT_LENGTH,
-  NONCE_LENGTH
-}
+  NONCE_LENGTH 
+};

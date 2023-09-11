@@ -3,24 +3,24 @@ import { expect } from "chai";
 import { TEST_ERROR } from "./config";
 import { BufferUtil } from "../src/utils";
 import {
-  KeyModule,
-  KeyChecker,
-  CryptoModule,
-  SerializerModule,
   ChallengeModule,
   CryptoChecker,
-  SerializerChecker
+  CryptoModule,
+  KeyChecker,
+  KeyModule,
+  SerializerChecker,
+  SerializerModule 
 } from "../src/modules";
 import { Wallet, WALLET_ERROR_MESSAGE } from "../src/wallet";
 import {
-  KeyType,
   type AdvancedCiphertext,
   type Challenge,
+  KeyType,
   type PrivateKey,
   type PublicKey,
-  type StandardCiphertext,
   type RawKey,
-  type SecureContextKey
+  type SecureContextKey,
+  type StandardCiphertext 
 } from "../src/interfaces";
 
 describe("[Wallet Class Test Suite]", () => {
@@ -54,7 +54,7 @@ describe("[Wallet Class Test Suite]", () => {
 
     thirdPartyPrivateKey = await KeyModule.generatePrivateKey();
     thirdPartyPrivateKeyUri = await SerializerModule.serializeKey(thirdPartyPrivateKey);
-  })
+  });
 
   describe("constructor()", () => {
     it("should throw an error if private key uri (string) is not provided", async () => {
@@ -82,7 +82,7 @@ describe("[Wallet Class Test Suite]", () => {
           expect(error.message, `should throw for argument ${invalidArgument}`).to.equal(WALLET_ERROR_MESSAGE.INVALID_KEY);
         }
       }
-    })
+    });
     
     it("should throw an error if key is not provided", async () => {
       try {
@@ -92,20 +92,20 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.INVALID_CONSTRUCTOR_PARAMS);
       }
-    })
+    });
 
     it("should return a wallet instance if valid private key uri is provided", async () => {
       const wallet = new Wallet(testPrivateKeyUri);
       expect(wallet).to.be.instanceOf(Wallet);
-    })
-  })
+    });
+  });
 
   describe("getPublicKey()", () => {
     let wallet: Wallet;
 
     beforeEach(async () => {
       wallet = new Wallet(testPrivateKeyUri);
-    })
+    });
 
     it("should return a public key uri", async () => {
       const publicKey: string = await wallet.getPublicKey();
@@ -113,34 +113,34 @@ describe("[Wallet Class Test Suite]", () => {
       expect(publicKey).to.be.a("string");
       expect(publicKey.startsWith(SerializerModule.PREFIX.URI.KEY)).to.be.true;
       expect(SerializerChecker.isKeyUri(publicKey, { type: KeyType.PublicKey })).to.be.true;
-    })
+    });
 
     it("should return raw key, if raw flag is set", async () => {
       const rawPublicKey: RawKey = await wallet.getPublicKey({ raw: true });
 
       expect(rawPublicKey).to.be.a("object");
       expect(KeyChecker.isRawKey(rawPublicKey)).to.be.true;
-    })
+    });
 
     it("should return secure context key, if secure flag is set", async () => {
       const securePublicKey: SecureContextKey = await wallet.getPublicKey({ secure: true });
 
       expect(securePublicKey).to.be.a("object");
       expect(KeyChecker.isAsymmetricKey(securePublicKey)).to.be.true;
-    })
+    });
 
     it("should return correct public key (uri by default)", async () => {
       const publicKeyUri: string = await wallet.getPublicKey();
       expect(publicKeyUri).to.deep.equal(testPublicKeyUri);
-    })
-  })
+    });
+  });
 
   describe("encrypt()", () => {
     let wallet: Wallet;
 
     beforeEach(async () => {
       wallet = new Wallet(testPrivateKeyUri);
-    })
+    });
 
     it("should throw an error if key is not supported", async () => {
       const unsportedKeys = [
@@ -157,10 +157,10 @@ describe("[Wallet Class Test Suite]", () => {
           expect.fail(TEST_ERROR.DID_NOT_THROW);
         } catch (e) {
           const error = e as Error;
-          expect(error.message).to.equal(WALLET_ERROR_MESSAGE.INVALID_KEY)
+          expect(error.message).to.equal(WALLET_ERROR_MESSAGE.INVALID_KEY);
         }
       }
-    })
+    });
 
     it("should throw an error if data is not provided", async () => {
       try {
@@ -170,14 +170,14 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_PAYLOAD);
       }
-    })
+    });
 
     it("should return a ciphertext uri", async () => {
       const payload = "data"; 
       const ciphertextUri = await wallet.encrypt(friendPublicKeyUri, payload);
 
       expect(ciphertextUri).to.be.a("string");
-    })
+    });
 
     it("should be possible to decode ciphertext uri", async () => {
       const payload = "data";
@@ -189,7 +189,7 @@ describe("[Wallet Class Test Suite]", () => {
       // iv should be a valid Uint8Array uri
       const result = BufferUtil.isBufferString(ciphertext.iv);
       expect(result).to.be.true;
-    })
+    });
 
     it("should return an ciphertext uri with salt param if key is a passphrase", async () => {
       const payload = "data";
@@ -197,7 +197,7 @@ describe("[Wallet Class Test Suite]", () => {
       const ciphertext: AdvancedCiphertext = await SerializerModule.deserializeCiphertext(ciphertextUri) as AdvancedCiphertext;
 
       expect(ciphertext.salt).to.exist;
-    })
+    });
 
     it("should return an advanced ciphertext with sender and recipient public key, if public key is passed", async () => {
       const payload = "data";
@@ -209,13 +209,11 @@ describe("[Wallet Class Test Suite]", () => {
 
       expect(ciphertext.recipient).to.exist;
       expect(ciphertext.recipient).to.deep.equal(friendPublicKey);
-    })
+    });
 
     it("should return an advanced ciphertext if serialized public key (key uri) is passed", async () => {
       const friendPrivateKey = await KeyModule.generatePrivateKey();
-      const friendPublicKey = await KeyModule.generatePublicKey({
-        privateKey: friendPrivateKey
-      });
+      const friendPublicKey = await KeyModule.generatePublicKey({ privateKey: friendPrivateKey });
       
       const serializedPublicKey = await SerializerModule.serializeKey(friendPublicKey);
       const payload = "data";
@@ -226,8 +224,8 @@ describe("[Wallet Class Test Suite]", () => {
       // expect ciphertext recipient to be the serialized public key belonging to the friend
       const ciphertext: AdvancedCiphertext = await SerializerModule.deserializeCiphertext(ciphertextUri) as AdvancedCiphertext;
       expect(ciphertext.recipient).to.deep.equal(friendPublicKey);
-    })
-  })
+    });
+  });
 
   describe("decrypt()", () => {
     let wallet: Wallet;
@@ -239,7 +237,7 @@ describe("[Wallet Class Test Suite]", () => {
       wallet = new Wallet(testPrivateKeyUri);
       friendWallet = new Wallet(friendPrivateKeyUri);
       encryptedMessageFromFriend = await friendWallet.encrypt(testPublicKeyUri, "data");
-    })
+    });
 
     it("should throw an error if key is not supported", async () => {
 
@@ -260,7 +258,7 @@ describe("[Wallet Class Test Suite]", () => {
           expect(error.message).to.equal(WALLET_ERROR_MESSAGE.INVALID_KEY);
         }
       }
-    })
+    });
     
     it("should throw an error if ciphertext is not provided", async () => {
       try {
@@ -270,21 +268,21 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
       }
-    })
+    });
 
     it("should return decrypted data that was encrypted with public key uri", async () => {
       const payload = "data";
       const decrypted = await wallet.decrypt(friendPublicKeyUri, encryptedMessageFromFriend);
       expect(decrypted).to.equal(payload);
-    })
-  })
+    });
+  });
 
   describe("generateSignature()", () => {
     let wallet: Wallet;
 
     beforeEach(async () => {
       wallet = new Wallet(testPrivateKeyUri);
-    })
+    });
 
     it("should return a signature uri", async () => {
       const payload = "data";
@@ -336,7 +334,7 @@ describe("[Wallet Class Test Suite]", () => {
 
     beforeEach(async () => {
       wallet = new Wallet(testPrivateKeyUri);
-    })
+    });
 
     it("should return string", async () => {
       const encryptedChallengeString = await wallet.generateChallenge(friendPublicKeyUri);
@@ -400,7 +398,7 @@ describe("[Wallet Class Test Suite]", () => {
       expect(mainEncryptedChallenge.signature).to.exist;
       expect(mainEncryptedChallenge.signature?.data).to.deep.equal(encryptedSolution.signature?.data);
       expect(mainEncryptedChallenge.signature?.iv).to.deep.equal(encryptedSolution.signature?.iv);
-    })
+    });
 
     it("should set encrypted challenge sender to the wallet public key and recipient to the provided public key", async () => {
       const ciphertext = await wallet.generateChallenge(friendPublicKeyUri);
@@ -409,7 +407,7 @@ describe("[Wallet Class Test Suite]", () => {
       expect(deserializedCiphertext.sender).to.deep.equal(testPublicKey); // wallet public key
       expect(deserializedCiphertext.recipient).to.deep.equal(friendPublicKey);
     });
-  })
+  });
 
   describe("generateChallengeResponse()", () => {
     let wallet: Wallet;
@@ -427,16 +425,14 @@ describe("[Wallet Class Test Suite]", () => {
       const challengeString = await SerializerModule.serializeChallenge(challenge);
 
       // derive shared key
-      const sharedKey = await KeyModule.generateSharedKey({
-        privateKey: friendPrivateKey, publicKey: testPublicKey
-      });
+      const sharedKey = await KeyModule.generateSharedKey({ privateKey: friendPrivateKey, publicKey: testPublicKey });
       
       // encrypt challenge
       encryptedChallenge = await CryptoModule.encrypt(sharedKey, challengeString, friendPublicKey, testPublicKey);
 
       // convert encrypted challenge to string
       encryptedChallengeString = await SerializerModule.serializeCiphertext(encryptedChallenge);
-    })
+    });
 
     it("should throw an error if the ciphertext is not provided", async () => {
       try {
@@ -446,14 +442,14 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
       }
-    })
+    });
 
     it("should throw an error if the sender or recipient is not provided in ciphertext", async () => {
       const mockCiphertext: AdvancedCiphertext = {
         ...encryptedChallenge,
         sender: undefined as any, // <-- should be friend public key
         recipient: undefined as any // <-- should be wallet public key
-      }
+      };
 
       const mockCiphertextString: string = await SerializerModule.serializeCiphertext(mockCiphertext);
       
@@ -464,13 +460,13 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
       }
-    })
+    });
 
     it("should throw an error if the ciphertext recipient does not match the wallet public key", async () => {
       const mockCiphertext: AdvancedCiphertext = {
         ...encryptedChallenge,
         recipient: friendPublicKey // <-- should be wallet public key
-      }
+      };
 
       const mockCiphertextString: string = await SerializerModule.serializeCiphertext(mockCiphertext);
       
@@ -481,13 +477,13 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
       }
-    })
+    });
     
     it("should throw an error if invalid challenge is provided", async () => {
       const mockCiphertext: AdvancedCiphertext = {
         ...encryptedChallenge,
         data: "invalid" // <-- should be challenge
-      }
+      };
 
       const mockCiphertextString: string = await SerializerModule.serializeCiphertext(mockCiphertext);
 
@@ -498,7 +494,7 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_CHALLENGE);
       }
-    })
+    });
 
     it("should return a encrypted challenge-response as string", async () => {
       const encryptedChallengeResponseString = await wallet.generateChallengeResponse(encryptedChallengeString);
@@ -506,7 +502,7 @@ describe("[Wallet Class Test Suite]", () => {
 
       expect(encryptedChallengeResponse.data).to.exist;
       expect(encryptedChallengeResponse.iv).to.exist;
-    })
+    });
 
     it("should return a encrypted challenge-response with a signature", async () => {
       const encryptedChallengeResponseString = await wallet.generateChallengeResponse(encryptedChallengeString);
@@ -522,10 +518,8 @@ describe("[Wallet Class Test Suite]", () => {
       const encryptedChallengeResponse = await SerializerModule.deserializeCiphertext(encryptedChallengeResponseString) as AdvancedCiphertext;
       
       // extract solution from ciphertext
-      const sharedKey = await KeyModule.generateSharedKey({
-        privateKey: testPrivateKey, publicKey: encryptedChallenge.sender as PublicKey 
-      });
-      const decryptedChallengeResponse = await CryptoModule.decrypt(sharedKey, encryptedChallengeResponse)
+      const sharedKey = await KeyModule.generateSharedKey({ privateKey: testPrivateKey, publicKey: encryptedChallenge.sender as PublicKey });
+      const decryptedChallengeResponse = await CryptoModule.decrypt(sharedKey, encryptedChallengeResponse);
       const challengeResponse = await SerializerModule.deserializeChallenge(decryptedChallengeResponse);
       
       // extract signature from ciphertext
@@ -551,7 +545,7 @@ describe("[Wallet Class Test Suite]", () => {
       // encode signature
       const signatureString = await SerializerModule.serializeSignature(signature);
 
-      const isValidSignature = await wallet.verifySignature(signatureString)
+      const isValidSignature = await wallet.verifySignature(signatureString);
       expect(isValidSignature).to.not.be.null;
     });
 
@@ -561,8 +555,8 @@ describe("[Wallet Class Test Suite]", () => {
 
       expect(encryptedChallengeResponse.sender).to.deep.equal(challenge.claimant);
       expect(encryptedChallengeResponse.recipient).to.deep.equal(challenge.verifier);
-    })
-  })
+    });
+  });
 
   describe("generateChallengeResponse() with required signature", () => {
     let wallet: Wallet;
@@ -575,7 +569,7 @@ describe("[Wallet Class Test Suite]", () => {
 
       encryptedChallengeString = await friendWallet.generateChallenge(await wallet.getPublicKey());
       encryptedChallenge = await SerializerModule.deserializeCiphertext(encryptedChallengeString);
-    })
+    });
 
     it("should throw an error if ciphertext does not contain a signature", async () => {
       try {
@@ -589,7 +583,7 @@ describe("[Wallet Class Test Suite]", () => {
         const error = err as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_SIGNATURE);
       }
-    })
+    });
     
     it("should throw an error if challenge signature is invalid", async () => {
       const invalidSignatures = [
@@ -602,7 +596,7 @@ describe("[Wallet Class Test Suite]", () => {
         let encryptedChallengeUri = await SerializerModule.serializeCiphertext(encryptedChallenge);
 
         // inject invalid signature
-        encryptedChallengeUri += `&signature=${invalidString}`
+        encryptedChallengeUri += `&signature=${invalidString}`;
         
         try {
           await wallet.generateChallengeResponse(
@@ -618,7 +612,7 @@ describe("[Wallet Class Test Suite]", () => {
           ]);
         }
       }
-    })
+    });
 
     it("should throw an error if challenge signature does not match parties", async () => {
       /**
@@ -646,16 +640,14 @@ describe("[Wallet Class Test Suite]", () => {
       // ... third party injects your signature into their challenge
       const encryptedThirdPartyChallengeWithReplay: AdvancedCiphertext = {
         ...await SerializerModule.deserializeCiphertext(encryptedThirdPartyChallengeString),
-        signature: encryptedChallengeResponse.signature
-      }
+        signature: encryptedChallengeResponse.signature 
+      };
 
       // ... third party encodes challenge
       const encryptedThirdPartyChallengeWithReplayString: string = await SerializerModule.serializeCiphertext(encryptedThirdPartyChallengeWithReplay);
 
       try {
-        await wallet.generateChallengeResponse(encryptedThirdPartyChallengeWithReplayString, {
-          requireSignature: true 
-        });
+        await wallet.generateChallengeResponse(encryptedThirdPartyChallengeWithReplayString, { requireSignature: true });
         expect.fail(TEST_ERROR.DID_NOT_THROW);
       } catch (err) {
         const error = err as Error;
@@ -672,7 +664,7 @@ describe("[Wallet Class Test Suite]", () => {
       const encryptedChallengeResponseUri: string = await wallet.generateChallengeResponse(encryptedChallengeUriFromFriend);
 
       // ... friend saves signature
-      const response = await friendWallet.verifyChallengeResponse(encryptedChallengeResponseUri)
+      const response = await friendWallet.verifyChallengeResponse(encryptedChallengeResponseUri);
 
       // friend generates a new challenge with signature
       const newEncryptedFriendChallengeString: string = await friendWallet.generateChallenge(testPublicKeyUri, response?.signature);
@@ -684,7 +676,7 @@ describe("[Wallet Class Test Suite]", () => {
 
       expect(walletSolutionWithSignature).to.not.be.null;
     });
-  })
+  });
 
   describe("verifyChallengeResponse()", () => {
     let wallet: Wallet; // <- verifier
@@ -698,12 +690,12 @@ describe("[Wallet Class Test Suite]", () => {
       wallet = new Wallet(testPrivateKeyUri);
       friendWallet = new Wallet(friendPrivateKeyUri);
       
-      const encryptedChallengeString = await wallet.generateChallenge(await friendWallet.getPublicKey())
+      const encryptedChallengeString = await wallet.generateChallenge(await friendWallet.getPublicKey());
       encryptedChallenge = await SerializerModule.deserializeCiphertext(encryptedChallengeString);
       
-      encryptedChallengeResponseString = await friendWallet.generateChallengeResponse(encryptedChallengeString)
+      encryptedChallengeResponseString = await friendWallet.generateChallengeResponse(encryptedChallengeString);
       encryptedChallengeResponse = await SerializerModule.deserializeCiphertext(encryptedChallengeResponseString);
-    })
+    });
 
     it("should throw an error if the ciphertext is not provided", async () => {
       try {
@@ -713,14 +705,14 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
       }
-    })
+    });
 
     it("should throw an error if the sender or recipient is not provided in ciphertext", async () => {
       const mockSolutionCiphertext: AdvancedCiphertext = {
         ...encryptedChallengeResponse,
         sender: undefined as any, // <-- should be wallet public key
         recipient: undefined as any // <-- should be friend public key
-      }
+      };
 
       const mockSolutionCiphertextString: string = await SerializerModule.serializeCiphertext(mockSolutionCiphertext);
 
@@ -731,7 +723,7 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT_PARTIES);
       }
-    })
+    });
 
     it("should throw an error if the ciphertext recipient does not match the wallet public key", async () => {
       const thirdPartyWallet = new Wallet(thirdPartyPrivateKeyUri);
@@ -745,7 +737,7 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.INVALID_CIPHERTEXT_ORIGIN);
       }
-    })
+    });
 
     it("should throw an error if the challenge is not provided", async () => {
       try {
@@ -755,7 +747,7 @@ describe("[Wallet Class Test Suite]", () => {
         const error = e as Error;
         expect(error.message).to.equal(WALLET_ERROR_MESSAGE.MISSING_CIPHERTEXT);
       }
-    })
+    });
 
     it("should return object with claimant's public key if the challenge has been solved", async () => {
       const result = await wallet.verifyChallengeResponse(encryptedChallengeResponseString);
@@ -768,7 +760,7 @@ describe("[Wallet Class Test Suite]", () => {
       // decode key
       const deserializedKey: PublicKey = await SerializerModule.deserializeKey(result?.publicKey as string) as PublicKey;
       expect(deserializedKey).to.deep.equal(friendPublicKey);
-    })
+    });
 
     it("should return object with signature if ciphertext had a signature and the challenge has been solved", async () => {
       expect(encryptedChallengeResponse.signature).to.exist;
@@ -783,7 +775,7 @@ describe("[Wallet Class Test Suite]", () => {
       // decode signature
       const deserializedSignature: StandardCiphertext = await SerializerModule.deserializeSignature(result?.signature as string);
       expect(CryptoChecker.isCiphertext(deserializedSignature)).to.be.true;
-    })
+    });
 
     it("should return object with signature that is verifiable by claimant if ciphertext had a signature and the challenge has been solved", async () => {
       expect(encryptedChallengeResponse.signature).to.exist;
@@ -795,18 +787,18 @@ describe("[Wallet Class Test Suite]", () => {
 
       const isValidSignature = await friendWallet.verifySignature(result?.signature as string);
       expect(isValidSignature).to.not.be.null;
-    })
+    });
 
     it("should return null if the challenge has not been solved", async () => {
       const mockSolutionCiphertext: AdvancedCiphertext = {
         ...encryptedChallengeResponse,
         data: encryptedChallenge.data // <-- should be solution
-      }
+      };
 
       const mockSolutionCiphertextString: string = await SerializerModule.serializeCiphertext(mockSolutionCiphertext);
 
       const claimantPublicKey = await wallet.verifyChallengeResponse(mockSolutionCiphertextString);
       expect(claimantPublicKey).to.be.null;
-    })
-  })
+    });
+  });
 });
